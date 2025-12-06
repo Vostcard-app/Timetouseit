@@ -1,0 +1,139 @@
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../firebase/firebaseConfig';
+import { useFoodItems } from '../hooks/useFoodItems';
+import { foodItemService } from '../services/firebaseService';
+import FoodItemCard from '../components/FoodItemCard';
+
+type FilterType = 'all' | 'fresh' | 'expiring_soon' | 'expired';
+
+const Dashboard: React.FC = () => {
+  const [user] = useAuthState(auth);
+  const { foodItems, loading } = useFoodItems(user || null);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const navigate = useNavigate();
+
+  const filteredItems = useMemo(() => {
+    if (filter === 'all') return foodItems;
+    return foodItems.filter(item => item.status === filter);
+  }, [foodItems, filter]);
+
+  const handleDelete = async (itemId: string) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await foodItemService.deleteFoodItem(itemId);
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        alert('Failed to delete item. Please try again.');
+      }
+    }
+  };
+
+  const handleMarkUsed = async (itemId: string) => {
+    try {
+      await foodItemService.deleteFoodItem(itemId);
+    } catch (error) {
+      console.error('Error marking item as used:', error);
+      alert('Failed to mark item as used. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <p>Loading your food items...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: '700', color: '#1f2937' }}>
+          My Food Items
+        </h1>
+        <button
+          onClick={() => navigate('/add')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#002B4D',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '1rem',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          + Add Item
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        {(['all', 'fresh', 'expiring_soon', 'expired'] as FilterType[]).map((filterType) => (
+          <button
+            key={filterType}
+            onClick={() => setFilter(filterType)}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: filter === filterType ? '#002B4D' : '#f3f4f6',
+              color: filter === filterType ? 'white' : '#1f2937',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              textTransform: 'capitalize'
+            }}
+          >
+            {filterType.replace('_', ' ')} ({filterType === 'all' ? foodItems.length : foodItems.filter(i => i.status === filterType).length})
+          </button>
+        ))}
+      </div>
+
+      {filteredItems.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+          <p style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
+            {filter === 'all' ? 'No food items yet.' : `No ${filter.replace('_', ' ')} items.`}
+          </p>
+          <p style={{ marginBottom: '1.5rem' }}>
+            {filter === 'all' ? 'Add your first food item to start tracking expiration dates!' : 'Try a different filter.'}
+          </p>
+          {filter === 'all' && (
+            <button
+              onClick={() => navigate('/add')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Add Your First Item
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+          {filteredItems.map((item) => (
+            <FoodItemCard
+              key={item.id}
+              item={item}
+              onClick={() => navigate(`/item/${item.id}`)}
+              onDelete={() => handleDelete(item.id)}
+              onMarkUsed={() => handleMarkUsed(item.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
+
