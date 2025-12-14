@@ -1,7 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail 
+} from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
+
+// Helper function to get user-friendly error messages
+const getErrorMessage = (errorCode: string): string => {
+  switch (errorCode) {
+    case 'auth/user-not-found':
+      return 'No account found with this email address.';
+    case 'auth/wrong-password':
+      return 'Incorrect password. Please try again.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection.';
+    case 'auth/invalid-credential':
+      return 'Invalid email or password.';
+    default:
+      return 'An error occurred. Please try again.';
+  }
+};
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,6 +39,10 @@ const Login: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,9 +58,31 @@ const Login: React.FC = () => {
       }
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      const errorMessage = getErrorMessage(err.code || '');
+      setError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+
+    setError(null);
+    setResetLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetEmailSent(true);
+    } catch (err: any) {
+      const errorMessage = getErrorMessage(err.code || '');
+      setError(errorMessage);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -77,7 +133,83 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        {resetEmailSent && (
+          <div style={{
+            padding: '0.75rem',
+            backgroundColor: '#d1fae5',
+            color: '#065f46',
+            borderRadius: '6px',
+            marginBottom: '1rem',
+            fontSize: '0.875rem'
+          }}>
+            Password reset email sent! Check your inbox.
+          </div>
+        )}
+
+        {showResetPassword ? (
+          <form onSubmit={handlePasswordReset}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="reset-email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Email
+              </label>
+              <input
+                type="email"
+                id="reset-email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={resetLoading}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '500',
+                cursor: resetLoading ? 'not-allowed' : 'pointer',
+                opacity: resetLoading ? 0.6 : 1,
+                marginBottom: '1rem'
+              }}
+            >
+              {resetLoading ? 'Sending...' : 'Send Reset Email'}
+            </button>
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetPassword(false);
+                  setResetEmailSent(false);
+                  setError(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#002B4D',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  textDecoration: 'underline'
+                }}
+              >
+                Back to {isSignUp ? 'sign up' : 'sign in'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Email
@@ -103,60 +235,106 @@ const Login: React.FC = () => {
             <label htmlFor="password" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  paddingRight: '2.5rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '0.5rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  color: '#6b7280',
+                  fontSize: '0.875rem'
+                }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={() => setShowResetPassword(true)}
+                style={{
+                  marginTop: '0.5rem',
+                  background: 'none',
+                  border: 'none',
+                  color: '#002B4D',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  textDecoration: 'underline',
+                  padding: 0
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
+          </div>
+
+            <button
+              type="submit"
+              disabled={loading}
               style={{
                 width: '100%',
                 padding: '0.75rem',
-                border: '1px solid #d1d5db',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
                 borderRadius: '6px',
                 fontSize: '1rem',
-                boxSizing: 'border-box'
+                fontWeight: '500',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1,
+                marginBottom: '1rem'
               }}
-            />
-          </div>
+            >
+              {loading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: '#002B4D',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-              marginBottom: '1rem'
-            }}
-          >
-            {loading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
-          </button>
-        </form>
-
-        <div style={{ textAlign: 'center' }}>
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#002B4D',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              textDecoration: 'underline'
-            }}
-          >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-          </button>
-        </div>
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError(null);
+                  setResetEmailSent(false);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#002B4D',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  textDecoration: 'underline'
+                }}
+              >
+                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
