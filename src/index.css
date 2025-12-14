@@ -76,14 +76,14 @@ body {
     #root {
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
-    }
+  }
   }
 }
 
 /* Touch handling */
 button {
   -webkit-tap-highlight-color: transparent;
-}
+  }
 
 img {
   max-width: 100%;
