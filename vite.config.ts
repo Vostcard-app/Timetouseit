@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/*.png'],
+      includeAssets: ['icons/*.png', 'vite.svg'],
       manifest: {
         name: 'TossItTime - Food Expiration Tracker',
         short_name: 'TossItTime',
@@ -21,29 +21,36 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
-            src: '/icons/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
+            src: '/vite.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
             purpose: 'any'
           },
-          {
-            src: '/icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/icons/icon-192-maskable.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'maskable'
-          },
-          {
-            src: '/icons/icon-512-maskable.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
-          }
+          // Add these icons when ready (see PWA_ICONS_SETUP.md):
+          // {
+          //   src: '/icons/icon-192.png',
+          //   sizes: '192x192',
+          //   type: 'image/png',
+          //   purpose: 'any'
+          // },
+          // {
+          //   src: '/icons/icon-512.png',
+          //   sizes: '512x512',
+          //   type: 'image/png',
+          //   purpose: 'any'
+          // },
+          // {
+          //   src: '/icons/icon-192-maskable.png',
+          //   sizes: '192x192',
+          //   type: 'image/png',
+          //   purpose: 'maskable'
+          // },
+          // {
+          //   src: '/icons/icon-512-maskable.png',
+          //   sizes: '512x512',
+          //   type: 'image/png',
+          //   purpose: 'maskable'
+          // }
         ],
         categories: ['food', 'lifestyle', 'productivity'],
         lang: 'en',
