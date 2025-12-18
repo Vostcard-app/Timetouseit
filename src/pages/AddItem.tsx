@@ -87,28 +87,6 @@ const AddItem: React.FC = () => {
 
   return (
     <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'transparent',
-            color: '#002B4D',
-            border: '1px solid #002B4D',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            marginBottom: '1rem'
-          }}
-        >
-          ← Back to Dashboard
-        </button>
-        <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: '700', color: '#1f2937' }}>
-          Add Food Item
-        </h1>
-      </div>
-
       {showScanner ? (
         <div>
           <BarcodeScanner
@@ -117,32 +95,11 @@ const AddItem: React.FC = () => {
           />
         </div>
       ) : (
-        <>
-          <div style={{ marginBottom: '1rem' }}>
-            <button
-              onClick={() => setShowScanner(true)}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: '#f3f4f6',
-                color: '#1f2937',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                marginBottom: '1rem'
-              }}
-            >
-              📷 Scan Barcode
-            </button>
-          </div>
-          <AddItemForm
-            onSubmit={handleSubmit}
-            onCancel={() => navigate('/')}
-            initialBarcode={scannedBarcode}
-          />
-        </>
+        <AddItemForm
+          onSubmit={handleSubmit}
+          initialBarcode={scannedBarcode}
+          onScanBarcode={() => setShowScanner(true)}
+        />
       )}
     </div>
   );

@@ -5,9 +5,10 @@ interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File) => Promise<void>;
   onCancel?: () => void;
   initialBarcode?: string;
+  onScanBarcode?: () => void;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, onCancel, initialBarcode }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode }) => {
   const [formData, setFormData] = useState<FoodItemData>({
     name: '',
     barcode: initialBarcode || '',
@@ -88,9 +89,10 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, onCancel, initialBa
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="name" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-          Food Item Name *
+      {/* 1. Item Name Field */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label htmlFor="name" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
+          Item Name *
         </label>
         <input
           type="text"
@@ -99,6 +101,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, onCancel, initialBa
           value={formData.name}
           onChange={handleInputChange}
           required
+          placeholder="Enter item name"
           style={{
             width: '100%',
             padding: '0.75rem',
@@ -109,29 +112,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, onCancel, initialBa
         />
       </div>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="barcode" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-          Barcode (optional)
-        </label>
-        <input
-          type="text"
-          id="barcode"
-          name="barcode"
-          value={formData.barcode}
-          onChange={handleInputChange}
-          placeholder="Scanned or manually entered barcode"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem'
-          }}
-        />
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="expirationDate" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+      {/* 2. Expiration Date Field */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label htmlFor="expirationDate" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
           Expiration Date *
         </label>
         <input
@@ -151,142 +134,91 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, onCancel, initialBa
         />
       </div>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="quantity" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-          Quantity
-        </label>
-        <input
-          type="number"
-          id="quantity"
-          name="quantity"
-          value={formData.quantity}
-          onChange={handleInputChange}
-          min="1"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem'
-          }}
-        />
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="category" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-          Category (optional)
-        </label>
-        <input
-          type="text"
-          id="category"
-          name="category"
-          value={formData.category}
-          onChange={handleInputChange}
-          placeholder="e.g., Dairy, Produce, Meat"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem'
-          }}
-        />
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="photo" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-          Photo (optional)
-        </label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          id="photo"
-          name="photo"
-          accept="image/*"
-          onChange={handlePhotoChange}
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem'
-          }}
-        />
-        {photoPreview && (
-          <img
-            src={photoPreview}
-            alt="Preview"
-            style={{
-              width: '100%',
-              maxWidth: '300px',
-              height: 'auto',
-              marginTop: '0.5rem',
-              borderRadius: '8px'
-            }}
-          />
-        )}
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="notes" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-          Notes (optional)
-        </label>
-        <textarea
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleInputChange}
-          rows={3}
-          placeholder="Any additional notes about this item"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            fontFamily: 'inherit',
-            resize: 'vertical'
-          }}
-        />
-      </div>
-
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      {/* 3. Save Button */}
+      <div style={{ marginBottom: '2rem' }}>
         <button
           type="submit"
           disabled={isSubmitting}
           style={{
-            flex: 1,
-            padding: '0.75rem 1.5rem',
+            width: '100%',
+            padding: '0.875rem 1.5rem',
             backgroundColor: '#002B4D',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
             fontSize: '1rem',
-            fontWeight: '500',
+            fontWeight: '600',
             cursor: isSubmitting ? 'not-allowed' : 'pointer',
-            opacity: isSubmitting ? 0.6 : 1
+            opacity: isSubmitting ? 0.6 : 1,
+            minHeight: '44px' // Touch target size for mobile
           }}
         >
-          {isSubmitting ? 'Adding...' : 'Add Food Item'}
+          {isSubmitting ? 'Saving...' : 'Save'}
         </button>
-        {onCancel && (
+      </div>
+
+      {/* 4. Photo/Barcode Section */}
+      <div style={{ 
+        paddingTop: '1.5rem', 
+        borderTop: '1px solid #e5e7eb',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        {onScanBarcode && (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={onScanBarcode}
             style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#6b7280',
-              color: 'white',
-              border: 'none',
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              border: '1px solid #d1d5db',
               borderRadius: '6px',
               fontSize: '1rem',
               fontWeight: '500',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              minHeight: '44px' // Touch target size for mobile
             }}
           >
-            Cancel
+            📷 Scan Barcode
           </button>
         )}
+        
+        <div>
+          <label htmlFor="photo" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.875rem', color: '#6b7280' }}>
+            Take Photo (optional)
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            id="photo"
+            name="photo"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '0.875rem'
+            }}
+          />
+          {photoPreview && (
+            <img
+              src={photoPreview}
+              alt="Preview"
+              style={{
+                width: '100%',
+                maxWidth: '300px',
+                height: 'auto',
+                marginTop: '0.5rem',
+                borderRadius: '8px'
+              }}
+            />
+          )}
+        </div>
       </div>
     </form>
   );
