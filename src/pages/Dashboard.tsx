@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
@@ -14,7 +14,21 @@ const Dashboard: React.FC = () => {
   const { foodItems, loading } = useFoodItems(user || null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showIndexWarning, setShowIndexWarning] = useState(false);
   const navigate = useNavigate();
+
+  // Check for Firestore index warning
+  useEffect(() => {
+    const checkIndexWarning = () => {
+      if ((window as any).__firestoreIndexWarningShown) {
+        setShowIndexWarning(true);
+      }
+    };
+    checkIndexWarning();
+    // Check periodically
+    const interval = setInterval(checkIndexWarning, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredItems = useMemo(() => {
     if (filter === 'all') return foodItems;
@@ -99,6 +113,64 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}>
+        {/* Firestore Index Warning */}
+        {showIndexWarning && (
+          <div style={{
+            backgroundColor: '#fef3c7',
+            border: '1px solid #f59e0b',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '1rem'
+          }}>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: '600', color: '#92400e' }}>
+                ⚠️ Firestore Index Required
+              </h3>
+              <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#78350f' }}>
+                Items are being saved, but they won't appear in the list until you create the Firestore index.
+              </p>
+              <a
+                href="https://console.firebase.google.com/v1/r/project/tossittime/firestore/indexes?create_composite=Ckxwcm9qZWN0cy90b3NzaXR0aW1lL2RhdGFiYXNlcy8oZGVmYXVsdCkvY29sbGVjdGlvbkdyb3Vwcy9mb29kSXRlbXMvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaEgoOZXhwaXJhdGlvbkRhdGUQARoMCghfX25hbWVfXxAB"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f59e0b',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  marginTop: '0.5rem'
+                }}
+              >
+                Create Index Now →
+              </a>
+            </div>
+            <button
+              onClick={() => setShowIndexWarning(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.25rem',
+                cursor: 'pointer',
+                color: '#92400e',
+                padding: '0.25rem',
+                lineHeight: 1,
+                flexShrink: 0
+              }}
+              aria-label="Close warning"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Page Header with Title and Add Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: '700', color: '#1f2937' }}>

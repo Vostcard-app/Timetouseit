@@ -61,13 +61,19 @@ export const foodItemService = {
       },
       (error) => {
         // Handle Firestore errors gracefully
-        // If index is missing, return empty array and show helpful message
+        console.error('❌ Firestore query error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+        
+        // If index is missing or still building
         if (error.code === 'failed-precondition') {
           // Only log once to reduce console noise
           if (!(window as any).__firestoreIndexWarningShown) {
             console.warn('⚠️ Firestore index required for food items query.');
             console.warn('📋 Create the index here:', error.message.match(/https:\/\/[^\s]+/)?.[0] || 'Firebase Console → Firestore → Indexes');
-            console.warn('💡 The app will work, but food items won\'t load until the index is created.');
+            console.warn('💡 The app will work, but food items won\'t load until the index is created and enabled.');
+            console.warn('💡 If you just created the index, wait 2-5 minutes for it to build, then refresh.');
             (window as any).__firestoreIndexWarningShown = true;
           }
           callback([]); // Return empty array so app doesn't break
