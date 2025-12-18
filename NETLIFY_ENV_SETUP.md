@@ -25,7 +25,7 @@ Your Firebase config values are in your local `.env` file. You need to add them 
 
 | Variable Name | Value |
 |--------------|-------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0` |
+| `VITE_FIREBASE_API_KEY` | `YOUR_API_KEY_HERE` |
 | `VITE_FIREBASE_AUTH_DOMAIN` | `tossittime.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | `tossittime` |
 | `VITE_FIREBASE_STORAGE_BUCKET` | `tossittime.firebasestorage.app` |

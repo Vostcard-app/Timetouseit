@@ -10,7 +10,7 @@ This happens because:
 
 ### Step 1: Verify Your API Key
 
-Your API key should be: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+Your API key should be obtained from Firebase Console (see FIREBASE_SETUP.md)
 
 **Important:** Make sure there are NO typos or extra spaces!
 
@@ -22,7 +22,7 @@ Your API key should be: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
 4. Click **"Add a variable"** and add each of these:
 
    ```
-   VITE_FIREBASE_API_KEY = AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0
+   VITE_FIREBASE_API_KEY = YOUR_API_KEY_HERE
    VITE_FIREBASE_AUTH_DOMAIN = tossittime.firebaseapp.com
    VITE_FIREBASE_PROJECT_ID = tossittime
    VITE_FIREBASE_STORAGE_BUCKET = tossittime.firebasestorage.app
@@ -87,7 +87,7 @@ After adding environment variables:
 3. **Verify API key in Google Cloud Console:**
    - Go to: https://console.cloud.google.com/apis/credentials?project=tossittime
    - Click on your API key
-   - Click "Show key" and verify it matches: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+   - Click "Show key" and verify it matches your Firebase Console API key
 
 4. **Check API key restrictions:**
    - Make sure your Netlify domain is in the allowed referrers

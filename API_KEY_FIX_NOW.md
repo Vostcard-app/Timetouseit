@@ -4,12 +4,12 @@
 
 ```
 API key not valid. Please pass a valid API key.
-identitytoolkit.googleapis.com/v1/projects?key=AIzaSyDv9GV58Aneksy10RoFhmt6FffKGiK01A0: Failed to load resource: the server responded with a status of 400
+identitytoolkit.googleapis.com/v1/projects?key=YOUR_API_KEY: Failed to load resource: the server responded with a status of 400
 ```
 
 ## Root Cause
 
-The API key `AIzaSyDv9GV58Aneksy10RoFhmt6FffKGiK01A0` is either:
+The API key is either:
 1. **Incorrect** - Wrong API key in environment variables
 2. **Revoked/Expired** - API key was deleted or disabled
 3. **Restricted** - API key restrictions are blocking your domain

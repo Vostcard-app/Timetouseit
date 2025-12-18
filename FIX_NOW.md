@@ -21,7 +21,7 @@ npm run dev
 
 ### Step 3: Verify API Restrictions in Google Cloud
 1. Go to: https://console.cloud.google.com/apis/credentials?project=tossittime
-2. Click your API key: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+2. Click your API key in Google Cloud Console
 3. Scroll to **"API restrictions"** section
 4. Make sure it says **"Restrict key"** (not "Don't restrict key")
 5. Click **"Select APIs"**

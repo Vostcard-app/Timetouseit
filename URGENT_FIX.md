@@ -22,7 +22,7 @@ Click **"Add a variable"** for each one:
 
 | Variable Name | Value |
 |--------------|-------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0` |
+| `VITE_FIREBASE_API_KEY` | `YOUR_API_KEY_HERE` (get from Firebase Console) |
 | `VITE_FIREBASE_AUTH_DOMAIN` | `tossittime.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | `tossittime` |
 | `VITE_FIREBASE_STORAGE_BUCKET` | `tossittime.firebasestorage.app` |
@@ -97,7 +97,7 @@ After adding variables and redeploying:
 
 3. **Verify API key value:**
    - In Google Cloud Console, click "Show key"
-   - Should match: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+   - Should match your Firebase Console API key
 
 4. **Clear browser cache:**
    - Hard refresh: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)

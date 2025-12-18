@@ -10,7 +10,7 @@ Your Netlify site has the OLD API key cached or wrong environment variables.
 2. Select your site: **tossittime**
 3. Go to: **Site settings** → **Environment variables**
 4. Find `VITE_FIREBASE_API_KEY`
-5. Make sure it's: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+5. Make sure it matches your Firebase Console API key
 6. If it's different, click Edit and update it
 7. Save
 

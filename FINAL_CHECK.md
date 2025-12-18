@@ -1,7 +1,7 @@
 # Final Check - API Restrictions
 
 ## ✅ Good News
-Your API key is now loading correctly: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+Your API key is now loading correctly from your environment variables
 
 ## If You're Still Getting "API key not valid" Error:
 
@@ -10,7 +10,7 @@ The issue is **API restrictions** in Google Cloud Console. The key needs these A
 ### Configure API Restrictions:
 
 1. Go to: https://console.cloud.google.com/apis/credentials?project=tossittime
-2. Click your API key: `AIzaSyDv9GV58Aneksy1ORoFhmt6FffKGiKO1A0`
+2. Click your API key in Google Cloud Console
 3. Scroll to **"API restrictions"** section
 4. Make sure it says **"Restrict key"** (not "Don't restrict key")
 5. Click **"Select APIs"** button
