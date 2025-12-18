@@ -61,14 +61,20 @@ export const foodItemService = {
       },
       (error) => {
         // Handle Firestore errors gracefully
-        console.error('Error in food items subscription:', error);
         // If index is missing, return empty array and show helpful message
         if (error.code === 'failed-precondition') {
-          console.warn('⚠️ Firestore index required. Please create the index using the link in the error message above.');
+          // Only log once to reduce console noise
+          if (!(window as any).__firestoreIndexWarningShown) {
+            console.warn('⚠️ Firestore index required for food items query.');
+            console.warn('📋 Create the index here:', error.message.match(/https:\/\/[^\s]+/)?.[0] || 'Firebase Console → Firestore → Indexes');
+            console.warn('💡 The app will work, but food items won\'t load until the index is created.');
+            (window as any).__firestoreIndexWarningShown = true;
+          }
           callback([]); // Return empty array so app doesn't break
         } else {
-          // For other errors, still return empty array to prevent app crash
-          callback([]);
+          // For other errors, log them normally
+          console.error('Error in food items subscription:', error);
+          callback([]); // Still return empty array to prevent app crash
         }
       }
     );
