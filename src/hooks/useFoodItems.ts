@@ -19,23 +19,36 @@ export const useFoodItems = (user: User | null) => {
     let unsubscribe: (() => void) | null = null;
 
     // Load user settings for reminder days
-    userSettingsService.getUserSettings(user.uid).then(settings => {
-      if (settings) {
-        setReminderDays(settings.reminderDays);
-      }
-      
-      // Subscribe to food items after settings are loaded
-      unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
-        // Update status for each item based on current date
-        const currentReminderDays = settings?.reminderDays || 7;
-        const updatedItems = items.map(item => ({
-          ...item,
-          status: getFoodItemStatus(item.expirationDate, currentReminderDays)
-        }));
-        setFoodItems(updatedItems);
-        setLoading(false);
+    userSettingsService.getUserSettings(user.uid)
+      .then(settings => {
+        if (settings) {
+          setReminderDays(settings.reminderDays);
+        }
+        
+        // Subscribe to food items after settings are loaded
+        unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
+          // Update status for each item based on current date
+          const currentReminderDays = settings?.reminderDays || 7;
+          const updatedItems = items.map(item => ({
+            ...item,
+            status: getFoodItemStatus(item.expirationDate, currentReminderDays)
+          }));
+          setFoodItems(updatedItems);
+          setLoading(false);
+        });
+      })
+      .catch(error => {
+        console.error('Error loading user settings:', error);
+        // Still try to subscribe to food items even if settings fail
+        unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
+          const updatedItems = items.map(item => ({
+            ...item,
+            status: getFoodItemStatus(item.expirationDate, 7) // Use default
+          }));
+          setFoodItems(updatedItems);
+          setLoading(false);
+        });
       });
-    });
 
     return () => {
       if (unsubscribe) unsubscribe();

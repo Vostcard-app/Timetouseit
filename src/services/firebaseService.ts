@@ -48,15 +48,30 @@ export const foodItemService = {
       orderBy('expirationDate', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-      const items = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        expirationDate: doc.data().expirationDate.toDate(),
-        addedDate: doc.data().addedDate.toDate()
-      })) as FoodItem[];
-      callback(items);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          expirationDate: doc.data().expirationDate.toDate(),
+          addedDate: doc.data().addedDate.toDate()
+        })) as FoodItem[];
+        callback(items);
+      },
+      (error) => {
+        // Handle Firestore errors gracefully
+        console.error('Error in food items subscription:', error);
+        // If index is missing, return empty array and show helpful message
+        if (error.code === 'failed-precondition') {
+          console.warn('⚠️ Firestore index required. Please create the index using the link in the error message above.');
+          callback([]); // Return empty array so app doesn't break
+        } else {
+          // For other errors, still return empty array to prevent app crash
+          callback([]);
+        }
+      }
+    );
 
     return unsubscribe;
   },
