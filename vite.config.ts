@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false, // Disable service worker in dev mode to prevent caching issues
+      },
       includeAssets: ['icons/*.png', 'vite.svg'],
       manifest: {
         name: 'TossItTime - Food Expiration Tracker',
@@ -110,7 +113,10 @@ export default defineConfig({
   ],
   server: {
     port: 5174,
-    host: true
+    host: true,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    }
   },
   build: {
     outDir: 'dist',

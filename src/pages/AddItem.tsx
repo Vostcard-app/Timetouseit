@@ -34,9 +34,13 @@ const AddItem: React.FC = () => {
 
       const itemData: FoodItemData = {
         ...data,
-        photoUrl,
         barcode: scannedBarcode || data.barcode
       };
+      
+      // Only include photoUrl if it exists (Firestore doesn't allow undefined)
+      if (photoUrl) {
+        itemData.photoUrl = photoUrl;
+      }
 
       const status = getFoodItemStatus(data.expirationDate);
       await foodItemService.addFoodItem(user.uid, itemData, status);

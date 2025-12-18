@@ -63,14 +63,24 @@ export const foodItemService = {
 
   // Add a new food item
   async addFoodItem(userId: string, data: FoodItemData, status: 'fresh' | 'expiring_soon' | 'expired'): Promise<string> {
-    const docRef = await addDoc(collection(db, 'foodItems'), {
+    // Remove undefined fields (Firestore doesn't allow undefined)
+    const cleanData: any = {
       userId,
-      ...data,
+      name: data.name,
       expirationDate: Timestamp.fromDate(data.expirationDate),
       addedDate: Timestamp.now(),
       status,
       reminderSent: false
-    });
+    };
+    
+    // Only include optional fields if they have values
+    if (data.barcode) cleanData.barcode = data.barcode;
+    if (data.quantity) cleanData.quantity = data.quantity;
+    if (data.category) cleanData.category = data.category;
+    if (data.notes) cleanData.notes = data.notes;
+    if (data.photoUrl) cleanData.photoUrl = data.photoUrl;
+    
+    const docRef = await addDoc(collection(db, 'foodItems'), cleanData);
     return docRef.id;
   },
 

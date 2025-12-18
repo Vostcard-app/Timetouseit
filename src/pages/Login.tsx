@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   signInWithEmailAndPassword, 
@@ -11,7 +11,12 @@ import {
 import { auth } from '../firebase/firebaseConfig';
 
 // Helper function to get user-friendly error messages
-const getErrorMessage = (errorCode: string): string => {
+const getErrorMessage = (errorCode: string, errorMessage?: string): string => {
+  // Check for API key errors
+  if (errorMessage?.includes('API key not valid') || errorMessage?.includes('INVALID_ARGUMENT') || errorCode?.includes('api-key')) {
+    return 'Firebase API key is invalid. Please check your configuration. See API_KEY_FIX_NOW.md for help.';
+  }
+
   switch (errorCode) {
     case 'auth/user-not-found':
       return 'No account found with this email address.';
@@ -31,6 +36,8 @@ const getErrorMessage = (errorCode: string): string => {
       return 'Network error. Please check your connection.';
     case 'auth/invalid-credential':
       return 'Invalid email or password.';
+    case 'auth/invalid-api-key':
+      return 'Firebase API key is invalid. Please check your configuration.';
     default:
       return 'An error occurred. Please try again.';
   }
@@ -52,6 +59,23 @@ const Login: React.FC = () => {
   const googleProvider = new GoogleAuthProvider();
   const facebookProvider = new FacebookAuthProvider();
 
+  // Check for API key errors on mount
+  useEffect(() => {
+    // Listen for console errors related to API keys
+    const originalError = console.error;
+    console.error = (...args: any[]) => {
+      const errorStr = args.join(' ');
+      if (errorStr.includes('API key not valid') || errorStr.includes('INVALID_ARGUMENT')) {
+        setError('Firebase API key is invalid. Please check your configuration. See API_KEY_FIX_NOW.md for help.');
+      }
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -65,7 +89,7 @@ const Login: React.FC = () => {
       }
       navigate('/');
     } catch (err: any) {
-      const errorMessage = getErrorMessage(err.code || '');
+      const errorMessage = getErrorMessage(err.code || '', err.message || '');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -86,7 +110,7 @@ const Login: React.FC = () => {
       await sendPasswordResetEmail(auth, email);
       setResetEmailSent(true);
     } catch (err: any) {
-      const errorMessage = getErrorMessage(err.code || '');
+      const errorMessage = getErrorMessage(err.code || '', err.message || '');
       setError(errorMessage);
     } finally {
       setResetLoading(false);
@@ -103,7 +127,7 @@ const Login: React.FC = () => {
     } catch (err: any) {
       // Don't show error for user cancellation
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        const errorMessage = getErrorMessage(err.code || '');
+        const errorMessage = getErrorMessage(err.code || '', err.message || '');
         setError(errorMessage);
       }
     } finally {
@@ -121,7 +145,7 @@ const Login: React.FC = () => {
     } catch (err: any) {
       // Don't show error for user cancellation
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        const errorMessage = getErrorMessage(err.code || '');
+        const errorMessage = getErrorMessage(err.code || '', err.message || '');
         setError(errorMessage);
       }
     } finally {
