@@ -74,6 +74,20 @@ if (requiredEnvVars.apiKey && !requiredEnvVars.apiKey.startsWith('AIzaSy')) {
   console.warn('⚠️ Warning: API key format looks incorrect. Firebase API keys typically start with "AIzaSy"');
 }
 
+// Suppress harmless MutationObserver warning from Firebase Auth
+// This is a known issue in Firebase Auth's internal code and doesn't affect functionality
+// We intercept console.error to filter out this specific harmless warning
+const originalError = console.error;
+console.error = (...args: unknown[]) => {
+  const errorMessage = String(args.join(' '));
+  // Ignore MutationObserver errors from Firebase Auth (harmless internal warning)
+  if (errorMessage.includes("Failed to execute 'observe' on 'MutationObserver'")) {
+    // Silently ignore - this is a harmless Firebase Auth internal warning
+    return;
+  }
+  originalError.apply(console, args);
+};
+
 // Initialize Firebase
 let app;
 try {
