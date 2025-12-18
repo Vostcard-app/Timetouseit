@@ -32,15 +32,18 @@ const AddItem: React.FC = () => {
         photoUrl = await foodItemService.uploadPhoto(user.uid, photoFile);
       }
 
+      // Build itemData without undefined fields
       const itemData: FoodItemData = {
-        ...data,
-        barcode: scannedBarcode || data.barcode
+        name: data.name,
+        expirationDate: data.expirationDate,
+        quantity: data.quantity || 1,
+        barcode: scannedBarcode || data.barcode || undefined
       };
       
-      // Only include photoUrl if it exists (Firestore doesn't allow undefined)
-      if (photoUrl) {
-        itemData.photoUrl = photoUrl;
-      }
+      // Only include optional fields if they have values
+      if (data.category) itemData.category = data.category;
+      if (data.notes) itemData.notes = data.notes;
+      if (photoUrl) itemData.photoUrl = photoUrl;
 
       const status = getFoodItemStatus(data.expirationDate);
       await foodItemService.addFoodItem(user.uid, itemData, status);
