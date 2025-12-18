@@ -26,6 +26,7 @@ interface CalendarEvent extends Event {
   resource: {
     itemId: string;
     status: 'fresh' | 'expiring_soon' | 'expired';
+    rowIndex?: number; // For vertical stacking in day/week views
   };
 }
 
@@ -41,6 +42,7 @@ const Calendar: React.FC = () => {
     if (!foodItems.length) return [];
 
     const allEvents: CalendarEvent[] = [];
+    let rowIndex = 0;
 
     foodItems.forEach((item) => {
       const expirationDate = new Date(item.expirationDate);
@@ -55,19 +57,26 @@ const Calendar: React.FC = () => {
           resource: {
             itemId: item.id,
             status: 'expired',
+            rowIndex: rowIndex,
           },
         } as CalendarEvent);
+        rowIndex++;
       } else if (status === 'expiring_soon') {
-        // Yellow: Show for the 3 days leading up to expiration (days -3, -2, -1)
-        allEvents.push({
-          title: item.name,
-          start: startOfDay(addDays(expirationDate, -3)),
-          end: endOfDay(addDays(expirationDate, -1)), // End the day before expiration
-          resource: {
-            itemId: item.id,
-            status: 'expiring_soon',
-          },
-        } as CalendarEvent);
+        // Yellow: Create individual events for each of the 3 days leading up to expiration
+        // This ensures they show correctly in day view
+        for (let i = 3; i >= 1; i--) {
+          const dayBefore = addDays(expirationDate, -i);
+          allEvents.push({
+            title: item.name,
+            start: startOfDay(dayBefore),
+            end: endOfDay(dayBefore),
+            resource: {
+              itemId: item.id,
+              status: 'expiring_soon',
+              rowIndex: rowIndex,
+            },
+          } as CalendarEvent);
+        }
         
         // Red: Show on the expiration date itself
         allEvents.push({
@@ -77,8 +86,10 @@ const Calendar: React.FC = () => {
           resource: {
             itemId: item.id,
             status: 'expired', // Use expired status for red color on expiration day
+            rowIndex: rowIndex,
           },
         } as CalendarEvent);
+        rowIndex++;
       } else {
         // Green (fresh): Single day on expiration date
         allEvents.push({
@@ -88,8 +99,10 @@ const Calendar: React.FC = () => {
           resource: {
             itemId: item.id,
             status: 'fresh',
+            rowIndex: rowIndex,
           },
         } as CalendarEvent);
+        rowIndex++;
       }
     });
 
@@ -103,17 +116,27 @@ const Calendar: React.FC = () => {
     const borderColor = color;
     const textColor = '#ffffff'; // White text for readability
 
+    const baseStyle: React.CSSProperties = {
+      backgroundColor,
+      borderColor,
+      color: textColor,
+      border: `1px solid ${borderColor}`,
+      borderRadius: '4px',
+      padding: '2px 4px',
+      fontSize: '0.875rem',
+      fontWeight: '500',
+    };
+
+    // Position events vertically by row index in day/week views
+    if (currentView === 'day' || currentView === 'week') {
+      const rowIndex = event.resource.rowIndex ?? 0;
+      const rowHeight = 44; // Height per row in pixels
+      baseStyle.top = `${rowIndex * rowHeight}px`;
+      baseStyle.position = 'absolute';
+    }
+
     return {
-      style: {
-        backgroundColor,
-        borderColor,
-        color: textColor,
-        border: `1px solid ${borderColor}`,
-        borderRadius: '4px',
-        padding: '2px 4px',
-        fontSize: '0.875rem',
-        fontWeight: '500',
-      },
+      style: baseStyle,
     };
   };
 
@@ -279,6 +302,24 @@ const Calendar: React.FC = () => {
       }
       .rbc-time-view.rbc-week-view .rbc-day-slot {
         width: 100% !important;
+      }
+      
+      /* Stack events vertically by row index in day/week views */
+      .rbc-time-view .rbc-day-slot {
+        position: relative;
+        min-height: auto !important;
+      }
+      .rbc-time-view .rbc-events-container {
+        position: relative !important;
+        min-height: 200px !important;
+      }
+      .rbc-time-view .rbc-event {
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 40px !important;
+        margin: 0 !important;
       }
     `;
     document.head.appendChild(style);
