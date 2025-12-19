@@ -219,26 +219,6 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Add Item Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-          <button
-            onClick={() => navigate('/add')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#002B4D',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              minHeight: '44px', // Touch target size for mobile
-              minWidth: '44px'
-            }}
-          >
-            + Add Item
-          </button>
-        </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {(['all', 'fresh', 'expiring_soon', 'expired'] as FilterType[]).map((filterType) => (
