@@ -6,6 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { getFoodItemStatus, getStatusColor } from '../utils/statusUtils';
+import HamburgerMenu from '../components/HamburgerMenu';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { addDays, startOfDay, format, parse, startOfWeek, getDay, eachDayOfInterval, isSameDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
@@ -36,6 +37,7 @@ const Calendar: React.FC = () => {
   const { foodItems, loading } = useFoodItems(user || null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
   
   // Check if we should default to week view (from Dashboard navigation)
   const defaultViewFromState = (location.state as any)?.defaultView;
@@ -906,9 +908,12 @@ const Calendar: React.FC = () => {
         padding: '1rem',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
+            TossItTime
+          </h1>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => setMenuOpen(true)}
             style={{
               background: 'none',
               border: 'none',
@@ -916,6 +921,8 @@ const Calendar: React.FC = () => {
               cursor: 'pointer',
               padding: '0.5rem',
               display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
               alignItems: 'center',
               justifyContent: 'center',
               width: '44px', // Touch target size for mobile
@@ -923,9 +930,7 @@ const Calendar: React.FC = () => {
               minWidth: '44px',
               minHeight: '44px',
               borderRadius: '4px',
-              transition: 'background-color 0.2s',
-              fontSize: '1.5rem',
-              lineHeight: 1
+              transition: 'background-color 0.2s'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
@@ -933,13 +938,12 @@ const Calendar: React.FC = () => {
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
-            aria-label="Go to home"
+            aria-label="Open menu"
           >
-            ⌂
+            <span style={{ width: '24px', height: '2px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
+            <span style={{ width: '24px', height: '2px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
+            <span style={{ width: '24px', height: '2px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff', flex: 1 }}>
-            Calendar
-          </h1>
         </div>
       </div>
 
@@ -1119,8 +1123,11 @@ const Calendar: React.FC = () => {
           />
           <span style={{ fontSize: '0.875rem' }}>Expired</span>
         </div>
+        </div>
       </div>
-      </div>
+
+      {/* Hamburger Menu */}
+      <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
     </>
   );
 };
