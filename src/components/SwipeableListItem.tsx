@@ -144,6 +144,28 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
             {formatDate(item.expirationDate)}
           </span>
         </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#6b7280',
+            cursor: 'pointer',
+            padding: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: '44px',
+            minHeight: '44px',
+            marginLeft: '0.5rem'
+          }}
+          aria-label="Delete item"
+        >
+          🗑️
+        </button>
       </div>
     </div>
   );
