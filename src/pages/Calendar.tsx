@@ -50,6 +50,27 @@ const Calendar: React.FC = () => {
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
+  // Navigation functions
+  const navigateBackward = () => {
+    if (currentView === 'month') {
+      setCurrentDate(addDays(currentDate, -30));
+    } else if (currentView === 'week') {
+      setCurrentDate(addDays(currentDate, -7));
+    } else {
+      setCurrentDate(addDays(currentDate, -1));
+    }
+  };
+
+  const navigateForward = () => {
+    if (currentView === 'month') {
+      setCurrentDate(addDays(currentDate, 30));
+    } else if (currentView === 'week') {
+      setCurrentDate(addDays(currentDate, 7));
+    } else {
+      setCurrentDate(addDays(currentDate, 1));
+    }
+  };
+
   // Convert food items to calendar events
   const events = useMemo<CalendarEvent[]>(() => {
     if (!foodItems.length) return [];
@@ -1049,8 +1070,32 @@ const Calendar: React.FC = () => {
           )}
         </div>
 
-        {/* View Buttons */}
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1rem' }}>
+        {/* View Buttons with Navigation */}
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', alignItems: 'center', marginBottom: '1rem' }}>
+          {/* Left chevrons - navigate backward */}
+          <button
+            onClick={navigateBackward}
+            style={{
+              padding: '0.5rem 0.75rem',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            aria-label="Navigate backward"
+          >
+            «
+          </button>
+          
+          {/* View buttons */}
           {['month', 'week', 'day'].map((view) => (
             <button
               key={view}
@@ -1063,12 +1108,36 @@ const Calendar: React.FC = () => {
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '0.875rem',
-                textTransform: 'capitalize'
+                textTransform: 'capitalize',
+                minHeight: '44px'
               }}
             >
               {view}
             </button>
           ))}
+          
+          {/* Right chevrons - navigate forward */}
+          <button
+            onClick={navigateForward}
+            style={{
+              padding: '0.5rem 0.75rem',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            aria-label="Navigate forward"
+          >
+            »
+          </button>
         </div>
       <div style={{ height: '600px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '1rem' }}>
         {currentView === 'week' ? (
