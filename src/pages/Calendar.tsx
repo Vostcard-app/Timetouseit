@@ -97,11 +97,11 @@ const Calendar: React.FC = () => {
           // Week view: Create a single spanning yellow event for 3 days before expiration
           // Event should span: [3 days before] to [1 day before expiration] = 3 days total
           const threeDaysBefore = addDays(expirationDate, -3);
+          const dayBeforeExpiration = addDays(expirationDate, -1);
           let eventStart = setToMidnight(threeDaysBefore);
-          // End at the start of expiration day (midnight), which is effectively end of day before
+          // End at the end of day before expiration (23:59:59.999)
           // This ensures exactly 3 days: day -3, day -2, day -1
-          // Using midnight of expiration day instead of endOfDay(dayBefore) to avoid 4-day calculation
-          let eventEnd = setToMidnight(expirationDate);
+          let eventEnd = setToEndOfDay(dayBeforeExpiration);
           
           // Get the start of the current week view to ensure events are visible
           const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
@@ -114,7 +114,9 @@ const Calendar: React.FC = () => {
           }
           
           // Verify date calculation creates exactly 3 days (or less if clipped to week start)
-          const calculatedDays = Math.ceil((eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60 * 24));
+          // Calculate days: from start to end (inclusive)
+          const calculatedDays = Math.ceil((eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          
           if (calculatedDays !== 3 && eventStart === originalStart) {
             console.warn(`⚠️ Yellow event span is ${calculatedDays} days, expected 3 days for item: ${item.name}`);
           }
@@ -123,7 +125,7 @@ const Calendar: React.FC = () => {
           const yellowEvent = {
             title: item.name,
             start: eventStart,
-            end: eventEnd,
+            end: eventEnd, // End at end of day before expiration
             resource: {
               itemId: item.id,
               status: 'expiring_soon',
@@ -137,11 +139,15 @@ const Calendar: React.FC = () => {
             item: item.name,
             expirationDate: expirationDate.toISOString().split('T')[0],
             start: yellowEvent.start ? yellowEvent.start.toISOString().split('T')[0] : 'undefined',
-            end: yellowEvent.end ? yellowEvent.end.toISOString().split('T')[0] : 'undefined',
+            end: yellowEvent.end ? yellowEvent.end.toISOString() : 'undefined',
+            endDate: yellowEvent.end ? new Date(yellowEvent.end).toISOString().split('T')[0] : 'undefined',
             spanDays: calculatedDays,
             weekStart: weekStart.toISOString().split('T')[0],
             adjusted: eventStart < setToMidnight(threeDaysBefore),
-            status: yellowEvent.resource.status
+            status: yellowEvent.resource.status,
+            inCurrentWeek: yellowEvent.start && yellowEvent.end && 
+              yellowEvent.start <= weekStart && 
+              yellowEvent.end >= weekStart
           });
           
           // Red: Show on the expiration date itself (no title - adjacent to yellow span)
@@ -204,17 +210,34 @@ const Calendar: React.FC = () => {
     // Debug: Log all events by status
     const expiringSoonEvents = allEvents.filter(e => e.resource.status === 'expiring_soon');
     const expiredEvents = allEvents.filter(e => e.resource.status === 'expired');
+    
+    // Get current week range for visibility check
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+    const weekEnd = addDays(weekStart, 6);
+    
+    // Check which yellow events intersect with current week
+    const visibleYellowEvents = expiringSoonEvents.filter(e => {
+      if (!e.start || !e.end) return false;
+      const eventStart = new Date(e.start);
+      const eventEnd = new Date(e.end);
+      // Event is visible if it intersects with the week
+      return eventEnd >= weekStart && eventStart <= weekEnd;
+    });
+    
     console.log('📅 Calendar events summary:', {
       total: allEvents.length,
       expiring_soon: expiringSoonEvents.length,
       expired: expiredEvents.length,
+      visible_yellow: visibleYellowEvents.length,
       currentView: currentView,
       currentDate: currentDate.toISOString().split('T')[0],
+      weekRange: `${weekStart.toISOString().split('T')[0]} to ${weekEnd.toISOString().split('T')[0]}`,
       expiring_soon_details: expiringSoonEvents.map(e => ({
         title: e.title,
         start: e.start?.toISOString().split('T')[0],
-        end: e.end?.toISOString().split('T')[0],
-        status: e.resource.status
+        end: e.end ? new Date(e.end).toISOString().split('T')[0] : 'undefined',
+        endTime: e.end ? new Date(e.end).toISOString() : 'undefined',
+        intersectsWeek: e.start && e.end && new Date(e.end) >= weekStart && new Date(e.start) <= weekEnd
       }))
     });
     
