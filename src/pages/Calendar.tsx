@@ -45,6 +45,10 @@ const Calendar: React.FC = () => {
   
   const [currentView, setCurrentView] = useState<View>(initialView);
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Swipe navigation state
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   // Convert food items to calendar events
   const events = useMemo<CalendarEvent[]>(() => {
@@ -989,57 +993,64 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}>
-      {/* Navigation controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#002B4D',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setCurrentDate(addDays(currentDate, -7))}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#f3f4f6',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            Back
-          </button>
-          <button
-            onClick={() => setCurrentDate(addDays(currentDate, 7))}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#f3f4f6',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            Next
-          </button>
+      <div 
+        style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}
+        onTouchStart={(e) => {
+          const touch = e.touches[0];
+          setTouchStart({ x: touch.clientX, y: touch.clientY });
+          setTouchEnd(null);
+        }}
+        onTouchMove={(e) => {
+          const touch = e.touches[0];
+          setTouchEnd({ x: touch.clientX, y: touch.clientY });
+        }}
+        onTouchEnd={() => {
+          if (!touchStart || !touchEnd) return;
+          
+          const distanceX = touchStart.x - touchEnd.x;
+          const distanceY = Math.abs(touchStart.y - touchEnd.y);
+          const minSwipeDistance = 50;
+          
+          // Only trigger if horizontal swipe is greater than vertical movement
+          if (Math.abs(distanceX) > minSwipeDistance && Math.abs(distanceX) > distanceY) {
+            if (distanceX > 0) {
+              // Swipe left - go forward
+              if (currentView === 'month') {
+                setCurrentDate(addDays(currentDate, 30));
+              } else if (currentView === 'week') {
+                setCurrentDate(addDays(currentDate, 7));
+              } else {
+                setCurrentDate(addDays(currentDate, 1));
+              }
+            } else {
+              // Swipe right - go backward
+              if (currentView === 'month') {
+                setCurrentDate(addDays(currentDate, -30));
+              } else if (currentView === 'week') {
+                setCurrentDate(addDays(currentDate, -7));
+              } else {
+                setCurrentDate(addDays(currentDate, -1));
+              }
+            }
+          }
+          
+          setTouchStart(null);
+          setTouchEnd(null);
+        }}
+      >
+        {/* Date Range Display */}
+        <div style={{ fontSize: '1rem', fontWeight: '500', marginBottom: '1rem', textAlign: 'center' }}>
+          {currentView === 'month' ? (
+            format(currentDate, 'MMMM yyyy')
+          ) : currentView === 'week' ? (
+            `${format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'MMM d')} - ${format(addDays(startOfWeek(currentDate, { weekStartsOn: 0 }), 6), 'MMM d, yyyy')}`
+          ) : (
+            format(currentDate, 'MMM d, yyyy')
+          )}
         </div>
-        <div style={{ fontSize: '1rem', fontWeight: '500' }}>
-          {format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'MMM d')} - {format(addDays(startOfWeek(currentDate, { weekStartsOn: 0 }), 6), 'MMM d, yyyy')}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+        {/* View Buttons */}
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1rem' }}>
           {['month', 'week', 'day'].map((view) => (
             <button
               key={view}
@@ -1059,7 +1070,6 @@ const Calendar: React.FC = () => {
             </button>
           ))}
         </div>
-      </div>
       <div style={{ height: '600px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '1rem' }}>
         {currentView === 'week' ? (
           <CustomWeekView />
