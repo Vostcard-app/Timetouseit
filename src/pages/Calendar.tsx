@@ -97,13 +97,25 @@ const Calendar: React.FC = () => {
           // Week view: Create a single spanning yellow event for 3 days before expiration
           // Event should span: [3 days before] to [1 day before expiration] = 3 days total
           const threeDaysBefore = addDays(expirationDate, -3);
-          const dayBeforeExpiration = addDays(expirationDate, -1);
-          const eventStart = setToMidnight(threeDaysBefore);
-          const eventEnd = setToEndOfDay(dayBeforeExpiration);
+          let eventStart = setToMidnight(threeDaysBefore);
+          // End at the start of expiration day (midnight), which is effectively end of day before
+          // This ensures exactly 3 days: day -3, day -2, day -1
+          // Using midnight of expiration day instead of endOfDay(dayBefore) to avoid 4-day calculation
+          let eventEnd = setToMidnight(expirationDate);
           
-          // Verify date calculation creates exactly 3 days
-          const calculatedDays = Math.ceil((eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          if (calculatedDays !== 3) {
+          // Get the start of the current week view to ensure events are visible
+          const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
+          
+          // If yellow event starts before the week view, adjust it to start at week start
+          // This ensures the event is visible even if it starts before the current week
+          const originalStart = eventStart;
+          if (eventStart < weekStart) {
+            eventStart = setToMidnight(weekStart);
+          }
+          
+          // Verify date calculation creates exactly 3 days (or less if clipped to week start)
+          const calculatedDays = Math.ceil((eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60 * 24));
+          if (calculatedDays !== 3 && eventStart === originalStart) {
             console.warn(`⚠️ Yellow event span is ${calculatedDays} days, expected 3 days for item: ${item.name}`);
           }
           
@@ -127,6 +139,8 @@ const Calendar: React.FC = () => {
             start: yellowEvent.start ? yellowEvent.start.toISOString().split('T')[0] : 'undefined',
             end: yellowEvent.end ? yellowEvent.end.toISOString().split('T')[0] : 'undefined',
             spanDays: calculatedDays,
+            weekStart: weekStart.toISOString().split('T')[0],
+            adjusted: eventStart < setToMidnight(threeDaysBefore),
             status: yellowEvent.resource.status
           });
           
