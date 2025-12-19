@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { FoodItem } from '../types';
-import { formatDate } from '../utils/dateUtils';
 
 interface SwipeableListItemProps {
   item: FoodItem;
