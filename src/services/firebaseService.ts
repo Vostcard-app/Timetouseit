@@ -220,6 +220,133 @@ export const shoppingListService = {
   }
 };
 
+// Shopping Lists Service
+export const shoppingListsService = {
+  // Get all shopping lists for a user
+  async getShoppingLists(userId: string): Promise<ShoppingList[]> {
+    const q = query(
+      collection(db, 'shoppingLists'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate()
+    })) as ShoppingList[];
+  },
+
+  // Subscribe to shopping lists changes
+  subscribeToShoppingLists(
+    userId: string,
+    callback: (lists: ShoppingList[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'shoppingLists'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const lists = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt.toDate()
+        })) as ShoppingList[];
+        callback(lists);
+      },
+      (error) => {
+        console.error('Error in shopping lists subscription:', error);
+        callback([]);
+      }
+    );
+    return unsubscribe;
+  },
+
+  // Create a new shopping list
+  async createShoppingList(userId: string, name: string, isDefault: boolean = false): Promise<string> {
+    const cleanData: any = {
+      userId,
+      name,
+      createdAt: Timestamp.now(),
+      isDefault
+    };
+    try {
+      const docRef = await addDoc(collection(db, 'shoppingLists'), cleanData);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating shopping list:', error);
+      throw error;
+    }
+  },
+
+  // Update shopping list
+  async updateShoppingList(listId: string, data: Partial<ShoppingList>): Promise<void> {
+    try {
+      const docRef = doc(db, 'shoppingLists', listId);
+      const updateData: any = {};
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
+      await updateDoc(docRef, updateData);
+    } catch (error) {
+      console.error('Error updating shopping list:', error);
+      throw error;
+    }
+  },
+
+  // Delete shopping list
+  async deleteShoppingList(listId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'shoppingLists', listId));
+    } catch (error) {
+      console.error('Error deleting shopping list:', error);
+      throw error;
+    }
+  },
+
+  // Get or create default "shop list"
+  async getDefaultShoppingList(userId: string): Promise<string> {
+    try {
+      // Try to find existing default list
+      const q = query(
+        collection(db, 'shoppingLists'),
+        where('userId', '==', userId),
+        where('isDefault', '==', true)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].id;
+      }
+
+      // Try to find list named "shop list"
+      const nameQuery = query(
+        collection(db, 'shoppingLists'),
+        where('userId', '==', userId),
+        where('name', '==', 'shop list')
+      );
+      const nameSnapshot = await getDocs(nameQuery);
+      
+      if (!nameSnapshot.empty) {
+        // Mark it as default
+        const listId = nameSnapshot.docs[0].id;
+        await this.updateShoppingList(listId, { isDefault: true });
+        return listId;
+      }
+
+      // Create default "shop list"
+      return await this.createShoppingList(userId, 'shop list', true);
+    } catch (error) {
+      console.error('Error getting default shopping list:', error);
+      throw error;
+    }
+  }
+};
+
 // User Settings Service
 export const userSettingsService = {
   // Get user settings
@@ -242,6 +369,21 @@ export const userSettingsService = {
       await updateDoc(docRef, settings as any);
     } else {
       await addDoc(collection(db, 'userSettings'), settings);
+    }
+  },
+
+  // Set last used shopping list
+  async setLastUsedShoppingList(userId: string, listId: string): Promise<void> {
+    const settings = await this.getUserSettings(userId);
+    if (settings) {
+      await this.updateUserSettings({ ...settings, lastUsedShoppingListId: listId });
+    } else {
+      await this.updateUserSettings({
+        userId,
+        reminderDays: 7,
+        notificationsEnabled: true,
+        lastUsedShoppingListId: listId
+      });
     }
   }
 };

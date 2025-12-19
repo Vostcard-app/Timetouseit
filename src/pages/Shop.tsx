@@ -27,7 +27,7 @@ const Shop: React.FC = () => {
     const loadListsAndSetDefault = async () => {
       try {
         // Subscribe to shopping lists
-        const unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists) => {
+        const unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists: ShoppingList[]) => {
           setShoppingLists(lists);
           
           // If no list is selected yet, set default
@@ -35,7 +35,7 @@ const Shop: React.FC = () => {
             // Try to restore last used list from settings
             userSettingsService.getUserSettings(user.uid).then(settings => {
               if (settings?.lastUsedShoppingListId) {
-                const lastUsedList = lists.find(l => l.id === settings.lastUsedShoppingListId);
+                const lastUsedList = lists.find((l: ShoppingList) => l.id === settings.lastUsedShoppingListId);
                 if (lastUsedList) {
                   setSelectedListId(lastUsedList.id);
                   return;
@@ -43,12 +43,12 @@ const Shop: React.FC = () => {
               }
               
               // Use default list or first list
-              const defaultList = lists.find(l => l.isDefault) || lists[0];
+              const defaultList = lists.find((l: ShoppingList) => l.isDefault) || lists[0];
               if (defaultList) {
                 setSelectedListId(defaultList.id);
               } else {
                 // Create default "shop list" if no lists exist
-                shoppingListsService.getDefaultShoppingList(user.uid).then(listId => {
+                shoppingListsService.getDefaultShoppingList(user.uid).then((listId: string) => {
                   setSelectedListId(listId);
                 });
               }
