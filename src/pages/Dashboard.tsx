@@ -219,11 +219,8 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Page Header with Title and Add Button */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: '700', color: '#1f2937' }}>
-            My Food Items
-          </h1>
+        {/* Add Item Button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
           <button
             onClick={() => navigate('/add')}
             style={{
