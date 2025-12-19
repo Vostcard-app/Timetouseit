@@ -101,8 +101,25 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* List and Calendar Buttons */}
+      {/* Shop, List and Calendar Buttons */}
       <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+        <button
+          onClick={() => navigate('/shop')}
+          style={{
+            padding: '0.75rem 2rem',
+            backgroundColor: '#f3f4f6',
+            color: '#1f2937',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
+            fontSize: '1rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            minHeight: '44px',
+            minWidth: '120px'
+          }}
+        >
+          Shop
+        </button>
         <button
           onClick={() => {
             // Already on Dashboard, just scroll to top or do nothing

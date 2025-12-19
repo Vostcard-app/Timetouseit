@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import type { FoodItemData, FoodItem } from '../types';
-import { foodItemService } from '../services/firebaseService';
+import { foodItemService, shoppingListService } from '../services/firebaseService';
 import { getFoodItemStatus } from '../utils/statusUtils';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { formatDate } from '../utils/dateUtils';
@@ -14,6 +14,7 @@ import type { BarcodeScanResult } from '../services/barcodeService';
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { foodItems } = useFoodItems(user || null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +24,19 @@ const AddItem: React.FC = () => {
   const [scannedBarcode, setScannedBarcode] = useState<string | undefined>(
     searchParams.get('barcode') || undefined
   );
+  
+  // Check if coming from shopping list
+  const fromShoppingList = (location.state as any)?.fromShoppingList;
+  const shoppingListItemId = (location.state as any)?.shoppingListItemId;
+  const shoppingListItemName = (location.state as any)?.itemName;
+  
+  // If coming from shopping list, show form immediately with pre-filled name
+  React.useEffect(() => {
+    if (fromShoppingList && shoppingListItemName) {
+      setShowForm(true);
+      setSearchQuery(shoppingListItemName);
+    }
+  }, [fromShoppingList, shoppingListItemName]);
 
   // Sort items by most recent first (by addedDate)
   const sortedItems = useMemo(() => {
@@ -81,11 +95,25 @@ const AddItem: React.FC = () => {
         await foodItemService.addFoodItem(user.uid, itemData, status);
       }
       
-      // Reset and go back to list view
+      // If coming from shopping list, delete the shopping list item
+      if (fromShoppingList && shoppingListItemId) {
+        try {
+          await shoppingListService.deleteShoppingListItem(shoppingListItemId);
+        } catch (error) {
+          console.error('Error deleting shopping list item:', error);
+          // Don't block the save if shopping list deletion fails
+        }
+      }
+      
+      // Reset and go back to appropriate view
       setShowForm(false);
       setEditingItem(null);
       setSearchQuery('');
-      navigate('/');
+      if (fromShoppingList) {
+        navigate('/shop');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error('Error saving food item:', error);
       throw error;
@@ -168,6 +196,11 @@ const AddItem: React.FC = () => {
   }
 
   if (showForm) {
+    // Pre-fill name if coming from shopping list
+    if (fromShoppingList && shoppingListItemName && !editingItem) {
+      (window as any).__shoppingListItemName = shoppingListItemName;
+    }
+    
     return (
       <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto' }}>
         <AddItemForm

@@ -23,6 +23,13 @@ export interface FoodItemData {
   notes?: string;
 }
 
+export interface ShoppingListItem {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: Date;
+}
+
 export interface UserSettings {
   userId: string;
   reminderDays: number; // Days before expiration to send reminder

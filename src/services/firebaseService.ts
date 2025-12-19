@@ -16,7 +16,7 @@ import {
 import type { DocumentData } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
-import type { FoodItem, FoodItemData, UserSettings } from '../types';
+import type { FoodItem, FoodItemData, UserSettings, ShoppingListItem } from '../types';
 
 // Food Items Service
 export const foodItemService = {
@@ -133,6 +133,72 @@ export const foodItemService = {
     const storageRef = ref(storage, `foodItems/${userId}/${Date.now()}_${file.name}`);
     await uploadBytes(storageRef, file);
     return await getDownloadURL(storageRef);
+  }
+};
+
+// Shopping List Service
+export const shoppingListService = {
+  // Get all shopping list items for a user
+  async getShoppingListItems(userId: string): Promise<ShoppingListItem[]> {
+    const q = query(
+      collection(db, 'shoppingList'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate()
+    })) as ShoppingListItem[];
+  },
+
+  // Subscribe to shopping list changes
+  subscribeToShoppingList(
+    userId: string,
+    callback: (items: ShoppingListItem[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'shoppingList'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt.toDate()
+        })) as ShoppingListItem[];
+        callback(items);
+      },
+      (error) => {
+        console.error('Error in shopping list subscription:', error);
+        callback([]);
+      }
+    );
+
+    return unsubscribe;
+  },
+
+  // Add item to shopping list
+  async addShoppingListItem(userId: string, name: string): Promise<string> {
+    const cleanData: any = {
+      userId,
+      name,
+      createdAt: Timestamp.now()
+    };
+    
+    const docRef = await addDoc(collection(db, 'shoppingList'), cleanData);
+    return docRef.id;
+  },
+
+  // Delete item from shopping list
+  async deleteShoppingListItem(itemId: string): Promise<void> {
+    await deleteDoc(doc(db, 'shoppingList', itemId));
   }
 };
 

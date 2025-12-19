@@ -23,7 +23,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form data when initialItem changes
+  // Update form data when initialItem changes or when name is provided from shopping list
   useEffect(() => {
     if (initialItem) {
       setFormData({
@@ -37,6 +37,15 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setPhotoPreview(initialItem.photoUrl || null);
     }
   }, [initialItem]);
+  
+  // Support pre-filling name from shopping list
+  const initialName = (window as any).__shoppingListItemName;
+  useEffect(() => {
+    if (initialName && !initialItem && !formData.name) {
+      setFormData(prev => ({ ...prev, name: initialName }));
+      delete (window as any).__shoppingListItemName;
+    }
+  }, [initialName, initialItem, formData.name]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
