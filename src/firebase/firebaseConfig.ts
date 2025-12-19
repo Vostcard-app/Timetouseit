@@ -135,19 +135,15 @@ window.onerror = (message, source, lineno, colno, error) => {
   return false;
 };
 
-const originalOnUnhandledRejection = window.onunhandledrejection;
-window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+// Use addEventListener for unhandledrejection to avoid TypeScript type issues
+window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
   const errorMessage = String(event.reason) + (event.reason instanceof Error ? ' ' + event.reason.stack : '');
   if (errorMessage.includes("MutationObserver") && 
       (errorMessage.includes("parameter 1 is not of type 'Node'") ||
        errorMessage.includes("Failed to execute 'observe'"))) {
     event.preventDefault(); // Suppress the error
-    return;
   }
-  if (originalOnUnhandledRejection) {
-    originalOnUnhandledRejection(event);
-  }
-};
+});
 
 // Initialize Firebase
 let app;
