@@ -585,7 +585,6 @@ const Calendar: React.FC = () => {
                   // Span goes from yellowStartCol (or 0 if null) to redCol (or 6 if null)
                   const isInSpan = colIndex >= renderStartCol && colIndex <= renderEndCol;
                   const isRedDay = colIndex === redCol;
-                  const isYellowDay = isInSpan && !isRedDay;
 
                   if (isInSpan) {
                     // Single continuous 4-day block (3 yellow days + 1 red day)
