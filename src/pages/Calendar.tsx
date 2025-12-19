@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import type { View, Event } from 'react-big-calendar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
@@ -35,7 +35,13 @@ const Calendar: React.FC = () => {
   const [user] = useAuthState(auth);
   const { foodItems, loading } = useFoodItems(user || null);
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState<View>('month');
+  const location = useLocation();
+  
+  // Check if we should default to week view (from Dashboard navigation)
+  const defaultViewFromState = (location.state as any)?.defaultView;
+  const initialView = defaultViewFromState === 'week' ? 'week' : 'month';
+  
+  const [currentView, setCurrentView] = useState<View>(initialView);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Convert food items to calendar events
