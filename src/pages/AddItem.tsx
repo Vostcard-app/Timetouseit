@@ -21,6 +21,8 @@ const AddItem: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<FoodItem | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState<string | undefined>(
     searchParams.get('barcode') || undefined
   );
@@ -263,26 +265,100 @@ const AddItem: React.FC = () => {
         >
           Cancel
         </button>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && searchQuery.trim() && filteredItems.length === 0) {
-              handleNewItem();
-            }
-          }}
-          placeholder="Find or add item"
-          autoFocus
-          style={{
-            flex: 1,
-            padding: '0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            outline: 'none'
-          }}
-        />
+        <div style={{ flex: 1, position: 'relative' }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => {
+              setInputFocused(true);
+              setShowDropdown(true);
+            }}
+            onBlur={() => {
+              setInputFocused(false);
+              // Delay hiding dropdown to allow item clicks
+              setTimeout(() => {
+                setShowDropdown(false);
+              }, 200);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim() && filteredItems.length === 0) {
+                handleNewItem();
+              }
+            }}
+            placeholder="Find or add item"
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck="false"
+            name="item-search"
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              outline: 'none'
+            }}
+          />
+          {/* Dropdown List */}
+          {showDropdown && (inputFocused || searchQuery.trim()) && filteredItems.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: '4px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                zIndex: 1000
+              }}
+              onMouseDown={(e) => {
+                // Prevent blur when clicking inside dropdown
+                e.preventDefault();
+              }}
+            >
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    handleItemSelect(item);
+                    setShowDropdown(false);
+                    setSearchQuery('');
+                  }}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderBottom: '1px solid #f3f4f6',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                  }}
+                >
+                  <div style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.25rem' }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    Expiration: {formatDate(item.expirationDate)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Item List */}
