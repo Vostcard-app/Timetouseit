@@ -176,8 +176,18 @@ export const shoppingListService = {
         callback(items);
       },
       (error) => {
-        console.error('Error in shopping list subscription:', error);
-        callback([]);
+        if (error.code === 'failed-precondition') {
+          if (!(window as any).__shoppingListIndexWarningShown) {
+            console.warn('⚠️ Firestore index required for shopping list query.');
+            console.warn('📋 Create the index here:', error.message.match(/https:\/\/[^\s]+/)?.[0] || 'Firebase Console → Firestore → Indexes');
+            console.warn('💡 The app will work, but shopping list items won\'t load until the index is created.');
+            (window as any).__shoppingListIndexWarningShown = true;
+          }
+          callback([]); // Return empty array so app doesn't break
+        } else {
+          console.error('Error in shopping list subscription:', error);
+          callback([]);
+        }
       }
     );
 
