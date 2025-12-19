@@ -49,6 +49,12 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
     
+    // Shopping list - users can only access their own
+    match /shoppingList/{itemId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
     // User settings - users can only access their own
     match /userSettings/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
