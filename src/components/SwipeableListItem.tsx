@@ -121,7 +121,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
         style={{
           position: 'relative',
           backgroundColor: '#ffffff',
-          padding: '1rem',
+          padding: '0.5rem 1rem',
           borderRadius: '8px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           transform: `translateX(${translateX}px)`,
@@ -154,12 +154,12 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
             border: 'none',
             color: '#6b7280',
             cursor: 'pointer',
-            padding: '0.5rem',
+            padding: '0.25rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minWidth: '44px',
-            minHeight: '44px',
+            minWidth: '36px',
+            minHeight: '36px',
             marginLeft: '0.5rem'
           }}
           aria-label="Delete item"
