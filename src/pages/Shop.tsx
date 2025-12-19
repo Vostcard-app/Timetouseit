@@ -98,10 +98,7 @@ const Shop: React.FC = () => {
         padding: '1rem',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
-            TossItTime
-          </h1>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <button
             onClick={() => setMenuOpen(true)}
             style={{
