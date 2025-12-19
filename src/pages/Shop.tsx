@@ -231,7 +231,7 @@ const Shop: React.FC = () => {
                   key={item.id}
                   onClick={() => handleItemClick(item)}
                   style={{
-                    padding: '1rem',
+                    padding: '0.5rem 1rem',
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
                     display: 'flex',
@@ -259,12 +259,12 @@ const Shop: React.FC = () => {
                       border: 'none',
                       color: '#6b7280',
                       cursor: 'pointer',
-                      padding: '0.5rem',
+                      padding: '0.25rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: '44px',
-                      minHeight: '44px'
+                      minWidth: '36px',
+                      minHeight: '36px'
                     }}
                     aria-label="Delete item"
                   >
