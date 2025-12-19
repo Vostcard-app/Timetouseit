@@ -7,11 +7,12 @@ interface AddItemFormProps {
   initialBarcode?: string;
   onScanBarcode?: () => void;
   initialItem?: FoodItem | null;
+  initialName?: string;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel, initialName }) => {
   const [formData, setFormData] = useState<FoodItemData>({
-    name: initialItem?.name || '',
+    name: initialItem?.name || initialName || '',
     barcode: initialBarcode || initialItem?.barcode || '',
     expirationDate: initialItem?.expirationDate ? new Date(initialItem.expirationDate) : new Date(),
     quantity: initialItem?.quantity || 1,
@@ -23,7 +24,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form data when initialItem changes or when name is provided from shopping list
+  // Update form data when initialItem or initialName changes
   useEffect(() => {
     if (initialItem) {
       setFormData({
@@ -35,17 +36,10 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         notes: initialItem.notes || ''
       });
       setPhotoPreview(initialItem.photoUrl || null);
-    }
-  }, [initialItem]);
-  
-  // Support pre-filling name from shopping list
-  const initialName = (window as any).__shoppingListItemName;
-  useEffect(() => {
-    if (initialName && !initialItem && !formData.name) {
+    } else if (initialName && !formData.name) {
       setFormData(prev => ({ ...prev, name: initialName }));
-      delete (window as any).__shoppingListItemName;
     }
-  }, [initialName, initialItem, formData.name]);
+  }, [initialItem, initialName]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

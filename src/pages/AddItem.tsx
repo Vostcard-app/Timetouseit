@@ -196,11 +196,6 @@ const AddItem: React.FC = () => {
   }
 
   if (showForm) {
-    // Pre-fill name if coming from shopping list
-    if (fromShoppingList && shoppingListItemName && !editingItem) {
-      (window as any).__shoppingListItemName = shoppingListItemName;
-    }
-    
     return (
       <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto' }}>
         <AddItemForm
@@ -209,6 +204,7 @@ const AddItem: React.FC = () => {
           onScanBarcode={() => setShowScanner(true)}
           initialItem={editingItem}
           onCancel={handleCancel}
+          initialName={fromShoppingList && shoppingListItemName ? shoppingListItemName : undefined}
         />
       </div>
     );
