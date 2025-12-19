@@ -7,7 +7,7 @@ import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { getFoodItemStatus, getStatusColor } from '../utils/statusUtils';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { addDays, startOfDay, format, parse, startOfWeek, getDay } from 'date-fns';
+import { addDays, startOfDay, format, parse, startOfWeek, getDay, eachDayOfInterval, isSameDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
 
 const locales = {
@@ -258,6 +258,16 @@ const Calendar: React.FC = () => {
 
   // Custom event style function
   const eventStyleGetter = (event: CalendarEvent) => {
+    // Debug: Log when eventStyleGetter is called for yellow events
+    if (event.resource.status === 'expiring_soon') {
+      console.log('🎨 eventStyleGetter called for yellow event:', {
+        title: event.title,
+        start: event.start?.toISOString(),
+        end: event.end?.toISOString(),
+        status: event.resource.status
+      });
+    }
+    
     const color = getStatusColor(event.resource.status);
     const backgroundColor = color;
     const borderColor = color;
@@ -352,6 +362,214 @@ const Calendar: React.FC = () => {
     return {
       className: `calendar-day-with-events ${statusClasses.join(' ')}`,
     };
+  };
+
+  // Custom Week View Component (Gantt chart style)
+  const CustomWeekView: React.FC = () => {
+    // Get the week start (Sunday) and create array of 7 days
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+    const weekDays = eachDayOfInterval({
+      start: weekStart,
+      end: addDays(weekStart, 6)
+    });
+
+    // Sort items by expiration proximity (soonest first)
+    const today = startOfDay(new Date());
+    const sortedItems = [...foodItems].sort((a, b) => {
+      const dateA = new Date(a.expirationDate);
+      const dateB = new Date(b.expirationDate);
+      const daysUntilA = Math.ceil((dateA.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const daysUntilB = Math.ceil((dateB.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return daysUntilA - daysUntilB;
+    });
+
+    // Calculate which columns a date falls into
+    const getColumnIndex = (date: Date): number | null => {
+      const dayStart = startOfDay(date);
+      for (let i = 0; i < weekDays.length; i++) {
+        if (isSameDay(dayStart, weekDays[i])) {
+          return i;
+        }
+      }
+      return null;
+    };
+
+    const rowHeight = 50; // Height of each row
+
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Day headers */}
+        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb' }}>
+          <div style={{ width: '120px', padding: '0.5rem', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
+            Item
+          </div>
+          {weekDays.map((day, index) => (
+            <div
+              key={index}
+              style={{
+                flex: 1,
+                padding: '0.5rem',
+                textAlign: 'center',
+                fontWeight: '600',
+                borderRight: index < 6 ? '1px solid #e5e7eb' : 'none',
+                backgroundColor: isSameDay(day, today) ? '#f3f4f6' : 'transparent'
+              }}
+            >
+              <div style={{ fontSize: '0.875rem' }}>{format(day, 'EEE')}</div>
+              <div style={{ fontSize: '1.25rem' }}>{format(day, 'd')}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Items rows */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {sortedItems.map((item) => {
+            const expirationDate = new Date(item.expirationDate);
+            const status = getFoodItemStatus(expirationDate, 7);
+            
+            // Calculate yellow span (3 days before expiration)
+            const threeDaysBefore = addDays(expirationDate, -3);
+            const dayBeforeExpiration = addDays(expirationDate, -1);
+            
+            // Get column indices
+            const yellowStartCol = getColumnIndex(threeDaysBefore);
+            const yellowEndCol = getColumnIndex(dayBeforeExpiration);
+            const redCol = getColumnIndex(expirationDate);
+
+            // Only render if item has expiring_soon status and spans intersect with week
+            if (status !== 'expiring_soon') {
+              if (status === 'expired' && redCol !== null) {
+                // Show expired items as red on expiration day
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      height: `${rowHeight}px`,
+                      borderBottom: '1px solid #e5e7eb',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div style={{ width: '120px', padding: '0.5rem', borderRight: '1px solid #e5e7eb', fontWeight: '500' }}>
+                      {item.name}
+                    </div>
+                    {weekDays.map((_, colIndex) => {
+                      if (colIndex === redCol) {
+                        return (
+                          <div
+                            key={colIndex}
+                            style={{
+                              flex: 1,
+                              height: '100%',
+                              backgroundColor: '#ef4444',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none',
+                              fontWeight: '500',
+                              padding: '0 0.5rem'
+                            }}
+                          >
+                            {/* Red block - no text since it's expired */}
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          key={colIndex}
+                          style={{
+                            flex: 1,
+                            borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none'
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              }
+              return null;
+            }
+
+            // Render expiring_soon items with yellow and red spans
+            return (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  height: `${rowHeight}px`,
+                  borderBottom: '1px solid #e5e7eb',
+                  alignItems: 'center',
+                  position: 'relative'
+                }}
+              >
+                <div style={{ width: '120px', padding: '0.5rem', borderRight: '1px solid #e5e7eb', fontWeight: '500' }}>
+                  {item.name}
+                </div>
+                {weekDays.map((_, colIndex) => {
+                  const isInYellowSpan = yellowStartCol !== null && yellowEndCol !== null && 
+                    colIndex >= yellowStartCol && colIndex <= yellowEndCol;
+                  const isRedDay = colIndex === redCol;
+
+                  if (isInYellowSpan && !isRedDay) {
+                    // Yellow span (3 days before expiration)
+                    return (
+                      <div
+                        key={colIndex}
+                        style={{
+                          flex: 1,
+                          height: '100%',
+                          backgroundColor: '#f59e0b',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none',
+                          fontWeight: '500',
+                          padding: '0 0.5rem'
+                        }}
+                      >
+                        {colIndex === yellowStartCol ? item.name : ''}
+                      </div>
+                    );
+                  } else if (isRedDay) {
+                    // Red day (expiration day)
+                    return (
+                      <div
+                        key={colIndex}
+                        style={{
+                          flex: 1,
+                          height: '100%',
+                          backgroundColor: '#ef4444',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none',
+                          fontWeight: '500',
+                          padding: '0 0.5rem'
+                        }}
+                      >
+                        {/* Red block - no text since it's adjacent to yellow */}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      key={colIndex}
+                      style={{
+                        flex: 1,
+                        borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none'
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // Custom event component
@@ -665,30 +883,102 @@ const Calendar: React.FC = () => {
 
       {/* Main Content */}
       <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}>
+      {/* Navigation controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => setCurrentDate(new Date())}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#002B4D',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setCurrentDate(addDays(currentDate, -7))}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            Back
+          </button>
+          <button
+            onClick={() => setCurrentDate(addDays(currentDate, 7))}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            Next
+          </button>
+        </div>
+        <div style={{ fontSize: '1rem', fontWeight: '500' }}>
+          {format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'MMM d')} - {format(addDays(startOfWeek(currentDate, { weekStartsOn: 0 }), 6), 'MMM d, yyyy')}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {['month', 'week', 'day'].map((view) => (
+            <button
+              key={view}
+              onClick={() => setCurrentView(view as View)}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: currentView === view ? '#002B4D' : '#f3f4f6',
+                color: currentView === view ? '#ffffff' : '#374151',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                textTransform: 'capitalize'
+              }}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
+      </div>
       <div style={{ height: '600px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '1rem' }}>
-        <BigCalendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          view={currentView}
-          onView={setCurrentView}
-          date={currentDate}
-          onNavigate={setCurrentDate}
-          onSelectEvent={handleSelectEvent}
-          onSelectSlot={handleSelectSlot}
-          selectable
-          eventPropGetter={eventStyleGetter}
-          dayPropGetter={dayPropGetter}
-          components={{
-            event: EventComponent,
-          }}
-          views={['month', 'week', 'day']}
-          defaultView="month"
-          // Ensure events that intersect with the current view are shown
-          // React-big-calendar by default shows events that overlap with the visible range
-        />
+        {currentView === 'week' ? (
+          <CustomWeekView />
+        ) : (
+          <BigCalendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: '100%' }}
+            view={currentView}
+            onView={setCurrentView}
+            date={currentDate}
+            onNavigate={setCurrentDate}
+            onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSelectSlot}
+            selectable
+            eventPropGetter={eventStyleGetter}
+            dayPropGetter={dayPropGetter}
+            components={{
+              event: EventComponent,
+            }}
+            views={['month', 'week', 'day']}
+            defaultView="month"
+          />
+        )}
       </div>
 
       {/* Legend */}
