@@ -409,9 +409,6 @@ const Calendar: React.FC = () => {
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Day headers */}
         <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb' }}>
-          <div style={{ width: '120px', padding: '0.5rem', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-            Item
-          </div>
           {weekDays.map((day, index) => (
             <div
               key={index}
@@ -436,14 +433,11 @@ const Calendar: React.FC = () => {
             const expirationDate = new Date(item.expirationDate);
             const status = getFoodItemStatus(expirationDate, 7);
             
-            // Calculate yellow span (always exactly 3 days before expiration: day -3, day -2, day -1)
+            // Calculate 4-day span: 3 days before expiration (yellow) + expiration day (red)
             const threeDaysBefore = addDays(expirationDate, -3);
-            const dayBeforeExpiration = addDays(expirationDate, -1);
             
-            // Verify: Yellow span should be exactly 3 days (day -3, -2, -1)
-            // Get column indices for yellow span (3 days before expiration)
+            // Get column indices for the 4-day span (3 yellow days + 1 red day)
             const yellowStartCol = getColumnIndex(threeDaysBefore);
-            const yellowEndCol = getColumnIndex(dayBeforeExpiration);
             const redCol = getColumnIndex(expirationDate);
 
             // Only render expiring_soon items (expired items are filtered out above)
@@ -460,9 +454,6 @@ const Calendar: React.FC = () => {
                       alignItems: 'center'
                     }}
                   >
-                    <div style={{ width: '120px', padding: '0.5rem', borderRight: '1px solid #e5e7eb', fontWeight: '500' }}>
-                      {item.name}
-                    </div>
                     {weekDays.map((_, colIndex) => {
                       if (colIndex === redCol) {
                         return (
@@ -501,7 +492,16 @@ const Calendar: React.FC = () => {
               return null;
             }
 
-            // Render expiring_soon items with yellow and red spans
+            // Render expiring_soon items with single 4-day span (3 yellow + 1 red)
+            // Create a single continuous block spanning from yellowStartCol to redCol
+            const spanStartCol = yellowStartCol;
+            const spanEndCol = redCol;
+            
+            // Calculate middle column for centering item name (between day -2 and day -1, or day -1 and expiration)
+            const middleCol = spanStartCol !== null && spanEndCol !== null 
+              ? Math.floor((spanStartCol + spanEndCol) / 2)
+              : null;
+
             return (
               <div
                 key={item.id}
@@ -513,54 +513,33 @@ const Calendar: React.FC = () => {
                   position: 'relative'
                 }}
               >
-                <div style={{ width: '120px', padding: '0.5rem', borderRight: '1px solid #e5e7eb', fontWeight: '500' }}>
-                  {item.name}
-                </div>
                 {weekDays.map((_, colIndex) => {
-                  const isInYellowSpan = yellowStartCol !== null && yellowEndCol !== null && 
-                    colIndex >= yellowStartCol && colIndex <= yellowEndCol;
+                  const isInSpan = spanStartCol !== null && spanEndCol !== null && 
+                    colIndex >= spanStartCol && colIndex <= spanEndCol;
                   const isRedDay = colIndex === redCol;
+                  const isMiddleCol = colIndex === middleCol;
 
-                  if (isInYellowSpan && !isRedDay) {
-                    // Yellow span (3 days before expiration)
+                  if (isInSpan) {
+                    // Single continuous 4-day block (3 yellow days + 1 red day)
                     return (
                       <div
                         key={colIndex}
                         style={{
                           flex: 1,
                           height: '100%',
-                          backgroundColor: '#f59e0b',
+                          backgroundColor: isRedDay ? '#ef4444' : '#f59e0b',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none',
+                          borderRight: colIndex < 6 ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
                           fontWeight: '500',
-                          padding: '0 0.5rem'
+                          padding: '0 0.5rem',
+                          position: 'relative'
                         }}
                       >
-                        {colIndex === yellowStartCol ? item.name : ''}
-                      </div>
-                    );
-                  } else if (isRedDay) {
-                    // Red day (expiration day)
-                    return (
-                      <div
-                        key={colIndex}
-                        style={{
-                          flex: 1,
-                          height: '100%',
-                          backgroundColor: '#ef4444',
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none',
-                          fontWeight: '500',
-                          padding: '0 0.5rem'
-                        }}
-                      >
-                        {/* Red block - no text since it's adjacent to yellow */}
+                        {/* Show item name centered in the middle column of the 4-day span */}
+                        {isMiddleCol ? item.name : ''}
                       </div>
                     );
                   }
