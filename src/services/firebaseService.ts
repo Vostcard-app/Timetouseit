@@ -259,8 +259,20 @@ export const shoppingListsService = {
         })) as ShoppingList[];
         callback(lists);
       },
-      (error) => {
-        console.error('Error in shopping lists subscription:', error);
+      (error: any) => {
+        // Check if it's an index error
+        if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
+          console.warn('⚠️ Firestore index required for shopping lists query.');
+          if (error.message.includes('create_composite')) {
+            const indexUrl = error.message.match(/https:\/\/[^\s]+/)?.[0];
+            if (indexUrl) {
+              console.warn('📋 Create the index here:', indexUrl);
+            }
+          }
+          console.warn('💡 The app will work, but shopping lists won\'t load until the index is created.');
+        } else {
+          console.error('Error in shopping lists subscription:', error);
+        }
         callback([]);
       }
     );

@@ -124,11 +124,21 @@ console.warn = (...args: unknown[]) => {
 const originalOnError = window.onerror;
 window.onerror = (message, source, lineno, colno, error) => {
   const errorMessage = String(message) + (error ? ' ' + error.stack : '');
+  
+  // Suppress MutationObserver errors from Firebase Auth
   if (errorMessage.includes("MutationObserver") && 
       (errorMessage.includes("parameter 1 is not of type 'Node'") ||
        errorMessage.includes("Failed to execute 'observe'"))) {
     return true; // Suppress the error
   }
+  
+  // Suppress Chrome extension errors (harmless browser extension communication issues)
+  if (errorMessage.includes("A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received") ||
+      errorMessage.includes("runtime.lastError") ||
+      errorMessage.includes("Unchecked runtime.lastError")) {
+    return true; // Suppress the error
+  }
+  
   if (originalOnError) {
     return originalOnError(message, source, lineno, colno, error);
   }
@@ -138,10 +148,20 @@ window.onerror = (message, source, lineno, colno, error) => {
 // Use addEventListener for unhandledrejection to avoid TypeScript type issues
 window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
   const errorMessage = String(event.reason) + (event.reason instanceof Error ? ' ' + event.reason.stack : '');
+  
+  // Suppress MutationObserver errors from Firebase Auth
   if (errorMessage.includes("MutationObserver") && 
       (errorMessage.includes("parameter 1 is not of type 'Node'") ||
        errorMessage.includes("Failed to execute 'observe'"))) {
     event.preventDefault(); // Suppress the error
+    return;
+  }
+  
+  // Suppress Chrome extension errors (harmless browser extension communication issues)
+  if (errorMessage.includes("A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received") ||
+      errorMessage.includes("runtime.lastError")) {
+    event.preventDefault(); // Suppress the error
+    return;
   }
 });
 
