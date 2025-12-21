@@ -234,6 +234,7 @@ const AddItem: React.FC = () => {
           initialItem={editingItem}
           onCancel={handleCancel}
           initialName={fromShoppingList && shoppingListItemName ? shoppingListItemName : undefined}
+          fromShoppingList={fromShoppingList}
         />
       </div>
     );
