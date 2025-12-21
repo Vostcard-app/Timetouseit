@@ -450,9 +450,9 @@ const Calendar: React.FC = () => {
     const rowHeight = 50; // Height of each row
 
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0 }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
         {/* Day headers */}
-        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', width: '100%', minWidth: 0 }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
           {weekDays.map((day, index) => (
             <div
               key={index}
@@ -473,7 +473,7 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* Items rows */}
-        <div style={{ flex: 1, overflowY: 'auto', width: '100%', minWidth: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
           {sortedItems.map((item) => {
             const expirationDate = new Date(item.expirationDate);
             const status = getFoodItemStatus(expirationDate, 7);
@@ -547,7 +547,9 @@ const Calendar: React.FC = () => {
                   alignItems: 'center',
                   position: 'relative',
                   width: '100%',
-                  minWidth: 0
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  boxSizing: 'border-box'
                 }}
               >
                 {weekDays.map((_, colIndex) => {
@@ -592,6 +594,8 @@ const Calendar: React.FC = () => {
                       style={{
                         flex: 1,
                         minWidth: 0,
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
                         borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none'
                       }}
                     />
