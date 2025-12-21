@@ -4,6 +4,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { foodItemService } from '../services/firebaseService';
+import { formatDate } from '../utils/dateUtils';
 import SwipeableListItem from '../components/SwipeableListItem';
 import HamburgerMenu from '../components/HamburgerMenu';
 
@@ -240,6 +241,13 @@ const Dashboard: React.FC = () => {
             {filterType.replace('_', ' ')} ({filterType === 'all' ? foodItems.length : foodItems.filter(i => i.status === filterType).length})
           </button>
         ))}
+      </div>
+
+      {/* Today's Date */}
+      <div style={{ marginBottom: '1rem', padding: '0.75rem 0', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
+          {formatDate(new Date())}
+        </div>
       </div>
 
       {filteredItems.length === 0 ? (
