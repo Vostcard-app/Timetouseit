@@ -293,7 +293,7 @@ const Shop: React.FC = () => {
               type="text"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="Add item to shopping list"
+              placeholder="Add item to list"
               style={{
                 flex: 1,
                 padding: '0.75rem',
