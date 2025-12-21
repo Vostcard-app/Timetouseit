@@ -450,14 +450,15 @@ const Calendar: React.FC = () => {
     const rowHeight = 50; // Height of each row
 
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0 }}>
         {/* Day headers */}
-        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', width: '100%', minWidth: 0 }}>
           {weekDays.map((day, index) => (
             <div
               key={index}
               style={{
                 flex: 1,
+                minWidth: 0,
                 padding: '0.5rem',
                 textAlign: 'center',
                 fontWeight: '600',
@@ -472,7 +473,7 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* Items rows */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', width: '100%', minWidth: 0 }}>
           {sortedItems.map((item) => {
             const expirationDate = new Date(item.expirationDate);
             const status = getFoodItemStatus(expirationDate, 7);
@@ -544,7 +545,9 @@ const Calendar: React.FC = () => {
                   height: `${rowHeight}px`,
                   borderBottom: '1px solid #e5e7eb',
                   alignItems: 'center',
-                  position: 'relative'
+                  position: 'relative',
+                  width: '100%',
+                  minWidth: 0
                 }}
               >
                 {weekDays.map((_, colIndex) => {
@@ -560,6 +563,7 @@ const Calendar: React.FC = () => {
                         key={colIndex}
                         style={{
                           flex: 1,
+                          minWidth: 0,
                           height: '100%',
                           backgroundColor: isRedDay ? '#ef4444' : '#f59e0b',
                           color: '#ffffff',
@@ -568,12 +572,17 @@ const Calendar: React.FC = () => {
                           justifyContent: 'center',
                           borderRight: colIndex < 6 ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
                           fontWeight: '500',
-                          padding: '0 0.5rem',
-                          position: 'relative'
+                          padding: '0 0.25rem',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
                         }}
                       >
                         {/* Show item name in both yellow and red sections */}
-                        {item.name}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                          {item.name}
+                        </span>
                       </div>
                     );
                   }
@@ -582,6 +591,7 @@ const Calendar: React.FC = () => {
                       key={colIndex}
                       style={{
                         flex: 1,
+                        minWidth: 0,
                         borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none'
                       }}
                     />
