@@ -196,8 +196,8 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
             Calendar
           </Link>
           <Link
-            to="/shop"
-            onClick={() => handleLinkClick('/shop')}
+            to="/edit-lists"
+            onClick={() => handleLinkClick('/edit-lists')}
             style={{
               display: 'flex',
               padding: '1rem 1.5rem',

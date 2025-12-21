@@ -9,6 +9,7 @@ import ItemDetail from './pages/ItemDetail';
 import Settings from './pages/Settings';
 import Calendar from './pages/Calendar';
 import Shop from './pages/Shop';
+import EditLists from './pages/EditLists';
 import Login from './pages/Login';
 import { notificationService } from './services/notificationService';
 import { useFoodItems } from './hooks/useFoodItems';
@@ -78,6 +79,7 @@ function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/shop" element={<Shop />} />
+                  <Route path="/edit-lists" element={<EditLists />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

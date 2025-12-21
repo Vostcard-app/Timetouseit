@@ -138,6 +138,23 @@ export const foodItemService = {
 
 // Shopping List Service
 export const shoppingListService = {
+  // Get all shopping list items for a specific list
+  async getShoppingListItems(userId: string, listId: string): Promise<ShoppingListItem[]> {
+    const q = query(
+      collection(db, 'shoppingList'),
+      where('userId', '==', userId),
+      where('listId', '==', listId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate()
+    })) as ShoppingListItem[];
+  },
+
   // Subscribe to shopping list changes
   subscribeToShoppingList(
     userId: string,
