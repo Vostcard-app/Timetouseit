@@ -992,7 +992,7 @@ const Calendar: React.FC = () => {
 
       {/* Main Content */}
       <div 
-        style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}
+        style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}
         onTouchStart={(e) => {
           const touch = e.touches[0];
           setTouchStart({ x: touch.clientX, y: touch.clientY });
@@ -1116,7 +1116,7 @@ const Calendar: React.FC = () => {
             »
           </button>
         </div>
-      <div style={{ height: '600px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '1rem' }}>
+      <div style={{ height: '600px', backgroundColor: '#ffffff', borderRadius: '8px', padding: '1rem', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>
         {currentView === 'week' ? (
           <CustomWeekView />
         ) : (
