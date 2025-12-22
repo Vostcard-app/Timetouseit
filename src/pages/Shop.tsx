@@ -46,17 +46,17 @@ const Shop: React.FC = () => {
       return;
     }
 
-    // Reset initialization flag when user changes
+    // Reset initialization flag when user or lastUsedListId changes
+    // This allows re-initialization when settings load after lists
     hasInitializedList.current = false;
 
     const unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists: ShoppingList[]) => {
       setShoppingLists(lists);
       
-      // Only initialize list selection once when lists first arrive
-      // Wait for settings to load (lastUsedListId will be set or remain null)
+      // Only initialize list selection once when lists first arrive and we have settings info
       if (!hasInitializedList.current && lists.length > 0) {
-        // If we're still waiting for settings, wait a bit more
-        // Otherwise proceed with initialization
+        // If lastUsedListId is null, settings might still be loading
+        // Wait a moment for settings to load, then initialize
         const initializeList = () => {
           if (hasInitializedList.current) return;
           hasInitializedList.current = true;
@@ -82,13 +82,13 @@ const Shop: React.FC = () => {
           }
         };
 
-        // If settings haven't loaded yet, wait a bit for them
+        // If settings haven't loaded yet (lastUsedListId is null), wait a bit
         // Otherwise initialize immediately
         if (lastUsedListId === null) {
           // Settings might still be loading, wait a short time
           setTimeout(() => {
             initializeList();
-          }, 100);
+          }, 200);
         } else {
           // Settings are loaded (or confirmed null), initialize now
           initializeList();
