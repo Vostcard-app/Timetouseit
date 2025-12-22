@@ -552,14 +552,37 @@ const Calendar: React.FC = () => {
                   boxSizing: 'border-box'
                 }}
               >
-                {weekDays.map((_, colIndex) => {
+                {weekDays.map((dayDate, colIndex) => {
                   // Check if this column is part of the span
                   // Span goes from yellowStartCol (or 0 if null) to redCol (or 6 if null)
                   const isInSpan = colIndex >= renderStartCol && colIndex <= renderEndCol;
                   const isRedDay = colIndex === redCol;
+                  
+                  // Determine if this is the second yellow day (should be blue)
+                  // The span is: 3 days before expiration (yellow) + expiration day (red)
+                  // Day 1 (3 days before): First yellow day
+                  // Day 2 (2 days before): Second yellow day (blue)
+                  // Day 3 (1 day before): Third yellow day
+                  // Day 4 (expiration): Red day
+                  // Calculate based on actual date difference
+                  let isSecondYellowDay = false;
+                  if (isInSpan && !isRedDay) {
+                    const currentDay = startOfDay(dayDate);
+                    const expirationDay = startOfDay(expirationDate);
+                    const twoDaysBefore = addDays(expirationDay, -2);
+                    // Check if current day is exactly 2 days before expiration
+                    isSecondYellowDay = currentDay.getTime() === twoDaysBefore.getTime();
+                  }
 
                   if (isInSpan) {
-                    // Single continuous 4-day block (3 yellow days + 1 red day)
+                    // Single continuous 4-day block (2 yellow days + 1 blue day + 1 red day)
+                    let backgroundColor = '#f59e0b'; // Default yellow
+                    if (isRedDay) {
+                      backgroundColor = '#ef4444'; // Red for expiration day
+                    } else if (isSecondYellowDay) {
+                      backgroundColor = '#3b82f6'; // Blue for second yellow day
+                    }
+                    
                     return (
                       <div
                         key={colIndex}
@@ -567,7 +590,7 @@ const Calendar: React.FC = () => {
                           flex: 1,
                           minWidth: 0,
                           height: '100%',
-                          backgroundColor: isRedDay ? '#ef4444' : '#f59e0b',
+                          backgroundColor: backgroundColor,
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
@@ -1167,6 +1190,17 @@ const Calendar: React.FC = () => {
             }}
           />
           <span style={{ fontSize: '0.875rem' }}>Expiring Soon</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{
+              width: '16px',
+              height: '16px',
+              borderRadius: '50%',
+              backgroundColor: '#3b82f6',
+            }}
+          />
+          <span style={{ fontSize: '0.875rem' }}>Freeze</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div
