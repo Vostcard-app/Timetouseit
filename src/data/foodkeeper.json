@@ -1,0 +1,381 @@
+[
+  {
+    "name": "Milk",
+    "category": "Dairy",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "Whole Milk",
+    "category": "Dairy",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "2% Milk",
+    "category": "Dairy",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "Skim Milk",
+    "category": "Dairy",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "Yogurt",
+    "category": "Dairy",
+    "refrigeratorDays": 14,
+    "freezerDays": 1,
+    "pantryDays": null
+  },
+  {
+    "name": "Greek Yogurt",
+    "category": "Dairy",
+    "refrigeratorDays": 14,
+    "freezerDays": 1,
+    "pantryDays": null
+  },
+  {
+    "name": "Cheese",
+    "category": "Dairy",
+    "refrigeratorDays": 21,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Cheddar Cheese",
+    "category": "Dairy",
+    "refrigeratorDays": 21,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Mozzarella Cheese",
+    "category": "Dairy",
+    "refrigeratorDays": 14,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Butter",
+    "category": "Dairy",
+    "refrigeratorDays": 30,
+    "freezerDays": 9,
+    "pantryDays": null
+  },
+  {
+    "name": "Eggs",
+    "category": "Dairy",
+    "refrigeratorDays": 21,
+    "freezerDays": null,
+    "pantryDays": null
+  },
+  {
+    "name": "Chicken",
+    "category": "Meat",
+    "refrigeratorDays": 2,
+    "freezerDays": 9,
+    "pantryDays": null
+  },
+  {
+    "name": "Chicken Breast",
+    "category": "Meat",
+    "refrigeratorDays": 2,
+    "freezerDays": 9,
+    "pantryDays": null
+  },
+  {
+    "name": "Chicken Thighs",
+    "category": "Meat",
+    "refrigeratorDays": 2,
+    "freezerDays": 9,
+    "pantryDays": null
+  },
+  {
+    "name": "Ground Beef",
+    "category": "Meat",
+    "refrigeratorDays": 2,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "Beef",
+    "category": "Meat",
+    "refrigeratorDays": 3,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Steak",
+    "category": "Meat",
+    "refrigeratorDays": 3,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Pork",
+    "category": "Meat",
+    "refrigeratorDays": 3,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Pork Chops",
+    "category": "Meat",
+    "refrigeratorDays": 3,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Bacon",
+    "category": "Meat",
+    "refrigeratorDays": 7,
+    "freezerDays": 1,
+    "pantryDays": null
+  },
+  {
+    "name": "Fish",
+    "category": "Seafood",
+    "refrigeratorDays": 2,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Salmon",
+    "category": "Seafood",
+    "refrigeratorDays": 2,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "Tuna",
+    "category": "Seafood",
+    "refrigeratorDays": 2,
+    "freezerDays": 3,
+    "pantryDays": null
+  },
+  {
+    "name": "Shrimp",
+    "category": "Seafood",
+    "refrigeratorDays": 2,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Bread",
+    "category": "Bakery",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": 5
+  },
+  {
+    "name": "White Bread",
+    "category": "Bakery",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": 5
+  },
+  {
+    "name": "Whole Wheat Bread",
+    "category": "Bakery",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": 5
+  },
+  {
+    "name": "Bananas",
+    "category": "Fruits",
+    "refrigeratorDays": 7,
+    "freezerDays": 3,
+    "pantryDays": 3
+  },
+  {
+    "name": "Apples",
+    "category": "Fruits",
+    "refrigeratorDays": 30,
+    "freezerDays": 8,
+    "pantryDays": 7
+  },
+  {
+    "name": "Strawberries",
+    "category": "Fruits",
+    "refrigeratorDays": 3,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Blueberries",
+    "category": "Fruits",
+    "refrigeratorDays": 10,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Grapes",
+    "category": "Fruits",
+    "refrigeratorDays": 7,
+    "freezerDays": 1,
+    "pantryDays": null
+  },
+  {
+    "name": "Oranges",
+    "category": "Fruits",
+    "refrigeratorDays": 21,
+    "freezerDays": 4,
+    "pantryDays": 7
+  },
+  {
+    "name": "Lettuce",
+    "category": "Vegetables",
+    "refrigeratorDays": 7,
+    "freezerDays": null,
+    "pantryDays": null
+  },
+  {
+    "name": "Spinach",
+    "category": "Vegetables",
+    "refrigeratorDays": 5,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Carrots",
+    "category": "Vegetables",
+    "refrigeratorDays": 21,
+    "freezerDays": 12,
+    "pantryDays": 3
+  },
+  {
+    "name": "Broccoli",
+    "category": "Vegetables",
+    "refrigeratorDays": 7,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Tomatoes",
+    "category": "Vegetables",
+    "refrigeratorDays": 7,
+    "freezerDays": 2,
+    "pantryDays": 3
+  },
+  {
+    "name": "Onions",
+    "category": "Vegetables",
+    "refrigeratorDays": 30,
+    "freezerDays": 10,
+    "pantryDays": 30
+  },
+  {
+    "name": "Potatoes",
+    "category": "Vegetables",
+    "refrigeratorDays": null,
+    "freezerDays": 10,
+    "pantryDays": 30
+  },
+  {
+    "name": "Bell Peppers",
+    "category": "Vegetables",
+    "refrigeratorDays": 7,
+    "freezerDays": 6,
+    "pantryDays": null
+  },
+  {
+    "name": "Cucumber",
+    "category": "Vegetables",
+    "refrigeratorDays": 7,
+    "freezerDays": null,
+    "pantryDays": null
+  },
+  {
+    "name": "Mushrooms",
+    "category": "Vegetables",
+    "refrigeratorDays": 7,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Avocado",
+    "category": "Fruits",
+    "refrigeratorDays": 3,
+    "freezerDays": 3,
+    "pantryDays": 3
+  },
+  {
+    "name": "Ham",
+    "category": "Meat",
+    "refrigeratorDays": 7,
+    "freezerDays": 2,
+    "pantryDays": null
+  },
+  {
+    "name": "Turkey",
+    "category": "Meat",
+    "refrigeratorDays": 2,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Sausage",
+    "category": "Meat",
+    "refrigeratorDays": 2,
+    "freezerDays": 2,
+    "pantryDays": null
+  },
+  {
+    "name": "Hot Dogs",
+    "category": "Meat",
+    "refrigeratorDays": 7,
+    "freezerDays": 1,
+    "pantryDays": null
+  },
+  {
+    "name": "Lunch Meat",
+    "category": "Meat",
+    "refrigeratorDays": 5,
+    "freezerDays": 2,
+    "pantryDays": null
+  },
+  {
+    "name": "Cottage Cheese",
+    "category": "Dairy",
+    "refrigeratorDays": 7,
+    "freezerDays": null,
+    "pantryDays": null
+  },
+  {
+    "name": "Sour Cream",
+    "category": "Dairy",
+    "refrigeratorDays": 14,
+    "freezerDays": null,
+    "pantryDays": null
+  },
+  {
+    "name": "Cream Cheese",
+    "category": "Dairy",
+    "refrigeratorDays": 14,
+    "freezerDays": null,
+    "pantryDays": null
+  },
+  {
+    "name": "Orange Juice",
+    "category": "Beverages",
+    "refrigeratorDays": 7,
+    "freezerDays": 12,
+    "pantryDays": null
+  },
+  {
+    "name": "Apple Juice",
+    "category": "Beverages",
+    "refrigeratorDays": 7,
+    "freezerDays": 12,
+    "pantryDays": null
+  }
+]
+

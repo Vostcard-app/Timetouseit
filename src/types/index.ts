@@ -49,3 +49,11 @@ export interface UserSettings {
 
 export type FoodItemStatus = 'fresh' | 'expiring_soon' | 'expired';
 
+export interface FoodKeeperItem {
+  name: string;
+  category: string;
+  refrigeratorDays?: number | null;
+  freezerDays?: number | null;
+  pantryDays?: number | null;
+}
+

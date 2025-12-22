@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { FoodItemData, FoodItem } from '../types';
+import { getSuggestedExpirationDate } from '../services/foodkeeperService';
 
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
@@ -23,6 +24,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update form data when initialItem or initialName changes
@@ -41,6 +43,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setFormData(prev => ({ ...prev, name: initialName }));
     }
   }, [initialItem, initialName]);
+
+  // Watch formData.name and calculate suggested expiration date
+  useEffect(() => {
+    if (formData.name.trim()) {
+      const suggestion = getSuggestedExpirationDate(formData.name.trim());
+      setSuggestedExpirationDate(suggestion);
+    } else {
+      setSuggestedExpirationDate(null);
+    }
+  }, [formData.name]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -155,37 +167,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         />
       </div>
 
-      {/* 2. Remove from list button (only when coming from shopping list) */}
-      {fromShoppingList && (
-        <div style={{ marginBottom: '1.5rem' }}>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await onSubmit({ ...formData, expirationDate: new Date() }, undefined, true);
-              } catch (error) {
-                console.error('Error removing from list:', error);
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '0.875rem 1.5rem',
-              backgroundColor: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              minHeight: '44px'
-            }}
-          >
-            Remove from list
-          </button>
-        </div>
-      )}
-
-      {/* 3. Expiration Date Field */}
+      {/* 2. Expiration Date Field */}
       <div style={{ marginBottom: '1.5rem' }}>
         <label htmlFor="expirationDate" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
           Expiration Date *
@@ -207,7 +189,66 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         />
       </div>
 
-      {/* 4. Save Button */}
+      {/* 3. Suggested Expiration Date button (appears when suggestion is available) */}
+      {formData.name.trim() && suggestedExpirationDate && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setFormData(prev => ({
+                ...prev,
+                expirationDate: suggestedExpirationDate
+              }));
+            }}
+            style={{
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              minHeight: '44px'
+            }}
+          >
+            Suggested Expiration Date
+          </button>
+        </div>
+      )}
+
+      {/* 4. Remove/ No Exp. button (only when coming from shopping list) */}
+      {fromShoppingList && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await onSubmit({ ...formData, expirationDate: new Date() }, undefined, true);
+              } catch (error) {
+                console.error('Error removing from list:', error);
+              }
+            }}
+            style={{
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              backgroundColor: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              minHeight: '44px'
+            }}
+          >
+            Remove/ No Exp.
+          </button>
+        </div>
+      )}
+
+      {/* 5. Save Button */}
       <div style={{ marginBottom: '2rem' }}>
         <button
           type="submit"
@@ -230,7 +271,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         </button>
       </div>
 
-      {/* 5. Photo/Barcode Section */}
+      {/* 6. Photo/Barcode Section */}
       <div style={{ 
         paddingTop: '1.5rem', 
         borderTop: '1px solid #e5e7eb',
