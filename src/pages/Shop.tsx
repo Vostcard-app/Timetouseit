@@ -96,7 +96,23 @@ const Shop: React.FC = () => {
 
   // Initialize list selection when lists become available (if settings are already loaded)
   useEffect(() => {
-    if (!user || !settingsLoaded || shoppingLists.length === 0) {
+    if (!user || !settingsLoaded) {
+      return;
+    }
+
+    // If no lists exist, create "Food" list for first-time users
+    if (shoppingLists.length === 0) {
+      console.log('📝 No lists found - creating "Food" list for new user');
+      shoppingListsService.createShoppingList(user.uid, 'Food', false).then(async (listId: string) => {
+        // Set as selected and save as last used
+        setSelectedListId(listId);
+        setLastUsedListId(listId);
+        await userSettingsService.setLastUsedShoppingList(user.uid, listId);
+        hasInitialized.current = true;
+        console.log('✅ Created "Food" list and set as last used');
+      }).catch((error) => {
+        console.error('Error creating Food list:', error);
+      });
       return;
     }
 
