@@ -53,27 +53,45 @@ const Shop: React.FC = () => {
       setShoppingLists(lists);
       
       // Only initialize list selection once when lists first arrive
+      // Wait for settings to load (lastUsedListId will be set or remain null)
       if (!hasInitializedList.current && lists.length > 0) {
-        hasInitializedList.current = true;
-        
-        // Try to restore last used list first
-        if (lastUsedListId) {
-          const lastUsedList = lists.find((l: ShoppingList) => l.id === lastUsedListId);
-          if (lastUsedList) {
-            setSelectedListId(lastUsedList.id);
-            return;
+        // If we're still waiting for settings, wait a bit more
+        // Otherwise proceed with initialization
+        const initializeList = () => {
+          if (hasInitializedList.current) return;
+          hasInitializedList.current = true;
+          
+          // Try to restore last used list first
+          if (lastUsedListId) {
+            const lastUsedList = lists.find((l: ShoppingList) => l.id === lastUsedListId);
+            if (lastUsedList) {
+              setSelectedListId(lastUsedList.id);
+              return;
+            }
           }
-        }
-        
-        // Fall back to default list or first list
-        const defaultList = lists.find((l: ShoppingList) => l.isDefault) || lists[0];
-        if (defaultList) {
-          setSelectedListId(defaultList.id);
+          
+          // Fall back to default list or first list
+          const defaultList = lists.find((l: ShoppingList) => l.isDefault) || lists[0];
+          if (defaultList) {
+            setSelectedListId(defaultList.id);
+          } else {
+            // Create default "shop list" if no lists exist
+            shoppingListsService.getDefaultShoppingList(user.uid).then((listId: string) => {
+              setSelectedListId(listId);
+            });
+          }
+        };
+
+        // If settings haven't loaded yet, wait a bit for them
+        // Otherwise initialize immediately
+        if (lastUsedListId === null) {
+          // Settings might still be loading, wait a short time
+          setTimeout(() => {
+            initializeList();
+          }, 100);
         } else {
-          // Create default "shop list" if no lists exist
-          shoppingListsService.getDefaultShoppingList(user.uid).then((listId: string) => {
-            setSelectedListId(listId);
-          });
+          // Settings are loaded (or confirmed null), initialize now
+          initializeList();
         }
       }
     });
