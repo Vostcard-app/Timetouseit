@@ -205,11 +205,26 @@ const Shop: React.FC = () => {
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newItemName.trim() || !selectedListId) return;
+    
+    if (!user) {
+      alert('Please log in to add items.');
+      return;
+    }
+    
+    if (!newItemName.trim()) {
+      alert('Please enter an item name.');
+      return;
+    }
+    
+    if (!selectedListId) {
+      alert('Please select a list first.');
+      return;
+    }
 
     try {
       await shoppingListService.addShoppingListItem(user.uid, selectedListId, newItemName.trim());
       setNewItemName('');
+      setShowDropdown(false);
     } catch (error) {
       console.error('Error adding item to shopping list:', error);
       alert('Failed to add item. Please try again.');
@@ -471,9 +486,15 @@ const Shop: React.FC = () => {
                   {foodKeeperSuggestions.map((suggestion, index) => (
                     <div
                       key={`foodkeeper-${suggestion.name}-${index}`}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setNewItemName(suggestion.name);
                         setShowDropdown(false);
+                        setInputFocused(false);
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                       }}
                       style={{
                         padding: '0.75rem 1rem',
