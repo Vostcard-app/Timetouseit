@@ -33,6 +33,9 @@ const AddItem: React.FC = () => {
   const shoppingListItemId = (location.state as any)?.shoppingListItemId;
   const shoppingListItemName = (location.state as any)?.itemName;
   
+  // Check if coming from Dashboard with item to edit
+  const dashboardEditingItem = (location.state as any)?.editingItem as FoodItem | undefined;
+  
   // If coming from shopping list, show form immediately with pre-filled name
   React.useEffect(() => {
     if (fromShoppingList && shoppingListItemName) {
@@ -40,6 +43,15 @@ const AddItem: React.FC = () => {
       setSearchQuery(shoppingListItemName);
     }
   }, [fromShoppingList, shoppingListItemName]);
+
+  // If coming from Dashboard with item to edit, show form immediately
+  React.useEffect(() => {
+    if (dashboardEditingItem) {
+      setEditingItem(dashboardEditingItem);
+      setShowForm(true);
+      setSearchQuery('');
+    }
+  }, [dashboardEditingItem]);
 
   // Sort items by most recent first (by addedDate)
   const sortedItems = useMemo(() => {

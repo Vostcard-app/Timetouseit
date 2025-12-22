@@ -25,6 +25,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
+  const [isFrozen, setIsFrozen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update form data when initialItem or initialName changes
@@ -44,15 +45,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     }
   }, [initialItem, initialName]);
 
-  // Watch formData.name and calculate suggested expiration date
+  // Watch formData.name and isFrozen to calculate suggested expiration date
   useEffect(() => {
     if (formData.name.trim()) {
-      const suggestion = getSuggestedExpirationDate(formData.name.trim());
+      const storageType = isFrozen ? 'freezer' : 'refrigerator';
+      const suggestion = getSuggestedExpirationDate(formData.name.trim(), storageType);
       setSuggestedExpirationDate(suggestion);
     } else {
       setSuggestedExpirationDate(null);
     }
-  }, [formData.name]);
+  }, [formData.name, isFrozen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -187,6 +189,25 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
             fontSize: '1rem'
           }}
         />
+      </div>
+
+      {/* 2.5. Freeze Checkbox */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={isFrozen}
+            onChange={(e) => setIsFrozen(e.target.checked)}
+            style={{
+              width: '1.25rem',
+              height: '1.25rem',
+              cursor: 'pointer'
+            }}
+          />
+          <span style={{ fontSize: '1rem', fontWeight: '500' }}>
+            Freeze
+          </span>
+        </label>
       </div>
 
       {/* 3. Suggested Expiration Date button (appears when suggestion is available) */}

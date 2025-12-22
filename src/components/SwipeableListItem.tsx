@@ -5,9 +5,10 @@ import { formatDate } from '../utils/dateUtils';
 interface SwipeableListItemProps {
   item: FoodItem;
   onDelete: () => void;
+  onClick?: () => void;
 }
 
-const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete }) => {
+const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, onClick }) => {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -38,6 +39,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
     } else {
       // Snap back
       setTranslateX(0);
+      // If no swipe occurred and onClick is provided, trigger click
+      if (translateX < 10 && onClick) {
+        onClick();
+      }
     }
   };
 
@@ -64,6 +69,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
           setTranslateX(0);
         } else {
           setTranslateX(0);
+          // If no swipe occurred and onClick is provided, trigger click
+          if (translateX < 10 && onClick) {
+            onClick();
+          }
         }
       };
 
@@ -118,6 +127,12 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
 
       {/* Item content */}
       <div
+        onClick={() => {
+          // Only trigger onClick if not dragging/swiping and delete button wasn't clicked
+          if (!isDragging && translateX < 10 && onClick) {
+            onClick();
+          }
+        }}
         style={{
           position: 'relative',
           backgroundColor: '#ffffff',
@@ -130,7 +145,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete })
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          cursor: isDragging ? 'grabbing' : 'grab'
+          cursor: isDragging ? 'grabbing' : (onClick ? 'pointer' : 'grab')
         }}
       >
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>

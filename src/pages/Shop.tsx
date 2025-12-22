@@ -216,13 +216,24 @@ const Shop: React.FC = () => {
       return;
     }
     
-    if (!selectedListId) {
+    // Auto-select first list if available but none selected
+    let listIdToUse = selectedListId;
+    if (!listIdToUse && shoppingLists.length > 0) {
+      listIdToUse = shoppingLists[0].id;
+      setSelectedListId(listIdToUse);
+      setLastUsedListId(listIdToUse);
+      if (user) {
+        userSettingsService.setLastUsedShoppingList(user.uid, listIdToUse).catch(console.error);
+      }
+    }
+    
+    if (!listIdToUse) {
       alert('Please select a list first.');
       return;
     }
 
     try {
-      await shoppingListService.addShoppingListItem(user.uid, selectedListId, newItemName.trim());
+      await shoppingListService.addShoppingListItem(user.uid, listIdToUse, newItemName.trim());
       setNewItemName('');
       setShowDropdown(false);
     } catch (error) {
@@ -393,7 +404,7 @@ const Shop: React.FC = () => {
         }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
             <select
-              value={selectedListId || ''}
+              value={selectedListId || (shoppingLists.length > 0 ? shoppingLists[0].id : '')}
               onChange={(e) => handleListChange(e.target.value)}
               style={{
                 flex: 1,
@@ -406,11 +417,15 @@ const Shop: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              {shoppingLists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
+              {shoppingLists.length === 0 ? (
+                <option value="">No lists available</option>
+              ) : (
+                shoppingLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))
+              )}
             </select>
             <button
               onClick={() => navigate('/edit-lists')}

@@ -45,6 +45,10 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleItemClick = (item: typeof foodItems[0]) => {
+    navigate('/add', { state: { editingItem: item } });
+  };
+
 
   if (loading) {
     return (
@@ -283,6 +287,7 @@ const Dashboard: React.FC = () => {
               key={item.id}
               item={item}
               onDelete={() => handleDelete(item.id)}
+              onClick={() => handleItemClick(item)}
             />
           ))}
         </div>
