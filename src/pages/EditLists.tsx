@@ -14,6 +14,8 @@ const EditLists: React.FC = () => {
   const [newListName, setNewListName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [deletingListId, setDeletingListId] = useState<string | null>(null);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingListName, setEditingListName] = useState('');
 
   // Subscribe to shopping lists
   useEffect(() => {
@@ -52,6 +54,34 @@ const EditLists: React.FC = () => {
   const handleCancelAddList = () => {
     setShowAddListToast(false);
     setNewListName('');
+  };
+
+  const handleEditList = (list: ShoppingList) => {
+    setEditingListId(list.id);
+    setEditingListName(list.name);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingListId || !editingListName.trim()) {
+      setEditingListId(null);
+      setEditingListName('');
+      return;
+    }
+
+    try {
+      await shoppingListsService.updateShoppingList(editingListId, { name: editingListName.trim() });
+      setEditingListId(null);
+      setEditingListName('');
+    } catch (error) {
+      console.error('Error updating shopping list:', error);
+      alert('Failed to update list. Please try again.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingListId(null);
+    setEditingListName('');
   };
 
   const handleDeleteList = async (listId: string) => {
@@ -225,51 +255,129 @@ const EditLists: React.FC = () => {
                   border: list.isDefault ? '2px solid #002B4D' : '1px solid #e5e7eb'
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                      {list.name}
-                    </span>
-                    {list.isDefault && (
-                      <span style={{
-                        fontSize: '0.75rem',
-                        padding: '0.25rem 0.5rem',
+                {editingListId === list.id ? (
+                  // Edit mode
+                  <form onSubmit={handleSaveEdit} style={{ flex: 1, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={editingListName}
+                      onChange={(e) => setEditingListName(e.target.value)}
+                      autoFocus
+                      style={{
+                        flex: 1,
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        outline: 'none'
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '0.5rem 1rem',
                         backgroundColor: '#002B4D',
-                        color: '#ffffff',
-                        borderRadius: '4px',
-                        fontWeight: '500'
-                      }}>
-                        Default
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                    Created {new Date(list.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDeleteList(list.id)}
-                  disabled={deletingListId === list.id || list.isDefault}
-                  style={{
-                    background: list.isDefault ? '#f3f4f6' : 'none',
-                    border: 'none',
-                    color: list.isDefault ? '#9ca3af' : '#ef4444',
-                    cursor: list.isDefault ? 'not-allowed' : 'pointer',
-                    padding: '0.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: '36px',
-                    minHeight: '36px',
-                    borderRadius: '4px',
-                    fontSize: '1.25rem',
-                    opacity: deletingListId === list.id ? 0.5 : 1
-                  }}
-                  aria-label="Delete list"
-                  title={list.isDefault ? 'Cannot delete default list' : 'Delete list'}
-                >
-                  {deletingListId === list.id ? '⏳' : '🗑️'}
-                </button>
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#f3f4f6',
+                        color: '#1f2937',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
+                          {list.name}
+                        </span>
+                        {list.isDefault && (
+                          <span style={{
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            backgroundColor: '#002B4D',
+                            color: '#ffffff',
+                            borderRadius: '4px',
+                            fontWeight: '500'
+                          }}>
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                        Created {new Date(list.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button
+                        onClick={() => handleEditList(list)}
+                        disabled={editingListId !== null}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#3b82f6',
+                          cursor: editingListId !== null ? 'not-allowed' : 'pointer',
+                          padding: '0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '36px',
+                          minHeight: '36px',
+                          borderRadius: '4px',
+                          fontSize: '1.25rem',
+                          opacity: editingListId !== null ? 0.5 : 1
+                        }}
+                        aria-label="Edit list"
+                        title="Edit list"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteList(list.id)}
+                        disabled={deletingListId === list.id || list.isDefault || editingListId !== null}
+                        style={{
+                          background: list.isDefault ? '#f3f4f6' : 'none',
+                          border: 'none',
+                          color: list.isDefault ? '#9ca3af' : '#ef4444',
+                          cursor: (list.isDefault || editingListId !== null) ? 'not-allowed' : 'pointer',
+                          padding: '0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '36px',
+                          minHeight: '36px',
+                          borderRadius: '4px',
+                          fontSize: '1.25rem',
+                          opacity: deletingListId === list.id ? 0.5 : 1
+                        }}
+                        aria-label="Delete list"
+                        title={list.isDefault ? 'Cannot delete default list' : 'Delete list'}
+                      >
+                        {deletingListId === list.id ? '⏳' : '🗑️'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ))
           )}
