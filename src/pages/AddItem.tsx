@@ -10,6 +10,7 @@ import { formatDate } from '../utils/dateUtils';
 import AddItemForm from '../components/AddItemForm';
 import BarcodeScanner from '../components/BarcodeScanner';
 import type { BarcodeScanResult } from '../services/barcodeService';
+import { findFoodItems } from '../services/foodkeeperService';
 
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -59,6 +60,14 @@ const AddItem: React.FC = () => {
       item.name.toLowerCase().includes(query)
     );
   }, [sortedItems, searchQuery]);
+
+  // Get FoodKeeper suggestions based on search query
+  const foodKeeperSuggestions = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return [];
+    }
+    return findFoodItems(searchQuery.trim(), 5); // Limit to 5 suggestions
+  }, [searchQuery]);
 
   const handleSubmit = async (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => {
     if (!user) {
@@ -307,7 +316,7 @@ const AddItem: React.FC = () => {
             }}
           />
           {/* Dropdown List */}
-          {showDropdown && (inputFocused || searchQuery.trim()) && filteredItems.length > 0 && (
+          {showDropdown && (inputFocused || searchQuery.trim()) && (filteredItems.length > 0 || foodKeeperSuggestions.length > 0) && (
             <div
               style={{
                 position: 'absolute',
@@ -328,6 +337,7 @@ const AddItem: React.FC = () => {
                 e.preventDefault();
               }}
             >
+              {/* Previously added items */}
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
@@ -357,6 +367,57 @@ const AddItem: React.FC = () => {
                   </div>
                 </div>
               ))}
+              
+              {/* FoodKeeper suggestions */}
+              {foodKeeperSuggestions.length > 0 && (
+                <>
+                  {filteredItems.length > 0 && (
+                    <div style={{ 
+                      padding: '0.5rem 1rem', 
+                      backgroundColor: '#f9fafb', 
+                      borderTop: '1px solid #e5e7eb',
+                      borderBottom: '1px solid #e5e7eb',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>
+                      Suggested Items
+                    </div>
+                  )}
+                  {foodKeeperSuggestions.map((suggestion, index) => (
+                    <div
+                      key={`foodkeeper-${suggestion.name}-${index}`}
+                      onClick={() => {
+                        setSearchQuery(suggestion.name);
+                        setShowForm(true);
+                        setShowDropdown(false);
+                      }}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderBottom: '1px solid #f3f4f6',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        backgroundColor: '#fef3c7' // Light yellow to distinguish from previous items
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fde68a';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fef3c7';
+                      }}
+                    >
+                      <div style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937' }}>
+                        {suggestion.name}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        {suggestion.category}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -364,11 +425,11 @@ const AddItem: React.FC = () => {
 
       {/* Item List */}
       <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#ffffff' }}>
-        {filteredItems.length === 0 && searchQuery.trim() ? (
+        {filteredItems.length === 0 && foodKeeperSuggestions.length === 0 && searchQuery.trim() ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
             <p>No items found. Press Enter to add "{searchQuery}"</p>
           </div>
-        ) : filteredItems.length === 0 ? (
+        ) : filteredItems.length === 0 && foodKeeperSuggestions.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
             <p>No items yet. Start typing to add a new item.</p>
           </div>

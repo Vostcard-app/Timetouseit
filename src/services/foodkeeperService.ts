@@ -43,6 +43,49 @@ export const findFoodItem = (query: string): FoodKeeperItem | null => {
 };
 
 /**
+ * Find multiple food items in the FoodKeeper dataset matching the query
+ * Returns up to 10 matches sorted by relevance
+ */
+export const findFoodItems = (query: string, limit: number = 10): FoodKeeperItem[] => {
+  if (!query || !query.trim()) {
+    return [];
+  }
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  // Get all matches
+  const matches = foodKeeperItems
+    .filter(item => item.name.toLowerCase().includes(normalizedQuery))
+    .map(item => {
+      const nameLower = item.name.toLowerCase();
+      let score = 0;
+      
+      // Exact match gets highest score
+      if (nameLower === normalizedQuery) {
+        score = 1000;
+      }
+      // Starts with query gets high score
+      else if (nameLower.startsWith(normalizedQuery)) {
+        score = 500;
+      }
+      // Contains query gets lower score
+      else {
+        score = 100;
+      }
+      
+      // Prefer shorter names (more specific)
+      score -= item.name.length;
+      
+      return { item, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(result => result.item);
+
+  return matches;
+};
+
+/**
  * Get suggested expiration date based on FoodKeeper data
  * Defaults to refrigerator storage time
  */
