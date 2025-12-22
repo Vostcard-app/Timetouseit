@@ -33,11 +33,12 @@ const Shop: React.FC = () => {
     const loadSettings = async () => {
       try {
         const settings = await userSettingsService.getUserSettings(user.uid);
-        if (settings?.lastUsedShoppingListId) {
-          setLastUsedListId(settings.lastUsedShoppingListId);
-        }
+        // Explicitly set lastUsedListId, even if null, so we know settings have loaded
+        setLastUsedListId(settings?.lastUsedShoppingListId || null);
       } catch (error) {
         console.error('Error loading user settings:', error);
+        // Even on error, set to null so we know settings have been checked
+        setLastUsedListId(null);
       } finally {
         setSettingsLoaded(true);
       }
@@ -71,21 +72,34 @@ const Shop: React.FC = () => {
     // Mark as initialized before setting
     hasInitialized.current = true;
 
+    console.log('🔍 Initializing list selection:', {
+      lastUsedListId,
+      shoppingLists: shoppingLists.map(l => ({ id: l.id, name: l.name, isDefault: l.isDefault })),
+      settingsLoaded
+    });
+
     // Try to restore last used list first
     if (lastUsedListId) {
       const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
       if (lastUsedList) {
+        console.log('✅ Restoring last used list:', lastUsedList.name);
         setSelectedListId(lastUsedList.id);
         return;
+      } else {
+        console.log('⚠️ Last used list not found in shopping lists:', lastUsedListId);
       }
+    } else {
+      console.log('⚠️ No lastUsedListId from settings');
     }
 
     // Fall back to default list or first list
     const defaultList = shoppingLists.find((l: ShoppingList) => l.isDefault) || shoppingLists[0];
     if (defaultList) {
+      console.log('📋 Falling back to default/first list:', defaultList.name);
       setSelectedListId(defaultList.id);
     } else {
       // Create default "shop list" if no lists exist
+      console.log('📝 Creating default shop list');
       shoppingListsService.getDefaultShoppingList(user.uid).then((listId: string) => {
         setSelectedListId(listId);
       });
@@ -144,11 +158,17 @@ const Shop: React.FC = () => {
   };
 
   const handleListChange = async (listId: string) => {
+    console.log('🔄 Changing list to:', listId);
     setSelectedListId(listId);
     // Update local state and save as last used
     setLastUsedListId(listId);
     if (user) {
-      await userSettingsService.setLastUsedShoppingList(user.uid, listId);
+      try {
+        await userSettingsService.setLastUsedShoppingList(user.uid, listId);
+        console.log('✅ Saved last used list to settings:', listId);
+      } catch (error) {
+        console.error('❌ Failed to save last used list:', error);
+      }
     }
   };
 
