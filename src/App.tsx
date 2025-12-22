@@ -66,21 +66,22 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/shop" replace />} />
         <Route
           path="/*"
           element={
             user ? (
               <Layout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/" element={<Navigate to="/shop" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/add" element={<AddItem />} />
                   <Route path="/item/:id" element={<ItemDetail />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/edit-lists" element={<EditLists />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/shop" replace />} />
                 </Routes>
               </Layout>
             ) : (

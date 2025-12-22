@@ -140,7 +140,7 @@ const EditLists: React.FC = () => {
           Lists
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           style={{
             padding: '0.75rem 1.5rem',
             backgroundColor: '#f3f4f6',

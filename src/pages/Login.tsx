@@ -87,7 +87,7 @@ const Login: React.FC = () => {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-      navigate('/');
+      navigate('/shop');
     } catch (err: any) {
       const errorMessage = getErrorMessage(err.code || '', err.message || '');
       setError(errorMessage);
@@ -123,7 +123,7 @@ const Login: React.FC = () => {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      navigate('/');
+      navigate('/shop');
     } catch (err: any) {
       // Don't show error for user cancellation
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
@@ -141,7 +141,7 @@ const Login: React.FC = () => {
 
     try {
       await signInWithPopup(auth, facebookProvider);
-      navigate('/');
+      navigate('/shop');
     } catch (err: any) {
       // Don't show error for user cancellation
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {

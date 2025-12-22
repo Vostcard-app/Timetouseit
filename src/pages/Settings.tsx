@@ -126,7 +126,7 @@ const Settings: React.FC = () => {
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/dashboard')}
         style={{
               background: 'none',
               border: 'none',

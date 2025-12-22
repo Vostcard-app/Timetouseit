@@ -141,7 +141,7 @@ const AddItem: React.FC = () => {
       if (fromShoppingList) {
         navigate('/shop');
       } else {
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Error saving food item:', error);

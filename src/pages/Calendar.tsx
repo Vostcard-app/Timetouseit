@@ -952,7 +952,7 @@ const Calendar: React.FC = () => {
           Lists
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           style={{
             padding: '0.75rem 2rem',
             backgroundColor: '#f3f4f6',

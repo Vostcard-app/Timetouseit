@@ -34,7 +34,7 @@ const ItemDetail: React.FC = () => {
 
           if (foodItem.userId !== user.uid) {
             alert('You do not have permission to view this item');
-            navigate('/');
+            navigate('/dashboard');
             return;
           }
 
