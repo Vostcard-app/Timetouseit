@@ -39,6 +39,35 @@ const Shop: React.FC = () => {
     loadSettings();
   }, [user]);
 
+  // Initialize list selection when both lists and settings are available
+  const initializeListSelection = (lists: ShoppingList[]) => {
+    if (hasInitializedList.current || lists.length === 0 || selectedListId) {
+      return;
+    }
+
+    hasInitializedList.current = true;
+
+    // Try to restore last used list first
+    if (lastUsedListId) {
+      const lastUsedList = lists.find((l: ShoppingList) => l.id === lastUsedListId);
+      if (lastUsedList) {
+        setSelectedListId(lastUsedList.id);
+        return;
+      }
+    }
+
+    // Fall back to default list or first list
+    const defaultList = lists.find((l: ShoppingList) => l.isDefault) || lists[0];
+    if (defaultList) {
+      setSelectedListId(defaultList.id);
+    } else {
+      // Create default "shop list" if no lists exist
+      shoppingListsService.getDefaultShoppingList(user.uid).then((listId: string) => {
+        setSelectedListId(listId);
+      });
+    }
+  };
+
   // Load shopping lists and set default/selected list
   useEffect(() => {
     if (!user) {
@@ -46,58 +75,34 @@ const Shop: React.FC = () => {
       return;
     }
 
-    // Reset initialization flag when user or lastUsedListId changes
-    // This allows re-initialization when settings load after lists
+    // Reset initialization flag when user changes
     hasInitializedList.current = false;
 
     const unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists: ShoppingList[]) => {
       setShoppingLists(lists);
-      
-      // Only initialize list selection once when lists first arrive and we have settings info
-      if (!hasInitializedList.current && lists.length > 0) {
-        // If lastUsedListId is null, settings might still be loading
-        // Wait a moment for settings to load, then initialize
-        const initializeList = () => {
-          if (hasInitializedList.current) return;
-          hasInitializedList.current = true;
-          
-          // Try to restore last used list first
-          if (lastUsedListId) {
-            const lastUsedList = lists.find((l: ShoppingList) => l.id === lastUsedListId);
-            if (lastUsedList) {
-              setSelectedListId(lastUsedList.id);
-              return;
-            }
-          }
-          
-          // Fall back to default list or first list
-          const defaultList = lists.find((l: ShoppingList) => l.isDefault) || lists[0];
-          if (defaultList) {
-            setSelectedListId(defaultList.id);
-          } else {
-            // Create default "shop list" if no lists exist
-            shoppingListsService.getDefaultShoppingList(user.uid).then((listId: string) => {
-              setSelectedListId(listId);
-            });
-          }
-        };
-
-        // If settings haven't loaded yet (lastUsedListId is null), wait a bit
-        // Otherwise initialize immediately
-        if (lastUsedListId === null) {
-          // Settings might still be loading, wait a short time
-          setTimeout(() => {
-            initializeList();
-          }, 200);
-        } else {
-          // Settings are loaded (or confirmed null), initialize now
-          initializeList();
-        }
-      }
+      // Try to initialize when lists arrive
+      initializeListSelection(lists);
     });
 
     return () => unsubscribeLists();
-  }, [user, lastUsedListId]);
+  }, [user]);
+
+  // Re-initialize when lastUsedListId becomes available (settings loaded)
+  useEffect(() => {
+    if (!user || !shoppingLists.length) return;
+
+    // If we haven't initialized yet and now have lastUsedListId, initialize
+    if (!hasInitializedList.current && !selectedListId) {
+      initializeListSelection(shoppingLists);
+    } else if (lastUsedListId && !selectedListId) {
+      // If lastUsedListId just loaded and we haven't selected a list, try to use it
+      const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
+      if (lastUsedList) {
+        hasInitializedList.current = true;
+        setSelectedListId(lastUsedList.id);
+      }
+    }
+  }, [user, lastUsedListId, shoppingLists, selectedListId]);
 
   // Subscribe to shopping list items for selected list
   useEffect(() => {
