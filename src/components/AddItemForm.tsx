@@ -26,7 +26,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
   const [isFrozen, setIsFrozen] = useState(false);
+  const [hasManuallyChangedDate, setHasManuallyChangedDate] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Update form data when initialItem or initialName changes
   useEffect(() => {
@@ -40,21 +42,41 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         notes: initialItem.notes || ''
       });
       setPhotoPreview(initialItem.photoUrl || null);
+      setHasManuallyChangedDate(true); // Don't auto-apply when editing existing item
     } else if (initialName && !formData.name) {
       setFormData(prev => ({ ...prev, name: initialName }));
+      setHasManuallyChangedDate(false); // Reset flag for new items
     }
   }, [initialItem, initialName]);
 
-  // Watch formData.name and isFrozen to calculate suggested expiration date
+  // Watch formData.name and isFrozen to calculate suggested expiration date and auto-apply it
   useEffect(() => {
     if (formData.name.trim()) {
       const storageType = isFrozen ? 'freezer' : 'refrigerator';
       const suggestion = getSuggestedExpirationDate(formData.name.trim(), storageType);
       setSuggestedExpirationDate(suggestion);
+      
+      // Auto-apply suggestion if available and user hasn't manually changed the date
+      if (suggestion && !hasManuallyChangedDate) {
+        // Only auto-apply if current date is today (default) or if we're editing and date hasn't been manually changed
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const currentDate = new Date(formData.expirationDate);
+        currentDate.setHours(0, 0, 0, 0);
+        const isDefaultDate = currentDate.getTime() === today.getTime();
+        
+        // Auto-apply if it's the default date or if we're not editing an existing item
+        if (isDefaultDate || !initialItem) {
+          setFormData(prev => ({
+            ...prev,
+            expirationDate: suggestion
+          }));
+        }
+      }
     } else {
       setSuggestedExpirationDate(null);
     }
-  }, [formData.name, isFrozen]);
+  }, [formData.name, isFrozen, hasManuallyChangedDate, initialItem]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -65,6 +87,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHasManuallyChangedDate(true);
     setFormData(prev => ({
       ...prev,
       expirationDate: new Date(e.target.value)
@@ -111,6 +134,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         });
         setPhotoFile(null);
         setPhotoPreview(null);
+        setHasManuallyChangedDate(false); // Reset flag for next item
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -175,6 +199,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           Expiration Date *
         </label>
         <input
+          ref={dateInputRef}
           type="date"
           id="expirationDate"
           name="expirationDate"
@@ -210,16 +235,17 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         </label>
       </div>
 
-      {/* 3. Suggested Expiration Date button (appears when suggestion is available) */}
+      {/* 3. Change Expiration Date button (appears when suggestion is available) */}
       {formData.name.trim() && suggestedExpirationDate && (
         <div style={{ marginBottom: '1.5rem' }}>
           <button
             type="button"
             onClick={() => {
-              setFormData(prev => ({
-                ...prev,
-                expirationDate: suggestedExpirationDate
-              }));
+              // Focus the date input to open the date picker
+              if (dateInputRef.current) {
+                dateInputRef.current.focus();
+                dateInputRef.current.showPicker?.();
+              }
             }}
             style={{
               width: '100%',
@@ -234,7 +260,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               minHeight: '44px'
             }}
           >
-            Suggest Expiration Date
+            Change Expiration Date
           </button>
         </div>
       )}
