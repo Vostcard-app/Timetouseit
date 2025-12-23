@@ -11,6 +11,7 @@ export interface FoodItem {
   status: 'fresh' | 'expiring_soon' | 'expired';
   reminderSent?: boolean;
   notes?: string;
+  isFrozen?: boolean;
 }
 
 export interface FoodItemData {
@@ -21,6 +22,7 @@ export interface FoodItemData {
   quantity?: number;
   category?: string;
   notes?: string;
+  isFrozen?: boolean;
 }
 
 export interface ShoppingList {

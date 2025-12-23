@@ -134,6 +134,7 @@ const AddItem: React.FC = () => {
       if (data.category) itemData.category = data.category;
       if (data.notes) itemData.notes = data.notes;
       if (photoUrl) itemData.photoUrl = photoUrl;
+      if (data.isFrozen !== undefined) itemData.isFrozen = data.isFrozen;
 
       if (editingItem) {
         // Update existing item

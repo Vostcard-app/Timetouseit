@@ -19,7 +19,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     expirationDate: initialItem?.expirationDate ? new Date(initialItem.expirationDate) : new Date(),
     quantity: initialItem?.quantity || 1,
     category: initialItem?.category || '',
-    notes: initialItem?.notes || ''
+    notes: initialItem?.notes || '',
+    isFrozen: initialItem?.isFrozen || false
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
@@ -39,9 +40,11 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         expirationDate: new Date(initialItem.expirationDate),
         quantity: initialItem.quantity || 1,
         category: initialItem.category || '',
-        notes: initialItem.notes || ''
+        notes: initialItem.notes || '',
+        isFrozen: initialItem.isFrozen || false
       });
       setPhotoPreview(initialItem.photoUrl || null);
+      setIsFrozen(initialItem.isFrozen || false);
       setHasManuallyChangedDate(true); // Don't auto-apply when editing existing item
     } else if (initialName && !formData.name) {
       setFormData(prev => ({ ...prev, name: initialName }));
@@ -130,10 +133,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           expirationDate: new Date(),
           quantity: 1,
           category: '',
-          notes: ''
+          notes: '',
+          isFrozen: false
         });
         setPhotoFile(null);
         setPhotoPreview(null);
+        setIsFrozen(false);
         setHasManuallyChangedDate(false); // Reset flag for next item
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -222,7 +227,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           <input
             type="checkbox"
             checked={isFrozen}
-            onChange={(e) => setIsFrozen(e.target.checked)}
+            onChange={(e) => {
+              const frozen = e.target.checked;
+              setIsFrozen(frozen);
+              // Update formData with isFrozen flag
+              setFormData(prev => ({ ...prev, isFrozen: frozen }));
+            }}
             style={{
               width: '1.25rem',
               height: '1.25rem',

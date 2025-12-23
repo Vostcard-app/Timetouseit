@@ -29,6 +29,7 @@ interface CalendarEvent extends Event {
     status: 'fresh' | 'expiring_soon' | 'expired';
     rowIndex?: number; // For vertical stacking in day/week views
     isAdjacentToYellow?: boolean; // Flag for red expiration day adjacent to yellow span
+    isThawDate?: boolean; // Flag for thaw date events (orange color)
   };
 }
 
@@ -95,6 +96,7 @@ const Calendar: React.FC = () => {
     sortedItems.forEach((item) => {
       const expirationDate = new Date(item.expirationDate);
       const status = getFoodItemStatus(expirationDate, 7); // Using default 7 days for expiring soon
+      const isFrozen = item.isFrozen || false;
 
       // Helper function to set time to midnight (00:00:00) for top positioning
       const setToMidnight = (date: Date): Date => {
@@ -109,6 +111,22 @@ const Calendar: React.FC = () => {
         d.setHours(23, 59, 59, 999);
         return d;
       };
+
+      // If item is frozen, add thaw date event (1 day before expiration) with orange color
+      if (isFrozen) {
+        const thawDate = addDays(expirationDate, -1);
+        allEvents.push({
+          title: item.name,
+          start: setToMidnight(thawDate),
+          end: setToEndOfDay(thawDate),
+          resource: {
+            itemId: item.id,
+            status: 'expiring_soon', // Use expiring_soon status but we'll override color to orange
+            rowIndex: rowIndex,
+            isThawDate: true, // Flag to identify thaw date events
+          },
+        } as CalendarEvent);
+      }
 
       if (status === 'expired') {
         // Red: Show on expiration date and continue showing as red for expired items
@@ -289,7 +307,8 @@ const Calendar: React.FC = () => {
       });
     }
     
-    const color = getStatusColor(event.resource.status);
+    // Use orange color for thaw dates, otherwise use status color
+    const color = event.resource.isThawDate ? '#F4A261' : getStatusColor(event.resource.status);
     const backgroundColor = color;
     const borderColor = color;
     const textColor = '#ffffff'; // White text for readability
@@ -485,6 +504,11 @@ const Calendar: React.FC = () => {
             const yellowStartCol = getColumnIndex(threeDaysBefore);
             const redCol = getColumnIndex(expirationDate);
             
+            // If item is frozen, calculate thaw date (1 day before expiration) and get its column
+            const isFrozen = item.isFrozen || false;
+            const thawDate = isFrozen ? addDays(expirationDate, -1) : null;
+            const thawCol = thawDate ? getColumnIndex(thawDate) : null;
+            
             // Debug: Log item rendering info
             console.log(`🔍 Item: ${item.name}`, {
               status,
@@ -557,21 +581,52 @@ const Calendar: React.FC = () => {
                   // Span goes from yellowStartCol (or 0 if null) to redCol (or 6 if null)
                   const isInSpan = colIndex >= renderStartCol && colIndex <= renderEndCol;
                   const isRedDay = colIndex === redCol;
+                  const isThawDay = thawCol !== null && colIndex === thawCol;
                   
                   // Determine if this is the second yellow day (should be blue)
                   // The span is: 3 days before expiration (yellow) + expiration day (red)
                   // Day 1 (3 days before): First yellow day
                   // Day 2 (2 days before): Second yellow day (blue)
-                  // Day 3 (1 day before): Third yellow day
+                  // Day 3 (1 day before): Third yellow day (or thaw day if frozen)
                   // Day 4 (expiration): Red day
                   // Calculate based on actual date difference
                   let isSecondYellowDay = false;
-                  if (isInSpan && !isRedDay) {
+                  if (isInSpan && !isRedDay && !isThawDay) {
                     const currentDay = startOfDay(dayDate);
                     const expirationDay = startOfDay(expirationDate);
                     const twoDaysBefore = addDays(expirationDay, -2);
                     // Check if current day is exactly 2 days before expiration
                     isSecondYellowDay = currentDay.getTime() === twoDaysBefore.getTime();
+                  }
+
+                  // Render thaw day separately if frozen
+                  if (isThawDay) {
+                    return (
+                      <div
+                        key={colIndex}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          height: '100%',
+                          backgroundColor: '#F4A261', // Orange for thaw date
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRight: colIndex < 6 ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
+                          fontWeight: '500',
+                          padding: '0 0.25rem',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                          {item.name}
+                        </span>
+                      </div>
+                    );
                   }
 
                   if (isInSpan) {
