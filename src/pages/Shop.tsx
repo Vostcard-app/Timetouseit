@@ -442,7 +442,7 @@ const Shop: React.FC = () => {
                 minWidth: '100px'
               }}
             >
-              Lists
+              {shoppingLists.length === 0 ? 'Create list' : 'Lists'}
             </button>
           </div>
 
