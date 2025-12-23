@@ -270,10 +270,17 @@ const Shop: React.FC = () => {
       const listId = await shoppingListsService.createShoppingList(user.uid, newListName.trim(), false);
       setNewListName('');
       setShowAddListToast(false);
-      // Automatically select the newly created list and save as last used
+      // Automatically select the newly created list
       setSelectedListId(listId);
       setLastUsedListId(listId);
-      await userSettingsService.setLastUsedShoppingList(user.uid, listId);
+      
+      // Try to save as last used, but don't fail if this errors
+      try {
+        await userSettingsService.setLastUsedShoppingList(user.uid, listId);
+      } catch (settingsError) {
+        console.error('Error saving last used list (non-critical):', settingsError);
+        // Don't show error to user - list was created successfully
+      }
     } catch (error) {
       console.error('Error creating shopping list:', error);
       alert('Failed to create list. Please try again.');
