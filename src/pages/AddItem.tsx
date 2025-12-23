@@ -110,10 +110,18 @@ const AddItem: React.FC = () => {
         return;
       }
 
-      // Otherwise, proceed with adding/updating food item (requires expiration date)
-      if (!data.expirationDate) {
-        alert('Please select an expiration date or check "No expiration"');
-        return;
+      // Otherwise, proceed with adding/updating food item
+      // For frozen items: require thawDate, for non-frozen items: require expirationDate
+      if (data.isFrozen) {
+        if (!data.thawDate) {
+          alert('Thaw date is required for frozen items');
+          return;
+        }
+      } else {
+        if (!data.expirationDate) {
+          alert('Please select an expiration date or check "No expiration"');
+          return;
+        }
       }
 
       // Upload photo if provided
