@@ -150,7 +150,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     setIsSubmitting(true);
     try {
       const dataToSubmit: FoodItemData = {
-        ...formData
+        ...formData,
+        freezeCategory: freezeCategory || undefined
         // Don't include photoUrl here - it will be set after upload
       };
       await onSubmit(dataToSubmit, photoFile || undefined);

@@ -126,15 +126,18 @@ const AddItem: React.FC = () => {
       const itemData: FoodItemData = {
         name: data.name,
         expirationDate: data.expirationDate,
-        quantity: data.quantity || 1,
-        barcode: scannedBarcode || data.barcode || undefined
+        quantity: data.quantity || 1
       };
       
-      // Only include optional fields if they have values
+      // Only include optional fields if they have values (not undefined)
+      if (scannedBarcode || data.barcode) {
+        itemData.barcode = scannedBarcode || data.barcode;
+      }
       if (data.category) itemData.category = data.category;
       if (data.notes) itemData.notes = data.notes;
       if (photoUrl) itemData.photoUrl = photoUrl;
       if (data.isFrozen !== undefined) itemData.isFrozen = data.isFrozen;
+      if (data.freezeCategory) itemData.freezeCategory = data.freezeCategory;
 
       if (editingItem) {
         // Update existing item

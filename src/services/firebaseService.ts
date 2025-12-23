@@ -114,10 +114,18 @@ export const foodItemService = {
   // Update a food item
   async updateFoodItem(itemId: string, updates: Partial<FoodItemData & { status: string; reminderSent?: boolean }>): Promise<void> {
     const docRef = doc(db, 'foodItems', itemId);
-    const updateData: any = { ...updates };
     
-    if (updates.expirationDate) {
-      updateData.expirationDate = Timestamp.fromDate(updates.expirationDate);
+    // Filter out undefined values (Firestore doesn't allow undefined)
+    const updateData: any = {};
+    Object.keys(updates).forEach(key => {
+      const value = (updates as any)[key];
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    });
+    
+    if (updateData.expirationDate) {
+      updateData.expirationDate = Timestamp.fromDate(updateData.expirationDate);
     }
     
     await updateDoc(docRef, updateData);

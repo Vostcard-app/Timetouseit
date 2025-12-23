@@ -23,6 +23,7 @@ export interface FoodItemData {
   category?: string;
   notes?: string;
   isFrozen?: boolean;
+  freezeCategory?: string;
 }
 
 export interface ShoppingList {
