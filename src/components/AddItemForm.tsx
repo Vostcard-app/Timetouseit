@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { FoodItemData, FoodItem } from '../types';
 import { getSuggestedExpirationDate } from '../services/foodkeeperService';
+import { freezeGuidelines, freezeCategoryLabels, type FreezeCategory } from '../data/freezeGuidelines';
+import { addMonths } from 'date-fns';
 
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
@@ -27,6 +29,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
   const [isFrozen, setIsFrozen] = useState(false);
+  const [freezeCategory, setFreezeCategory] = useState<FreezeCategory | null>(null);
   const [hasManuallyChangedDate, setHasManuallyChangedDate] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +48,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       });
       setPhotoPreview(initialItem.photoUrl || null);
       setIsFrozen(initialItem.isFrozen || false);
+      // TODO: Store freezeCategory in FoodItem if needed, for now set to null
+      setFreezeCategory(null);
       setHasManuallyChangedDate(true); // Don't auto-apply when editing existing item
     } else if (initialName && !formData.name) {
       setFormData(prev => ({ ...prev, name: initialName }));
@@ -60,7 +65,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setSuggestedExpirationDate(suggestion);
       
       // Auto-apply suggestion if available and user hasn't manually changed the date
-      if (suggestion && !hasManuallyChangedDate) {
+      // BUT: Don't auto-apply if freeze is checked (we'll use category-based calculation instead)
+      if (suggestion && !hasManuallyChangedDate && !isFrozen) {
         // Only auto-apply if current date is today (default) or if we're editing and date hasn't been manually changed
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -80,6 +86,24 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setSuggestedExpirationDate(null);
     }
   }, [formData.name, isFrozen, hasManuallyChangedDate, initialItem]);
+
+  // Calculate thaw date when freeze category is selected
+  useEffect(() => {
+    if (isFrozen && freezeCategory) {
+      const bestQualityMonths = freezeGuidelines[freezeCategory];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      // Calculate thaw date = today + bestQualityMonths
+      const thawDate = addMonths(today, bestQualityMonths);
+      
+      // Set expiration date to thaw date (thaw replaces expiration)
+      setFormData(prev => ({
+        ...prev,
+        expirationDate: thawDate
+      }));
+      setHasManuallyChangedDate(false); // Reset flag since we're auto-setting
+    }
+  }, [isFrozen, freezeCategory]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -116,6 +140,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       alert('Please enter a food item name');
       return;
     }
+    
+    // If freeze is checked, category must be selected
+    if (isFrozen && !freezeCategory) {
+      alert('Please select a freeze category');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -139,6 +169,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         setPhotoFile(null);
         setPhotoPreview(null);
         setIsFrozen(false);
+        setFreezeCategory(null);
         setHasManuallyChangedDate(false); // Reset flag for next item
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -232,6 +263,10 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               setIsFrozen(frozen);
               // Update formData with isFrozen flag
               setFormData(prev => ({ ...prev, isFrozen: frozen }));
+              // Reset category when unchecked
+              if (!frozen) {
+                setFreezeCategory(null);
+              }
             }}
             style={{
               width: '1.25rem',
@@ -244,6 +279,41 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           </span>
         </label>
       </div>
+
+      {/* Freeze Category Dropdown (appears when freeze is checked) */}
+      {isFrozen && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label htmlFor="freezeCategory" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
+            Freeze Category *
+          </label>
+          <select
+            id="freezeCategory"
+            value={freezeCategory || ''}
+            onChange={(e) => {
+              const category = e.target.value as FreezeCategory;
+              setFreezeCategory(category);
+            }}
+            required={isFrozen}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              outline: 'none',
+              backgroundColor: '#ffffff',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="">Select category...</option>
+            {(Object.keys(freezeGuidelines) as FreezeCategory[]).map((category) => (
+              <option key={category} value={category}>
+                {freezeCategoryLabels[category]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* 3. Change Expiration Date button (appears when suggestion is available) */}
       {formData.name.trim() && suggestedExpirationDate && (

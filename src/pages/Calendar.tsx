@@ -30,6 +30,7 @@ interface CalendarEvent extends Event {
     rowIndex?: number; // For vertical stacking in day/week views
     isAdjacentToYellow?: boolean; // Flag for red expiration day adjacent to yellow span
     isThawDate?: boolean; // Flag for thaw date events (orange color)
+    isFreezeDate?: boolean; // Flag for freeze date events
   };
 }
 
@@ -112,9 +113,27 @@ const Calendar: React.FC = () => {
         return d;
       };
 
-      // If item is frozen, add thaw date event (1 day before expiration) with orange color
+      // If item is frozen, add thaw date and freeze date events
       if (isFrozen) {
-        const thawDate = addDays(expirationDate, -1);
+        // Thaw date is the expiration date for frozen items
+        const thawDate = expirationDate;
+        // Freeze date is 2 days before thaw date
+        const freezeDate = addDays(thawDate, -2);
+        
+        // Add freeze date event (2 days before thaw)
+        allEvents.push({
+          title: item.name,
+          start: setToMidnight(freezeDate),
+          end: setToEndOfDay(freezeDate),
+          resource: {
+            itemId: item.id,
+            status: 'expiring_soon',
+            rowIndex: rowIndex,
+            isFreezeDate: true, // Flag to identify freeze date events
+          },
+        } as CalendarEvent);
+        
+        // Add thaw date event (same as expiration date, orange color)
         allEvents.push({
           title: item.name,
           start: setToMidnight(thawDate),
@@ -126,6 +145,10 @@ const Calendar: React.FC = () => {
             isThawDate: true, // Flag to identify thaw date events
           },
         } as CalendarEvent);
+        
+        // Skip normal expiration date rendering for frozen items (thaw date replaces it)
+        rowIndex++;
+        return; // Don't process frozen items with normal expiration logic
       }
 
       if (status === 'expired') {
@@ -308,6 +331,7 @@ const Calendar: React.FC = () => {
     }
     
     // Use orange color for thaw dates, otherwise use status color
+    // Freeze dates can use a different color if needed, for now use default
     const color = event.resource.isThawDate ? '#F4A261' : getStatusColor(event.resource.status);
     const backgroundColor = color;
     const borderColor = color;
@@ -496,18 +520,98 @@ const Calendar: React.FC = () => {
           {sortedItems.map((item) => {
             const expirationDate = new Date(item.expirationDate);
             const status = getFoodItemStatus(expirationDate, 7);
+            const isFrozen = item.isFrozen || false;
             
-            // Calculate 4-day span: 3 days before expiration (yellow) + expiration day (red)
+            // Handle frozen items separately
+            if (isFrozen) {
+              // For frozen items: thaw date = expiration date, freeze date = thaw date - 2 days
+              const thawDate = expirationDate;
+              const freezeDate = addDays(thawDate, -2);
+              
+              const freezeCol = getColumnIndex(freezeDate);
+              const thawCol = getColumnIndex(thawDate);
+              
+              // Check if freeze or thaw date intersects with week
+              const freezeInWeek = freezeCol !== null;
+              const thawInWeek = thawCol !== null;
+              const intersectsWeek = freezeInWeek || thawInWeek;
+              
+              if (!intersectsWeek) {
+                return null;
+              }
+              
+              // Render frozen item: freeze date and thaw date
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    height: `${rowHeight}px`,
+                    borderBottom: '1px solid #e5e7eb',
+                    alignItems: 'center',
+                    position: 'relative',
+                    width: '100%',
+                    minWidth: 0,
+                    maxWidth: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {weekDays.map((_, colIndex) => {
+                    const isFreezeDay = freezeCol !== null && colIndex === freezeCol;
+                    const isThawDay = thawCol !== null && colIndex === thawCol;
+                    
+                    if (isFreezeDay || isThawDay) {
+                      const backgroundColor = isThawDay ? '#F4A261' : '#3b82f6'; // Orange for thaw, blue for freeze
+                      return (
+                        <div
+                          key={colIndex}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            height: '100%',
+                            backgroundColor: backgroundColor,
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRight: colIndex < 6 ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
+                            fontWeight: '500',
+                            padding: '0 0.25rem',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                            {item.name}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={colIndex}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          maxWidth: '100%',
+                          boxSizing: 'border-box',
+                          borderRight: colIndex < 6 ? '1px solid #e5e7eb' : 'none'
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            }
+            
+            // Normal (non-frozen) items: Calculate 4-day span: 3 days before expiration (yellow) + expiration day (red)
             const threeDaysBefore = addDays(expirationDate, -3);
             
             // Get column indices for the 4-day span (3 yellow days + 1 red day)
             const yellowStartCol = getColumnIndex(threeDaysBefore);
             const redCol = getColumnIndex(expirationDate);
-            
-            // If item is frozen, calculate thaw date (1 day before expiration) and get its column
-            const isFrozen = item.isFrozen || false;
-            const thawDate = isFrozen ? addDays(expirationDate, -1) : null;
-            const thawCol = thawDate ? getColumnIndex(thawDate) : null;
             
             // Debug: Log item rendering info
             console.log(`🔍 Item: ${item.name}`, {
@@ -576,57 +680,26 @@ const Calendar: React.FC = () => {
                   boxSizing: 'border-box'
                 }}
               >
-                {weekDays.map((dayDate, colIndex) => {
+                {weekDays.map((_, colIndex) => {
                   // Check if this column is part of the span
                   // Span goes from yellowStartCol (or 0 if null) to redCol (or 6 if null)
                   const isInSpan = colIndex >= renderStartCol && colIndex <= renderEndCol;
                   const isRedDay = colIndex === redCol;
-                  const isThawDay = thawCol !== null && colIndex === thawCol;
                   
                   // Determine if this is the second yellow day (should be blue)
                   // The span is: 3 days before expiration (yellow) + expiration day (red)
                   // Day 1 (3 days before): First yellow day
                   // Day 2 (2 days before): Second yellow day (blue)
-                  // Day 3 (1 day before): Third yellow day (or thaw day if frozen)
+                  // Day 3 (1 day before): Third yellow day
                   // Day 4 (expiration): Red day
                   // Calculate based on actual date difference
                   let isSecondYellowDay = false;
-                  if (isInSpan && !isRedDay && !isThawDay) {
-                    const currentDay = startOfDay(dayDate);
+                  if (isInSpan && !isRedDay) {
+                    const currentDay = startOfDay(weekDays[colIndex]);
                     const expirationDay = startOfDay(expirationDate);
                     const twoDaysBefore = addDays(expirationDay, -2);
                     // Check if current day is exactly 2 days before expiration
                     isSecondYellowDay = currentDay.getTime() === twoDaysBefore.getTime();
-                  }
-
-                  // Render thaw day separately if frozen
-                  if (isThawDay) {
-                    return (
-                      <div
-                        key={colIndex}
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          height: '100%',
-                          backgroundColor: '#F4A261', // Orange for thaw date
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRight: colIndex < 6 ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
-                          fontWeight: '500',
-                          padding: '0 0.25rem',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
-                          {item.name}
-                        </span>
-                      </div>
-                    );
                   }
 
                   if (isInSpan) {
