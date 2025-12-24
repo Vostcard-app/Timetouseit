@@ -7,6 +7,8 @@ import { findFoodItems } from '../services/foodkeeperService';
 import type { ShoppingListItem, ShoppingList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 
+const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
+
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
@@ -94,12 +96,19 @@ const Shop: React.FC = () => {
     if (!settingsLoaded) return;
     if (shoppingLists.length === 0) return;
 
+    const storedId = localStorage.getItem(LAST_LIST_STORAGE_KEY);
     const savedId = lastUsedListIdRef.current;
 
-    // Preserve valid existing selection
+    // Keep current valid selection
     if (selectedListId && shoppingLists.some(l => l.id === selectedListId)) return;
 
-    // Restore last-used list if valid
+    // Restore from localStorage if valid
+    if (storedId && shoppingLists.some(l => l.id === storedId)) {
+      setSelectedListId(storedId);
+      return;
+    }
+
+    // Restore from settings if valid
     if (savedId && shoppingLists.some(l => l.id === savedId)) {
       setSelectedListId(savedId);
       return;
@@ -199,6 +208,7 @@ const Shop: React.FC = () => {
 
     setSelectedListId(listId);
     lastUsedListIdRef.current = listId;
+    localStorage.setItem(LAST_LIST_STORAGE_KEY, listId);
 
     if (user) {
       userSettingsService
@@ -233,6 +243,8 @@ const Shop: React.FC = () => {
       setShowAddListToast(false);
       // Automatically select the newly created list
       setSelectedListId(listId);
+      lastUsedListIdRef.current = listId;
+      localStorage.setItem(LAST_LIST_STORAGE_KEY, listId);
       // Persistence will be handled by the effect
     } catch (error) {
       console.error('Error creating shopping list:', error);
