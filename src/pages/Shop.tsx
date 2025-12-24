@@ -13,7 +13,6 @@ const Shop: React.FC = () => {
   const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
-  const [lastUsedListId, setLastUsedListId] = useState<string | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,18 +31,17 @@ const Shop: React.FC = () => {
       return;
     }
 
-    setSelectedListId(null);
+    // DON'T reset selectedListId here - it prevents restoration
 
     const loadSettings = async () => {
       try {
         const settings = await userSettingsService.getUserSettings(user.uid);
         const loadedLastUsedId = settings?.lastUsedShoppingListId || null;
         console.log('⚙️ Settings loaded:', { lastUsedShoppingListId: loadedLastUsedId, settings });
-        setLastUsedListId(loadedLastUsedId);
         lastUsedListIdRef.current = loadedLastUsedId;
       } catch (error) {
         console.error('Error loading user settings:', error);
-        setLastUsedListId(null);
+        lastUsedListIdRef.current = null;
       } finally {
         setSettingsLoaded(true);
         console.log('✅ Settings loading complete, settingsLoaded = true');
@@ -54,22 +52,25 @@ const Shop: React.FC = () => {
   }, [user]);
 
   // Restore last used list when both settings and lists are loaded
+  // This is a backup restoration - main restoration happens in subscription callback
   useEffect(() => {
     if (!user || !settingsLoaded || shoppingLists.length === 0) {
       return;
     }
 
     // Only restore if we have a lastUsedListId and no list is currently selected
-    if (lastUsedListId && !selectedListId) {
-      const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
+    // Use ref to get latest value (not closure value)
+    const currentLastUsedId = lastUsedListIdRef.current;
+    if (currentLastUsedId && !selectedListId) {
+      const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === currentLastUsedId);
       if (lastUsedList) {
-        console.log('✅ Restoring last used list from effect:', lastUsedList.name);
+        console.log('✅ Restoring last used list from backup effect:', lastUsedList.name);
         setSelectedListId(lastUsedList.id);
       } else {
-        console.log('⚠️ Last used list not found in shopping lists:', lastUsedListId);
+        console.log('⚠️ Last used list not found in shopping lists:', currentLastUsedId);
       }
     }
-  }, [user, settingsLoaded, shoppingLists, lastUsedListId]);
+  }, [user, settingsLoaded, shoppingLists, selectedListId]);
 
   // Load shopping lists
   useEffect(() => {
@@ -81,20 +82,27 @@ const Shop: React.FC = () => {
     const unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists: ShoppingList[]) => {
       console.log('📦 Shopping lists updated:', lists.map(l => ({ id: l.id, name: l.name, isDefault: l.isDefault })));
       
+      // ALWAYS check the ref - it has the latest value even if subscription was created before settings loaded
+      const currentLastUsedId = lastUsedListIdRef.current;
+      console.log('🔍 Restoration check - ref:', currentLastUsedId, 'selectedListId:', selectedListId, 'lists.length:', lists.length);
+      
       // Restore last used list IMMEDIATELY before setting shoppingLists state
       // This ensures the dropdown has the correct value when it renders
-      const currentLastUsedId = lastUsedListIdRef.current;
       if (lists.length > 0 && currentLastUsedId) {
         const lastUsedList = lists.find((l: ShoppingList) => l.id === currentLastUsedId);
         if (lastUsedList) {
-          console.log('✅ Restoring last used list from subscription (before setState):', lastUsedList.name);
+          console.log('✅ Restoring last used list from subscription:', lastUsedList.name);
           // Set selectedListId FIRST, then set shoppingLists
           // This ensures both states update together and dropdown shows correct value
           setSelectedListId(lastUsedList.id);
+          setShoppingLists(lists);
+          return; // Exit early to prevent double setShoppingLists
+        } else {
+          console.log('⚠️ Last used list ID not found in lists:', currentLastUsedId);
         }
       }
       
-      // Now set shoppingLists - this will trigger re-render with correct selectedListId
+      // If no restoration needed, just set lists
       setShoppingLists(lists);
     });
 
@@ -143,7 +151,7 @@ const Shop: React.FC = () => {
     if (!listIdToUse && shoppingLists.length > 0) {
       listIdToUse = shoppingLists[0].id;
       setSelectedListId(listIdToUse);
-      setLastUsedListId(listIdToUse);
+      lastUsedListIdRef.current = listIdToUse;
       if (user) {
         userSettingsService.setLastUsedShoppingList(user.uid, listIdToUse).catch(console.error);
       }
@@ -178,8 +186,7 @@ const Shop: React.FC = () => {
 
     console.log('🔄 Changing list to:', listId);
     setSelectedListId(listId);
-    // Update local state and save as last used
-    setLastUsedListId(listId);
+    // Update ref and save as last used
     lastUsedListIdRef.current = listId;
     if (user) {
       try {
@@ -215,7 +222,6 @@ const Shop: React.FC = () => {
       setShowAddListToast(false);
       // Automatically select the newly created list
       setSelectedListId(listId);
-      setLastUsedListId(listId);
       lastUsedListIdRef.current = listId;
       
       // Try to save as last used, but don't fail if this errors
