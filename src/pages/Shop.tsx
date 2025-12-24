@@ -122,10 +122,30 @@ const Shop: React.FC = () => {
       return;
     }
 
+    // Wait a tick to ensure lastUsedListId state is set from settings
     // Use the current lastUsedListId state value to restore the list
-    console.log('🔄 Initializing list selection with lastUsedListId:', lastUsedListId);
-    initializeListSelection(lastUsedListId);
-  }, [user, settingsLoaded, shoppingLists.length, lastUsedListId]);
+    const timer = setTimeout(() => {
+      console.log('🔄 Initializing list selection with lastUsedListId:', lastUsedListId);
+      console.log('📋 Available lists:', shoppingLists.map(l => ({ id: l.id, name: l.name })));
+      
+      if (lastUsedListId) {
+        const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
+        if (lastUsedList) {
+          console.log('✅ Found and restoring last used list:', lastUsedList.name);
+          setSelectedListId(lastUsedList.id);
+          hasInitialized.current = true;
+          return;
+        } else {
+          console.log('⚠️ Last used list not found in available lists');
+        }
+      }
+      
+      // If no lastUsedListId or not found, use initializeListSelection
+      initializeListSelection(lastUsedListId);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [user, settingsLoaded, shoppingLists, lastUsedListId]);
 
   // Load shopping lists
   useEffect(() => {
@@ -208,7 +228,18 @@ const Shop: React.FC = () => {
     }
   };
 
-  const handleListChange = async (listId: string) => {
+  const handleListChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const listId = e.target.value;
+    
+    // Handle "Add list" option
+    if (listId === '__add_list__') {
+      setShowAddListToast(true);
+      setNewListName('');
+      // Reset dropdown to previously selected list by resetting the select value
+      e.target.value = selectedListId || '';
+      return;
+    }
+
     console.log('🔄 Changing list to:', listId);
     setSelectedListId(listId);
     // Update local state and save as last used
@@ -416,7 +447,7 @@ const Shop: React.FC = () => {
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
             <select
               value={selectedListId || ''}
-              onChange={(e) => handleListChange(e.target.value)}
+              onChange={handleListChange}
               style={{
                 flex: 1,
                 padding: '0.75rem',
@@ -438,6 +469,9 @@ const Shop: React.FC = () => {
                       {list.name}
                     </option>
                   ))}
+                  <option value="__add_list__" style={{ fontStyle: 'italic', color: '#6b7280' }}>
+                    + Add list
+                  </option>
                 </>
               )}
             </select>
