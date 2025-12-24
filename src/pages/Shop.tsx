@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
@@ -22,7 +22,6 @@ const Shop: React.FC = () => {
   const [inputFocused, setInputFocused] = useState(false);
   const [showAddListToast, setShowAddListToast] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const hasInitialized = useRef(false);
 
   // Load user settings
   useEffect(() => {
@@ -32,8 +31,6 @@ const Shop: React.FC = () => {
       return;
     }
 
-    // Reset initialization flag when user changes
-    hasInitialized.current = false;
     setSelectedListId(null);
 
     const loadSettings = async () => {
@@ -54,98 +51,21 @@ const Shop: React.FC = () => {
     loadSettings();
   }, [user]);
 
-  // Initialize list selection function
-  const initializeListSelection = (lastUsedId: string | null) => {
-    if (hasInitialized.current || shoppingLists.length === 0) {
+  // Restore last used list when both settings and lists are loaded
+  useEffect(() => {
+    if (!user || !settingsLoaded || shoppingLists.length === 0) {
       return;
     }
 
-    hasInitialized.current = true;
-
-    console.log('🔍 Initializing list selection:', {
-      lastUsedId,
-      shoppingLists: shoppingLists.map(l => ({ id: l.id, name: l.name, isDefault: l.isDefault })),
-      settingsLoaded
-    });
-
-    // Try to restore last used list - ONLY use last used list, no fallback
-    if (lastUsedId) {
-      const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedId);
+    // Only restore if we have a lastUsedListId and no list is currently selected
+    if (lastUsedListId && !selectedListId) {
+      const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
       if (lastUsedList) {
         console.log('✅ Restoring last used list:', lastUsedList.name);
         setSelectedListId(lastUsedList.id);
-        return;
-      } else {
-        console.log('⚠️ Last used list not found in shopping lists:', lastUsedId);
-        console.log('ℹ️ No list selected - user must choose manually');
-        // Don't select anything - let user choose
-        return;
       }
-    } else {
-      console.log('⚠️ No lastUsedListId from settings');
-      // If there's only one list and no last used, select it automatically
-      if (shoppingLists.length === 1) {
-        console.log('📋 Only one list exists - selecting it automatically:', shoppingLists[0].name);
-        setSelectedListId(shoppingLists[0].id);
-        // Save it as last used
-        if (user) {
-          setLastUsedListId(shoppingLists[0].id);
-          userSettingsService.setLastUsedShoppingList(user.uid, shoppingLists[0].id).catch(console.error);
-        }
-        return;
-      }
-      console.log('ℹ️ No list selected - user must choose manually');
-      // Don't select anything - let user choose
-      return;
     }
-  };
-
-  // Initialize list selection when both settings and lists are loaded
-  useEffect(() => {
-    if (!user || !settingsLoaded) {
-      return;
-    }
-
-    // If no lists exist, don't create any automatically - user must create manually
-    if (shoppingLists.length === 0) {
-      return;
-    }
-
-    // Only initialize once per component mount
-    if (hasInitialized.current) {
-      return;
-    }
-
-    // Only initialize if we don't have a selected list yet
-    if (selectedListId) {
-      hasInitialized.current = true;
-      return;
-    }
-
-    // Wait a tick to ensure lastUsedListId state is set from settings
-    // Use the current lastUsedListId state value to restore the list
-    const timer = setTimeout(() => {
-      console.log('🔄 Initializing list selection with lastUsedListId:', lastUsedListId);
-      console.log('📋 Available lists:', shoppingLists.map(l => ({ id: l.id, name: l.name })));
-      
-      if (lastUsedListId) {
-        const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
-        if (lastUsedList) {
-          console.log('✅ Found and restoring last used list:', lastUsedList.name);
-          setSelectedListId(lastUsedList.id);
-          hasInitialized.current = true;
-          return;
-        } else {
-          console.log('⚠️ Last used list not found in available lists');
-        }
-      }
-      
-      // If no lastUsedListId or not found, use initializeListSelection
-      initializeListSelection(lastUsedListId);
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [user, settingsLoaded, shoppingLists, lastUsedListId]);
+  }, [user, settingsLoaded, shoppingLists, lastUsedListId, selectedListId]);
 
   // Load shopping lists
   useEffect(() => {
