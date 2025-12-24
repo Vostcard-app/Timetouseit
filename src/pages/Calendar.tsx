@@ -503,7 +503,7 @@ const Calendar: React.FC = () => {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, maxWidth: '100%', overflowX: 'hidden', backgroundColor: '#ffffff' }}>
         {/* Color Key */}
-        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', padding: '0.75rem', borderBottom: '1px solid #d1d5db', flexWrap: 'wrap', backgroundColor: '#ffffff' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', padding: '0.75rem', borderBottom: '1px solid #d1d5db', flexWrap: 'wrap', backgroundColor: '#ffffff', minHeight: '48px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div
               style={{
@@ -571,37 +571,40 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* Items rows */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', minHeight: `${rowHeight * 3}px` }}>
           {sortedItems.length === 0 ? (
-            // Show empty grid row when no items
-            <div
-              style={{
-                display: 'flex',
-                height: `${rowHeight}px`,
-                borderBottom: '1px solid #d1d5db',
-                alignItems: 'center',
-                position: 'relative',
-                width: '100%',
-                minWidth: 0,
-                maxWidth: '100%',
-                boxSizing: 'border-box',
-                backgroundColor: '#ffffff'
-              }}
-            >
-              {weekDays.map((_, colIndex) => (
-                <div
-                  key={colIndex}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    boxSizing: 'border-box',
-                    borderRight: colIndex < 6 ? '1px solid #d1d5db' : 'none',
-                    backgroundColor: '#ffffff'
-                  }}
-                />
-              ))}
-            </div>
+            // Show multiple empty grid rows when no items to make grid clearly visible
+            Array.from({ length: 3 }).map((_, rowIndex) => (
+              <div
+                key={rowIndex}
+                style={{
+                  display: 'flex',
+                  height: `${rowHeight}px`,
+                  borderBottom: '1px solid #d1d5db',
+                  alignItems: 'center',
+                  position: 'relative',
+                  width: '100%',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                {weekDays.map((_, colIndex) => (
+                  <div
+                    key={colIndex}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      borderRight: colIndex < 6 ? '1px solid #d1d5db' : 'none',
+                      backgroundColor: '#ffffff'
+                    }}
+                  />
+                ))}
+              </div>
+            ))
           ) : (
             sortedItems.map((item) => {
             const isFrozen = item.isFrozen || false;
