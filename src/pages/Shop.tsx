@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
@@ -22,6 +22,7 @@ const Shop: React.FC = () => {
   const [inputFocused, setInputFocused] = useState(false);
   const [showAddListToast, setShowAddListToast] = useState(false);
   const [newListName, setNewListName] = useState('');
+  const lastUsedListIdRef = useRef<string | null>(null);
 
   // Load user settings
   useEffect(() => {
@@ -39,6 +40,7 @@ const Shop: React.FC = () => {
         const loadedLastUsedId = settings?.lastUsedShoppingListId || null;
         console.log('⚙️ Settings loaded:', { lastUsedShoppingListId: loadedLastUsedId, settings });
         setLastUsedListId(loadedLastUsedId);
+        lastUsedListIdRef.current = loadedLastUsedId;
       } catch (error) {
         console.error('Error loading user settings:', error);
         setLastUsedListId(null);
@@ -61,11 +63,13 @@ const Shop: React.FC = () => {
     if (lastUsedListId && !selectedListId) {
       const lastUsedList = shoppingLists.find((l: ShoppingList) => l.id === lastUsedListId);
       if (lastUsedList) {
-        console.log('✅ Restoring last used list:', lastUsedList.name);
+        console.log('✅ Restoring last used list from effect:', lastUsedList.name);
         setSelectedListId(lastUsedList.id);
+      } else {
+        console.log('⚠️ Last used list not found in shopping lists:', lastUsedListId);
       }
     }
-  }, [user, settingsLoaded, shoppingLists, lastUsedListId, selectedListId]);
+  }, [user, settingsLoaded, shoppingLists, lastUsedListId]);
 
   // Load shopping lists
   useEffect(() => {
@@ -78,8 +82,19 @@ const Shop: React.FC = () => {
       console.log('📦 Shopping lists updated:', lists.map(l => ({ id: l.id, name: l.name, isDefault: l.isDefault })));
       setShoppingLists(lists);
       
-      // Don't auto-select here - let the initialization effect handle it
-      // This prevents race conditions and ensures lastUsedListId is respected
+      // Restore last used list when lists are loaded
+      // Use ref to get current lastUsedListId value (not closure value)
+      const currentLastUsedId = lastUsedListIdRef.current;
+      setSelectedListId(currentSelectedId => {
+        if (lists.length > 0 && currentLastUsedId && !currentSelectedId) {
+          const lastUsedList = lists.find((l: ShoppingList) => l.id === currentLastUsedId);
+          if (lastUsedList) {
+            console.log('✅ Restoring last used list from subscription:', lastUsedList.name);
+            return lastUsedList.id;
+          }
+        }
+        return currentSelectedId;
+      });
     });
 
     return () => unsubscribeLists();
@@ -164,6 +179,7 @@ const Shop: React.FC = () => {
     setSelectedListId(listId);
     // Update local state and save as last used
     setLastUsedListId(listId);
+    lastUsedListIdRef.current = listId;
     if (user) {
       try {
         await userSettingsService.setLastUsedShoppingList(user.uid, listId);
@@ -199,6 +215,7 @@ const Shop: React.FC = () => {
       // Automatically select the newly created list
       setSelectedListId(listId);
       setLastUsedListId(listId);
+      lastUsedListIdRef.current = listId;
       
       // Try to save as last used, but don't fail if this errors
       try {
