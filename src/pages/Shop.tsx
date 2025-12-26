@@ -14,7 +14,14 @@ const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
-  const { foodItems } = useFoodItems(user || null);
+  const { foodItems, loading: foodItemsLoading } = useFoodItems(user || null);
+  
+  // Debug: Log foodItems changes
+  useEffect(() => {
+    if (user && !foodItemsLoading) {
+      console.log('🍔 FoodItems updated in Shop:', foodItems.map(fi => fi.name));
+    }
+  }, [foodItems, foodItemsLoading, user]);
   const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
