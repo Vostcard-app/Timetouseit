@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import type { FoodItemData, FoodItem, UserCategory, UserCategoryData } from '../types';
+import type { FoodItemData, FoodItem, UserCategory, UserCategoryData, UserItem } from '../types';
 import { getSuggestedExpirationDate } from '../services/foodkeeperService';
 import { freezeGuidelines, freezeCategoryLabels, type FreezeCategory } from '../data/freezeGuidelines';
-import { userCategoriesService } from '../services/firebaseService';
-import { addMonths } from 'date-fns';
+import { userCategoriesService, userItemsService } from '../services/firebaseService';
+import { addMonths, addDays } from 'date-fns';
 
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
@@ -39,6 +39,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [hasManuallyChangedDate, setHasManuallyChangedDate] = useState(false);
   const [categories, setCategories] = useState<UserCategory[]>([]);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [userItems, setUserItems] = useState<UserItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +51,20 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       user.uid,
       (cats) => {
         setCategories(cats);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Load userItems
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = userItemsService.subscribeToUserItems(
+      user.uid,
+      (items) => {
+        setUserItems(items);
       }
     );
 
@@ -107,7 +122,25 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   useEffect(() => {
     if (formData.name.trim()) {
       const storageType = isFrozen ? 'freezer' : 'refrigerator';
-      const suggestion = getSuggestedExpirationDate(formData.name.trim(), storageType);
+      
+      // First check userItems for a matching item
+      const normalizedName = formData.name.trim().toLowerCase();
+      const userItem = userItems.find(
+        item => item.name.trim().toLowerCase() === normalizedName
+      );
+      
+      let suggestion: Date | null = null;
+      
+      if (userItem && !isFrozen) {
+        // Use user's custom expirationLength
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        suggestion = addDays(today, userItem.expirationLength);
+      } else {
+        // Fall back to foodkeeper.json
+        suggestion = getSuggestedExpirationDate(formData.name.trim(), storageType);
+      }
+      
       setSuggestedExpirationDate(suggestion);
       
       // Auto-apply suggestion if available and user hasn't manually changed the date
@@ -131,7 +164,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     } else {
       setSuggestedExpirationDate(null);
     }
-  }, [formData.name, isFrozen, hasManuallyChangedDate, initialItem]);
+  }, [formData.name, isFrozen, hasManuallyChangedDate, initialItem, userItems]);
 
   // Calculate thaw date when freeze category is selected
   useEffect(() => {
