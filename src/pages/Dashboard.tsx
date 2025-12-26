@@ -21,28 +21,12 @@ const Dashboard: React.FC = () => {
   const [showIndexWarning, setShowIndexWarning] = useState(false);
   const [showFreezeWarning, setShowFreezeWarning] = useState(false);
   const [pendingFreezeItem, setPendingFreezeItem] = useState<FoodItem | null>(null);
-  const [modalJustOpened, setModalJustOpened] = useState(false);
   const navigate = useNavigate();
 
   // Debug: Track state changes
   useEffect(() => {
     console.log('🔍 Modal state changed - showFreezeWarning:', showFreezeWarning, 'pendingFreezeItem:', pendingFreezeItem);
   }, [showFreezeWarning, pendingFreezeItem]);
-
-  // Prevent backdrop clicks immediately after modal opens
-  useEffect(() => {
-    if (showFreezeWarning) {
-      console.log('🔒 Modal just opened - preventing backdrop clicks for 100ms');
-      setModalJustOpened(true);
-      const timer = setTimeout(() => {
-        console.log('🔓 Modal protection period ended - backdrop clicks now allowed');
-        setModalJustOpened(false);
-      }, 100); // Prevent clicks for 100ms after opening
-      return () => clearTimeout(timer);
-    } else {
-      setModalJustOpened(false);
-    }
-  }, [showFreezeWarning]);
 
   // Check for Firestore index warning
   useEffect(() => {
