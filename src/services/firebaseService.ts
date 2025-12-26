@@ -538,30 +538,87 @@ export const userItemsService = {
     userId: string,
     callback: (items: UserItem[]) => void
   ): () => void {
+    console.log('🔍 userItemsService.subscribeToUserItems: Starting subscription for userId:', userId);
+    
+    // Try the query with orderBy first
     const q = query(
       collection(db, 'userItems'),
       where('userId', '==', userId),
       orderBy('lastUsed', 'desc')
     );
     
-    const unsubscribe = onSnapshot(
+    let unsubscribe: () => void;
+    
+    unsubscribe = onSnapshot(
       q,
       (snapshot: QuerySnapshot) => {
-        const items = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt.toDate(),
-          lastUsed: doc.data().lastUsed ? doc.data().lastUsed.toDate() : undefined
-        })) as UserItem[];
+        console.log('📦 userItemsService: Snapshot received, docs:', snapshot.docs.length);
+        const items = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('📦 userItemsService: Processing doc:', doc.id, {
+            name: data.name,
+            expirationLength: data.expirationLength,
+            category: data.category,
+            lastUsed: data.lastUsed ? data.lastUsed.toDate() : null
+          });
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt.toDate(),
+            lastUsed: data.lastUsed ? data.lastUsed.toDate() : undefined
+          };
+        }) as UserItem[];
+        console.log('📦 userItemsService: Mapped items count:', items.length);
         callback(items);
       },
-      (error) => {
-        console.error('Error in user items subscription:', error);
-        callback([]);
+      (error: any) => {
+        console.error('❌ Error in user items subscription:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        // Check if it's an index error
+        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+          console.warn('⚠️ Firestore index required for userItems query.');
+          console.warn('📋 Create the index here: https://console.firebase.google.com/v1/r/project/tossittime/firestore/indexes');
+          console.warn('💡 Falling back to query without orderBy...');
+          // Try a simpler query without orderBy as fallback
+          const fallbackQ = query(
+            collection(db, 'userItems'),
+            where('userId', '==', userId)
+          );
+          unsubscribe = onSnapshot(
+            fallbackQ,
+            (snapshot: QuerySnapshot) => {
+              console.log('📦 userItemsService (fallback): Snapshot received, docs:', snapshot.docs.length);
+              const items = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  ...data,
+                  createdAt: data.createdAt.toDate(),
+                  lastUsed: data.lastUsed ? data.lastUsed.toDate() : undefined
+                };
+              }) as UserItem[];
+              // Sort by lastUsed descending manually
+              items.sort((a, b) => {
+                if (!a.lastUsed && !b.lastUsed) return 0;
+                if (!a.lastUsed) return 1;
+                if (!b.lastUsed) return -1;
+                return b.lastUsed.getTime() - a.lastUsed.getTime();
+              });
+              callback(items);
+            },
+            (fallbackError: any) => {
+              console.error('❌ Error in fallback user items subscription:', fallbackError);
+              callback([]);
+            }
+          );
+        } else {
+          callback([]);
+        }
       }
     );
     
-    return unsubscribe;
+    return () => unsubscribe();
   }
 };
 
