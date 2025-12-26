@@ -138,11 +138,17 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     if (forceFreeze && !initialItem) {
       // Check if item is not recommended to freeze
       const normalizedName = formData.name.trim().toLowerCase();
-      const isNotRecommended = notRecommendedToFreeze.some(
-        item => item.toLowerCase() === normalizedName
-      );
+      
+      // Check for exact match OR if any list item is contained in the name
+      const isNotRecommended = notRecommendedToFreeze.some(item => {
+        const normalizedItem = item.toLowerCase();
+        const exactMatch = normalizedItem === normalizedName;
+        const containsMatch = normalizedName.includes(normalizedItem);
+        return exactMatch || containsMatch;
+      });
       
       if (isNotRecommended && normalizedName) {
+        console.log('⚠️ Freeze warning triggered (forceFreeze) for:', normalizedName);
         // Show warning modal
         setShowFreezeWarning(true);
       } else {
@@ -448,11 +454,17 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               // Check if item is not recommended to freeze
               if (frozen) {
                 const normalizedName = formData.name.trim().toLowerCase();
-                const isNotRecommended = notRecommendedToFreeze.some(
-                  item => item.toLowerCase() === normalizedName
-                );
+                
+                // Check for exact match OR if any list item is contained in the name
+                const isNotRecommended = notRecommendedToFreeze.some(item => {
+                  const normalizedItem = item.toLowerCase();
+                  const exactMatch = normalizedItem === normalizedName;
+                  const containsMatch = normalizedName.includes(normalizedItem);
+                  return exactMatch || containsMatch;
+                });
                 
                 if (isNotRecommended) {
+                  console.log('⚠️ Freeze warning triggered for:', normalizedName);
                   // Show warning modal and don't set isFrozen yet
                   setShowFreezeWarning(true);
                   return;
