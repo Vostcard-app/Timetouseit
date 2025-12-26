@@ -58,6 +58,7 @@ const Dashboard: React.FC = () => {
 
   const handleFreezeItem = (item: typeof foodItems[0]) => {
     const normalizedName = item.name.trim().toLowerCase();
+    console.log('🔍 Freeze check for:', normalizedName);
     
     // Check for exact match OR if any list item is contained in the name
     const isNotRecommended = notRecommendedToFreeze.some(listItem => {
@@ -67,23 +68,29 @@ const Dashboard: React.FC = () => {
       return exactMatch || containsMatch;
     });
     
+    console.log('⚠️ Is not recommended:', isNotRecommended);
+    
     if (isNotRecommended) {
       // Show warning modal
+      console.log('📋 Showing freeze warning modal');
       setPendingFreezeItem(item);
       setShowFreezeWarning(true);
     } else {
       // Navigate directly
+      console.log('✅ Item is safe to freeze, navigating directly');
       navigate('/add', { state: { editingItem: item, forceFreeze: true } });
     }
   };
 
   const handleDismissFreezeWarning = () => {
+    console.log('❌ Freeze warning dismissed - staying on dashboard');
     setShowFreezeWarning(false);
     setPendingFreezeItem(null);
   };
 
   const handleProceedWithFreeze = () => {
     if (pendingFreezeItem) {
+      console.log('✅ Proceeding with freeze - navigating to add page');
       setShowFreezeWarning(false);
       navigate('/add', { state: { editingItem: pendingFreezeItem, forceFreeze: true } });
       setPendingFreezeItem(null);
