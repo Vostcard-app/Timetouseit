@@ -4,9 +4,8 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { shoppingListService, shoppingListsService, userSettingsService, userItemsService, foodItemService } from '../services/firebaseService';
 import { findFoodItems } from '../services/foodkeeperService';
-import type { ShoppingListItem, ShoppingList, UserItem } from '../types';
+import type { ShoppingListItem, ShoppingList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
-import EditItemModal from '../components/EditItemModal';
 import { useFoodItems } from '../hooks/useFoodItems';
 
 const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
@@ -26,8 +25,7 @@ const Shop: React.FC = () => {
   const [inputFocused, setInputFocused] = useState(false);
   const [showAddListToast, setShowAddListToast] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const [userItems, setUserItems] = useState<UserItem[]>([]);
-  const [editingUserItem, setEditingUserItem] = useState<UserItem | null>(null);
+  const [userItems, setUserItems] = useState<any[]>([]);
   const lastUsedListIdRef = useRef<string | null>(null);
   const settingsLoadedRef = useRef(false);
 
@@ -723,50 +721,6 @@ const Shop: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        if (!user) return;
-                        
-                        try {
-                          let userItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
-                          if (!userItem) {
-                            // Create a userItem if it doesn't exist (with default expiration length)
-                            await userItemsService.createOrUpdateUserItem(user.uid, {
-                              name: item.name,
-                              expirationLength: 7, // Default 7 days
-                              category: undefined
-                            });
-                            const newUserItem = await userItemsService.getUserItemByName(user.uid, item.name);
-                            if (newUserItem) {
-                              userItem = newUserItem;
-                            }
-                          }
-                          if (userItem) {
-                            setEditingUserItem(userItem);
-                          }
-                        } catch (error) {
-                          console.error('Error loading/creating user item:', error);
-                        }
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#6b7280',
-                        cursor: 'pointer',
-                        padding: '0.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minWidth: '36px',
-                        minHeight: '36px',
-                        zIndex: 10
-                      }}
-                      aria-label="Edit item"
-                    >
-                      ✏️
-                    </button>
-                    <button
                       onClick={(e) => handleDelete(item.id, e)}
                       style={{
                         background: 'none',
@@ -837,50 +791,6 @@ const Shop: React.FC = () => {
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                           <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              if (!user) return;
-                              
-                              try {
-                                let userItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
-                                if (!userItem) {
-                                  // Create a userItem if it doesn't exist (with default expiration length)
-                                  await userItemsService.createOrUpdateUserItem(user.uid, {
-                                    name: item.name,
-                                    expirationLength: 7, // Default 7 days
-                                    category: undefined
-                                  });
-                                  const newUserItem = await userItemsService.getUserItemByName(user.uid, item.name);
-                                  if (newUserItem) {
-                                    userItem = newUserItem;
-                                  }
-                                }
-                                if (userItem) {
-                                  setEditingUserItem(userItem);
-                                }
-                              } catch (error) {
-                                console.error('Error loading/creating user item:', error);
-                              }
-                            }}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: '#6b7280',
-                              cursor: 'pointer',
-                              padding: '0.25rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minWidth: '36px',
-                              minHeight: '36px',
-                              zIndex: 10
-                            }}
-                            aria-label="Edit item"
-                          >
-                            ✏️
-                          </button>
-                          <button
                             onClick={(e) => handleDelete(item.id, e)}
                             style={{
                               background: 'none',
@@ -950,33 +860,6 @@ const Shop: React.FC = () => {
                     <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                       {item.expirationLength} days
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        setEditingUserItem(item);
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#6b7280',
-                        cursor: 'pointer',
-                        padding: '0.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minWidth: '36px',
-                        minHeight: '36px',
-                        zIndex: 10,
-                        position: 'relative'
-                      }}
-                      aria-label="Edit item"
-                    >
-                      ✏️
-                    </button>
                   </div>
                 </div>
               ))}
@@ -984,18 +867,6 @@ const Shop: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Edit Item Modal */}
-      {editingUserItem && (
-        <EditItemModal
-          item={editingUserItem}
-          onClose={() => setEditingUserItem(null)}
-          onSave={() => {
-            // Refresh will happen automatically via subscription
-            setEditingUserItem(null);
-          }}
-        />
-      )}
 
       {/* Toast-style popup for creating first list */}
       {showAddListToast && (

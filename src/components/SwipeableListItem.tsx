@@ -6,10 +6,9 @@ interface SwipeableListItemProps {
   item: FoodItem;
   onDelete: () => void;
   onClick?: () => void;
-  onEdit?: () => void;
 }
 
-const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, onClick, onEdit }) => {
+const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, onClick }) => {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -138,11 +137,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
       {/* Item content */}
       <div
         onClick={(e) => {
-          // Only trigger onClick if not dragging/swiping and delete/edit buttons weren't clicked
+          // Only trigger onClick if not dragging/swiping and delete button wasn't clicked
           const target = e.target as HTMLElement;
           const isDeleteButton = target.closest('button[aria-label="Delete item"]');
-          const isEditButton = target.closest('button[aria-label="Edit item"]');
-          if (!isDragging && translateX < 10 && !isDeleteButton && !isEditButton && onClick) {
+          if (!isDragging && translateX < 10 && !isDeleteButton && onClick) {
             onClick();
           }
         }}
@@ -178,35 +176,6 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', position: 'relative', zIndex: 10 }}>
-          {onEdit && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onEdit();
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#6b7280',
-                cursor: 'pointer',
-                padding: '0.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '36px',
-                minHeight: '36px',
-                zIndex: 10,
-                position: 'relative'
-              }}
-              aria-label="Edit item"
-            >
-              ✏️
-            </button>
-          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
