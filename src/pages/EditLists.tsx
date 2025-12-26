@@ -110,6 +110,29 @@ const EditLists: React.FC = () => {
     }
   };
 
+  const handleDefaultToggle = async (list: ShoppingList, checked: boolean) => {
+    if (!user) return;
+    
+    try {
+      if (checked) {
+        // Set this list as default
+        await shoppingListsService.updateShoppingList(list.id, { isDefault: true });
+        
+        // Unset any other default lists
+        const otherDefaultLists = shoppingLists.filter(l => l.id !== list.id && l.isDefault);
+        for (const otherList of otherDefaultLists) {
+          await shoppingListsService.updateShoppingList(otherList.id, { isDefault: false });
+        }
+      } else {
+        // Unset this list as default
+        await shoppingListsService.updateShoppingList(list.id, { isDefault: false });
+      }
+    } catch (error) {
+      console.error('Error updating default list:', error);
+      alert('Failed to update default list. Please try again.');
+    }
+  };
+
   // Check if we need to add getShoppingListItems back temporarily
   // Actually, let me check if there's a way to get items by listId
   // We might need to add a function to get items for a specific list
@@ -308,6 +331,20 @@ const EditLists: React.FC = () => {
                   <>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={list.isDefault || false}
+                          onChange={(e) => handleDefaultToggle(list, e.target.checked)}
+                          disabled={editingListId !== null}
+                          style={{
+                            width: '1.25rem',
+                            height: '1.25rem',
+                            cursor: editingListId !== null ? 'not-allowed' : 'pointer',
+                            opacity: editingListId !== null ? 0.5 : 1
+                          }}
+                          aria-label={`Set ${list.name} as default list`}
+                          title="Set as default list"
+                        />
                         <span style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
                           {list.name}
                         </span>

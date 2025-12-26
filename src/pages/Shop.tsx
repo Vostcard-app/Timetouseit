@@ -117,6 +117,13 @@ const Shop: React.FC = () => {
       return;
     }
 
+    // Check for default list
+    const defaultList = shoppingLists.find(l => l.isDefault);
+    if (defaultList) {
+      setSelectedListId(defaultList.id);
+      return;
+    }
+
     // Final fallback
     setSelectedListId(shoppingLists[0].id);
 
