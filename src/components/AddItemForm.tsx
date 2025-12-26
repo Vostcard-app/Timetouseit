@@ -135,30 +135,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   }, [initialItem, initialName, forceFreeze]);
 
   // Handle forceFreeze when no initialItem
+  // Note: Warning should have already been shown on dashboard when Freeze button was tapped
+  // So we just set isFrozen to true without showing warning again
   useEffect(() => {
     if (forceFreeze && !initialItem) {
-      // Check if item is not recommended to freeze
-      const normalizedName = formData.name.trim().toLowerCase();
-      
-      // Check for exact match OR if any list item is contained in the name
-      const isNotRecommended = notRecommendedToFreeze.some(item => {
-        const normalizedItem = item.toLowerCase();
-        const exactMatch = normalizedItem === normalizedName;
-        const containsMatch = normalizedName.includes(normalizedItem);
-        return exactMatch || containsMatch;
-      });
-      
-      if (isNotRecommended && normalizedName) {
-        console.log('⚠️ Freeze warning triggered (forceFreeze) for:', normalizedName);
-        // Show warning modal
-        setShowFreezeWarning(true);
-      } else {
-        // Proceed normally
-        setIsFrozen(true);
-        setFormData(prev => ({ ...prev, isFrozen: true }));
-      }
+      // User already saw warning on dashboard and proceeded, so just set frozen state
+      console.log('✅ Setting freeze state from forceFreeze (warning already shown on dashboard)');
+      setIsFrozen(true);
+      setFormData(prev => ({ ...prev, isFrozen: true }));
     }
-  }, [forceFreeze, initialItem, formData.name]);
+  }, [forceFreeze, initialItem]);
 
   // Watch formData.name and isFrozen to calculate suggested expiration date and auto-apply it
   useEffect(() => {
