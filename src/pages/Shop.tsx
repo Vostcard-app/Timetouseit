@@ -14,7 +14,7 @@ const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
-  const { foodItems, loading: foodItemsLoading } = useFoodItems(user || null);
+  const { foodItems } = useFoodItems(user || null);
   const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
