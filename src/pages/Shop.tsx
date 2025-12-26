@@ -173,13 +173,15 @@ const Shop: React.FC = () => {
 
   // Separate regular and crossed-off items
   const { regularItems, crossedOffItems } = useMemo(() => {
-    const foodItemNames = new Set(foodItems.map(fi => fi.name.toLowerCase()));
+    // Normalize food item names (trim and lowercase) for matching
+    const foodItemNames = new Set(foodItems.map(fi => fi.name.trim().toLowerCase()));
     
     const regular: ShoppingListItem[] = [];
     const crossedOff: ShoppingListItem[] = [];
     
     shoppingListItems.forEach(item => {
-      if (foodItemNames.has(item.name.toLowerCase())) {
+      const normalizedItemName = item.name.trim().toLowerCase();
+      if (foodItemNames.has(normalizedItemName)) {
         crossedOff.push(item);
       } else {
         regular.push(item);
@@ -235,13 +237,17 @@ const Shop: React.FC = () => {
     if (!user) return;
 
     try {
-      // Find the matching foodItem by name (case-insensitive)
-      const foodItem = foodItems.find(fi => fi.name.toLowerCase() === item.name.toLowerCase());
+      // Find the matching foodItem by name (case-insensitive, trimmed)
+      const normalizedItemName = item.name.trim().toLowerCase();
+      const foodItem = foodItems.find(fi => fi.name.trim().toLowerCase() === normalizedItemName);
       if (foodItem) {
         await foodItemService.deleteFoodItem(foodItem.id);
         // Item will automatically move back to regular list since it's no longer in foodItems
       } else {
-        console.warn(`FoodItem not found for: ${item.name}`);
+        console.warn(`FoodItem not found for: ${item.name}`, { 
+          foodItems: foodItems.map(fi => fi.name),
+          searchingFor: item.name 
+        });
       }
     } catch (error) {
       console.error('Error removing item from dashboard:', error);
