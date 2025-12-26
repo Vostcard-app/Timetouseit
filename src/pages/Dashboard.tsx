@@ -57,24 +57,45 @@ const Dashboard: React.FC = () => {
   };
 
   const handleFreezeItem = (item: typeof foodItems[0]) => {
+    console.log('🔍 ===== FREEZE BUTTON CLICKED =====');
+    console.log('🔍 handleFreezeItem called with item:', item);
+    console.log('🔍 Item name:', item.name);
     const normalizedName = item.name.trim().toLowerCase();
-    console.log('🔍 Freeze check for:', normalizedName);
+    console.log('🔍 Normalized name:', normalizedName);
+    console.log('🔍 notRecommendedToFreeze list length:', notRecommendedToFreeze.length);
+    console.log('🔍 First few items in list:', notRecommendedToFreeze.slice(0, 5));
     
     // Check for exact match OR if any list item is contained in the name
+    let matchFound = false;
+    let matchedItem = '';
     const isNotRecommended = notRecommendedToFreeze.some(listItem => {
       const normalizedItem = listItem.toLowerCase();
       const exactMatch = normalizedItem === normalizedName;
       const containsMatch = normalizedName.includes(normalizedItem);
-      return exactMatch || containsMatch;
+      const match = exactMatch || containsMatch;
+      if (match) {
+        matchFound = true;
+        matchedItem = listItem;
+        console.log('✅ MATCH FOUND!', listItem, 'exactMatch:', exactMatch, 'containsMatch:', containsMatch);
+      }
+      return match;
     });
     
-    console.log('⚠️ Is not recommended:', isNotRecommended);
+    console.log('⚠️ Final result - isNotRecommended:', isNotRecommended);
+    if (matchFound) {
+      console.log('⚠️ Matched item:', matchedItem);
+    } else {
+      console.log('❌ No match found for:', normalizedName);
+    }
     
     if (isNotRecommended) {
       // Show warning modal
-      console.log('📋 Showing freeze warning modal');
+      console.log('📋 Showing freeze warning modal - NOT navigating');
       setPendingFreezeItem(item);
       setShowFreezeWarning(true);
+      console.log('📋 Modal state set - showFreezeWarning:', true, 'pendingFreezeItem:', item);
+      // Explicitly prevent navigation
+      return;
     } else {
       // Navigate directly
       console.log('✅ Item is safe to freeze, navigating directly');
