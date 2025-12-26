@@ -15,17 +15,6 @@ const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const { foodItems, loading: foodItemsLoading } = useFoodItems(user || null);
-  
-  // Debug: Log foodItems and shopping list items changes
-  useEffect(() => {
-    if (user && !foodItemsLoading) {
-      console.log('🍔 FoodItems in Shop:', {
-        count: foodItems.length,
-        items: foodItems.map(fi => fi.name),
-        shoppingListItems: shoppingListItems.map(sli => sli.name)
-      });
-    }
-  }, [foodItems, foodItemsLoading, user, shoppingListItems]);
   const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
