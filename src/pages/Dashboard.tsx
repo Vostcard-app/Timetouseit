@@ -41,14 +41,11 @@ const Dashboard: React.FC = () => {
   }, [foodItems, filter]);
 
   const handleDelete = async (itemId: string) => {
-    // Show confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to delete this item?');
-    if (!confirmed) {
-      return; // User cancelled, do nothing
-    }
-
+    // Note: Confirmation is now handled in SwipeableListItem component
+    // This function is called only after user confirms
     try {
       await foodItemService.deleteFoodItem(itemId);
+      // User remains on dashboard - no navigation needed
     } catch (error) {
       console.error('Error deleting item:', error);
       alert('Failed to delete item. Please try again.');

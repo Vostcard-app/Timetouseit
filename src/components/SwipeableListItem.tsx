@@ -205,7 +205,12 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              e.preventDefault();
+              // Show confirmation before deleting
+              const confirmed = window.confirm('Are you sure you want to delete this item?');
+              if (confirmed) {
+                onDelete();
+              }
             }}
             style={{
               background: 'none',
