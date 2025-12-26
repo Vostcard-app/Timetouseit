@@ -187,11 +187,16 @@ const Shop: React.FC = () => {
     
     const regular: ShoppingListItem[] = [];
     const crossedOff: ShoppingListItem[] = [];
+    const seenCrossedOffNames = new Set<string>(); // Track names we've already added
     
     shoppingListItems.forEach(item => {
       const normalizedItemName = item.name.trim().toLowerCase();
       if (foodItemNames.has(normalizedItemName)) {
-        crossedOff.push(item);
+        // Only add if we haven't seen this name before
+        if (!seenCrossedOffNames.has(normalizedItemName)) {
+          crossedOff.push(item);
+          seenCrossedOffNames.add(normalizedItemName);
+        }
       } else {
         regular.push(item);
       }
