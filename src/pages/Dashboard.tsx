@@ -5,8 +5,10 @@ import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { foodItemService } from '../services/firebaseService';
 import { formatDate } from '../utils/dateUtils';
+import { notRecommendedToFreeze } from '../data/freezeGuidelines';
 import SwipeableListItem from '../components/SwipeableListItem';
 import HamburgerMenu from '../components/HamburgerMenu';
+import type { FoodItem } from '../types';
 
 type FilterType = 'all' | 'fresh' | 'expiring_soon' | 'expired';
 
@@ -16,6 +18,8 @@ const Dashboard: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showIndexWarning, setShowIndexWarning] = useState(false);
+  const [showFreezeWarning, setShowFreezeWarning] = useState(false);
+  const [pendingFreezeItem, setPendingFreezeItem] = useState<FoodItem | null>(null);
   const navigate = useNavigate();
 
   // Check for Firestore index warning
@@ -53,7 +57,37 @@ const Dashboard: React.FC = () => {
   };
 
   const handleFreezeItem = (item: typeof foodItems[0]) => {
-    navigate('/add', { state: { editingItem: item, forceFreeze: true } });
+    const normalizedName = item.name.trim().toLowerCase();
+    
+    // Check for exact match OR if any list item is contained in the name
+    const isNotRecommended = notRecommendedToFreeze.some(listItem => {
+      const normalizedItem = listItem.toLowerCase();
+      const exactMatch = normalizedItem === normalizedName;
+      const containsMatch = normalizedName.includes(normalizedItem);
+      return exactMatch || containsMatch;
+    });
+    
+    if (isNotRecommended) {
+      // Show warning modal
+      setPendingFreezeItem(item);
+      setShowFreezeWarning(true);
+    } else {
+      // Navigate directly
+      navigate('/add', { state: { editingItem: item, forceFreeze: true } });
+    }
+  };
+
+  const handleDismissFreezeWarning = () => {
+    setShowFreezeWarning(false);
+    setPendingFreezeItem(null);
+  };
+
+  const handleProceedWithFreeze = () => {
+    if (pendingFreezeItem) {
+      setShowFreezeWarning(false);
+      navigate('/add', { state: { editingItem: pendingFreezeItem, forceFreeze: true } });
+      setPendingFreezeItem(null);
+    }
   };
 
 
@@ -304,7 +338,100 @@ const Dashboard: React.FC = () => {
 
       {/* Hamburger Menu */}
       <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      {/* Freeze Warning Modal */}
+      {showFreezeWarning && pendingFreezeItem && (
+        <FreezeWarningModal
+          itemName={pendingFreezeItem.name}
+          onDismiss={handleDismissFreezeWarning}
+          onProceed={handleProceedWithFreeze}
+        />
+      )}
     </>
+  );
+};
+
+// Freeze Warning Modal Component
+interface FreezeWarningModalProps {
+  itemName: string;
+  onDismiss: () => void;
+  onProceed: () => void;
+}
+
+const FreezeWarningModal: React.FC<FreezeWarningModalProps> = ({ itemName, onDismiss, onProceed }) => {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000
+      }}
+      onClick={onDismiss}
+    >
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          padding: '1.5rem',
+          borderRadius: '12px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+          minWidth: '300px',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          overflow: 'auto'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
+          Not Recommended to Freeze
+        </h3>
+
+        <p style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', color: '#374151', lineHeight: '1.5' }}>
+          <strong>{itemName}</strong> is not recommended to freeze. Freezing may cause changes in texture, quality, or safety.
+        </p>
+
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={onDismiss}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            Dismiss
+          </button>
+          <button
+            type="button"
+            onClick={onProceed}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#002B4D',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            Proceed Anyway
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
