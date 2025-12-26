@@ -188,6 +188,17 @@ const Shop: React.FC = () => {
       }
     });
     
+    // Debug logging
+    if (shoppingListItems.length > 0 || foodItems.length > 0) {
+      console.log('🛒 Shop items separation:', {
+        shoppingListItems: shoppingListItems.map(sli => sli.name),
+        foodItems: foodItems.map(fi => fi.name),
+        foodItemNames: Array.from(foodItemNames),
+        regularItems: regular.map(r => r.name),
+        crossedOffItems: crossedOff.map(c => c.name)
+      });
+    }
+    
     return { regularItems: regular, crossedOffItems: crossedOff };
   }, [shoppingListItems, foodItems]);
 
