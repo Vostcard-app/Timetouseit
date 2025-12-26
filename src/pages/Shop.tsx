@@ -187,9 +187,30 @@ const Shop: React.FC = () => {
     return findFoodItems(newItemName.trim(), 5); // Limit to 5 suggestions
   }, [newItemName]);
 
-  // All shopping list items are shown as regular items (active list)
-  // Items can exist on both the active list and dashboard simultaneously
-  const regularItems = shoppingListItems;
+  // Separate items into active and crossed off based on whether they exist in dashboard
+  const { regularItems, crossedOffItems } = useMemo(() => {
+    const regular: ShoppingListItem[] = [];
+    const crossedOff: ShoppingListItem[] = [];
+    
+    // Create a set of dashboard item names (case-insensitive)
+    const dashboardItemNames = new Set(
+      foodItems.map(item => item.name.trim().toLowerCase())
+    );
+    
+    // Separate shopping list items
+    shoppingListItems.forEach(item => {
+      const itemNameLower = item.name.trim().toLowerCase();
+      if (dashboardItemNames.has(itemNameLower)) {
+        // Item exists in dashboard - mark as crossed off
+        crossedOff.push(item);
+      } else {
+        // Item not in dashboard - show as active
+        regular.push(item);
+      }
+    });
+    
+    return { regularItems: regular, crossedOffItems: crossedOff };
+  }, [shoppingListItems, foodItems]);
 
   // Filter and sort previously used items (exclude items already in current list)
   const previouslyUsedItems = useMemo(() => {
@@ -681,6 +702,69 @@ const Shop: React.FC = () => {
                   </div>
                 </div>
               ))}
+                </div>
+              )}
+
+              {/* Crossed Off Items */}
+              {crossedOffItems.length > 0 && (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <h3 style={{ 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#6b7280', 
+                    marginBottom: '1rem' 
+                  }}>
+                    Crossed off
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {crossedOffItems.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          backgroundColor: '#f9fafb',
+                          transition: 'background-color 0.2s',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          opacity: 0.6
+                        }}
+                      >
+                        <div style={{ 
+                          fontSize: '1rem', 
+                          fontWeight: '500', 
+                          color: '#6b7280',
+                          textDecoration: 'line-through'
+                        }}>
+                          {item.name}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleItemClick(item);
+                            }}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              backgroundColor: '#002B4D',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              cursor: 'pointer'
+                            }}
+                            aria-label="Add item"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
