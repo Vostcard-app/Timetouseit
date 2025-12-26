@@ -62,6 +62,7 @@ export const freezeCategoryLabels: Record<FreezeCategory, string> = {
 export const notRecommendedToFreeze: string[] = [
   "milk",
   "cream",
+  "butter",
   "half and half",
   "yogurt",
   "sour cream",

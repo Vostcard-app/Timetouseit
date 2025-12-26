@@ -255,9 +255,9 @@ const AddItem: React.FC = () => {
       setShowForm(false);
       setEditingItem(null);
       setSearchQuery('');
-    } else {
-      navigate('/');
     }
+    // Always navigate to shop page when back button is clicked
+    navigate('/shop');
   };
 
   const handleScan = (result: BarcodeScanResult) => {
