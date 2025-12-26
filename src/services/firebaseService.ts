@@ -16,7 +16,7 @@ import {
 import type { DocumentData } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
-import type { FoodItem, FoodItemData, UserSettings, ShoppingListItem, ShoppingList, UserItem, UserItemData } from '../types';
+import type { FoodItem, FoodItemData, UserSettings, ShoppingListItem, ShoppingList, UserItem, UserItemData, UserCategory, UserCategoryData } from '../types';
 
 // Food Items Service
 export const foodItemService = {
@@ -619,6 +619,142 @@ export const userItemsService = {
     );
     
     return () => unsubscribe();
+  }
+};
+
+// User Categories Service
+export const userCategoriesService = {
+  // Get all user categories
+  async getUserCategories(userId: string): Promise<UserCategory[]> {
+    const q = query(
+      collection(db, 'userCategories'),
+      where('userId', '==', userId),
+      orderBy('name', 'asc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate()
+    })) as UserCategory[];
+  },
+
+  // Get user category by name
+  async getUserCategoryByName(userId: string, name: string): Promise<UserCategory | null> {
+    const q = query(
+      collection(db, 'userCategories'),
+      where('userId', '==', userId),
+      where('name', '==', name)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    const doc = querySnapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate()
+    } as UserCategory;
+  },
+
+  // Create category
+  async createCategory(userId: string, data: UserCategoryData): Promise<string> {
+    // Check if category with same name already exists
+    const existing = await this.getUserCategoryByName(userId, data.name);
+    if (existing) {
+      throw new Error('Category with this name already exists');
+    }
+    
+    const docRef = await addDoc(collection(db, 'userCategories'), {
+      userId,
+      name: data.name,
+      createdAt: Timestamp.now()
+    });
+    return docRef.id;
+  },
+
+  // Update category
+  async updateCategory(categoryId: string, data: Partial<UserCategoryData>): Promise<void> {
+    const docRef = doc(db, 'userCategories', categoryId);
+    const updateData: any = {};
+    
+    if (data.name !== undefined) {
+      // Check if another category with this name exists
+      const categoryDoc = await getDoc(docRef);
+      if (!categoryDoc.exists()) {
+        throw new Error('Category not found');
+      }
+      const userId = categoryDoc.data().userId;
+      const existing = await this.getUserCategoryByName(userId, data.name);
+      if (existing && existing.id !== categoryId) {
+        throw new Error('Category with this name already exists');
+      }
+      updateData.name = data.name;
+    }
+    
+    await updateDoc(docRef, updateData);
+  },
+
+  // Delete category
+  async deleteCategory(categoryId: string): Promise<void> {
+    const docRef = doc(db, 'userCategories', categoryId);
+    await deleteDoc(docRef);
+  },
+
+  // Subscribe to user categories changes
+  subscribeToUserCategories(
+    userId: string,
+    callback: (categories: UserCategory[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'userCategories'),
+      where('userId', '==', userId),
+      orderBy('name', 'asc')
+    );
+    
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot: QuerySnapshot) => {
+        const categories = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt.toDate()
+        })) as UserCategory[];
+        callback(categories);
+      },
+      (error: any) => {
+        console.error('❌ Error in user categories subscription:', error);
+        // Fallback: try without orderBy if index is missing
+        if (error.code === 'failed-precondition' && error.message?.includes('index')) {
+          console.warn('⚠️ Firestore index for userCategories (userId, name) is missing. Attempting fallback query without orderBy.');
+          const fallbackQ = query(
+            collection(db, 'userCategories'),
+            where('userId', '==', userId)
+          );
+          onSnapshot(fallbackQ, (fallbackSnapshot: QuerySnapshot) => {
+            const categories = fallbackSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              createdAt: doc.data().createdAt.toDate()
+            })) as UserCategory[];
+            // Sort manually if fallback is used
+            categories.sort((a, b) => a.name.localeCompare(b.name));
+            callback(categories);
+          }, (fallbackError: any) => {
+            console.error('❌ Fallback query for user categories also failed:', fallbackError);
+            callback([]);
+          });
+        } else {
+          callback([]);
+        }
+      }
+    );
+    
+    return unsubscribe;
   }
 };
 

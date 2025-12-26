@@ -79,3 +79,14 @@ export interface UserItemData {
   category?: string;
 }
 
+export interface UserCategory {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: Date;
+}
+
+export interface UserCategoryData {
+  name: string;
+}
+
