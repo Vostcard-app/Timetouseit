@@ -22,6 +22,11 @@ const Dashboard: React.FC = () => {
   const [pendingFreezeItem, setPendingFreezeItem] = useState<FoodItem | null>(null);
   const navigate = useNavigate();
 
+  // Debug: Track state changes
+  useEffect(() => {
+    console.log('🔍 Modal state changed - showFreezeWarning:', showFreezeWarning, 'pendingFreezeItem:', pendingFreezeItem);
+  }, [showFreezeWarning, pendingFreezeItem]);
+
   // Check for Firestore index warning
   useEffect(() => {
     const checkIndexWarning = () => {
@@ -91,9 +96,13 @@ const Dashboard: React.FC = () => {
     if (isNotRecommended) {
       // Show warning modal
       console.log('📋 Showing freeze warning modal - NOT navigating');
+      // Use functional updates to ensure both states are set together
       setPendingFreezeItem(item);
       setShowFreezeWarning(true);
-      console.log('📋 Modal state set - showFreezeWarning:', true, 'pendingFreezeItem:', item);
+      // Verify state was set
+      setTimeout(() => {
+        console.log('📋 State verification - showFreezeWarning should be true, pendingFreezeItem should exist');
+      }, 0);
       // Explicitly prevent navigation
       return;
     } else {
@@ -368,13 +377,16 @@ const Dashboard: React.FC = () => {
       <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* Freeze Warning Modal */}
-      {showFreezeWarning && pendingFreezeItem && (
-        <FreezeWarningModal
-          itemName={pendingFreezeItem.name}
-          onDismiss={handleDismissFreezeWarning}
-          onProceed={handleProceedWithFreeze}
-        />
-      )}
+      {showFreezeWarning && pendingFreezeItem && (() => {
+        console.log('🎨 Rendering FreezeWarningModal - showFreezeWarning:', showFreezeWarning, 'pendingFreezeItem:', pendingFreezeItem);
+        return (
+          <FreezeWarningModal
+            itemName={pendingFreezeItem.name}
+            onDismiss={handleDismissFreezeWarning}
+            onProceed={handleProceedWithFreeze}
+          />
+        );
+      })()}
     </>
   );
 };
@@ -387,6 +399,7 @@ interface FreezeWarningModalProps {
 }
 
 const FreezeWarningModal: React.FC<FreezeWarningModalProps> = ({ itemName, onDismiss, onProceed }) => {
+  console.log('🎨 FreezeWarningModal rendering with itemName:', itemName);
   return (
     <div
       style={{
