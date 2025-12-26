@@ -654,11 +654,30 @@ const Shop: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        const userItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
-                        if (userItem) {
-                          setEditingUserItem(userItem);
+                        e.preventDefault();
+                        if (!user) return;
+                        
+                        try {
+                          let userItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
+                          if (!userItem) {
+                            // Create a userItem if it doesn't exist (with default expiration length)
+                            await userItemsService.createOrUpdateUserItem(user.uid, {
+                              name: item.name,
+                              expirationLength: 7, // Default 7 days
+                              category: undefined
+                            });
+                            const newUserItem = await userItemsService.getUserItemByName(user.uid, item.name);
+                            if (newUserItem) {
+                              userItem = newUserItem;
+                            }
+                          }
+                          if (userItem) {
+                            setEditingUserItem(userItem);
+                          }
+                        } catch (error) {
+                          console.error('Error loading/creating user item:', error);
                         }
                       }}
                       style={{
@@ -671,7 +690,8 @@ const Shop: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         minWidth: '36px',
-                        minHeight: '36px'
+                        minHeight: '36px',
+                        zIndex: 10
                       }}
                       aria-label="Edit item"
                     >
@@ -747,7 +767,11 @@ const Shop: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         setEditingUserItem(item);
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
                       }}
                       style={{
                         background: 'none',
@@ -759,7 +783,9 @@ const Shop: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         minWidth: '36px',
-                        minHeight: '36px'
+                        minHeight: '36px',
+                        zIndex: 10,
+                        position: 'relative'
                       }}
                       aria-label="Edit item"
                     >

@@ -165,12 +165,16 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
             }
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', position: 'relative', zIndex: 10 }}>
           {onEdit && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 onEdit();
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
               }}
               style={{
                 background: 'none',
@@ -182,7 +186,9 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
                 alignItems: 'center',
                 justifyContent: 'center',
                 minWidth: '36px',
-                minHeight: '36px'
+                minHeight: '36px',
+                zIndex: 10,
+                position: 'relative'
               }}
               aria-label="Edit item"
             >
