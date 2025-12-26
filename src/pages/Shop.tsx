@@ -2,17 +2,19 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { shoppingListService, shoppingListsService, userSettingsService, userItemsService } from '../services/firebaseService';
+import { shoppingListService, shoppingListsService, userSettingsService, userItemsService, foodItemService } from '../services/firebaseService';
 import { findFoodItems } from '../services/foodkeeperService';
 import type { ShoppingListItem, ShoppingList, UserItem } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import EditItemModal from '../components/EditItemModal';
+import { useFoodItems } from '../hooks/useFoodItems';
 
 const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
 
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
+  const { foodItems } = useFoodItems(user || null);
   const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -169,6 +171,24 @@ const Shop: React.FC = () => {
     return findFoodItems(newItemName.trim(), 5); // Limit to 5 suggestions
   }, [newItemName]);
 
+  // Separate regular and crossed-off items
+  const { regularItems, crossedOffItems } = useMemo(() => {
+    const foodItemNames = new Set(foodItems.map(fi => fi.name.toLowerCase()));
+    
+    const regular: ShoppingListItem[] = [];
+    const crossedOff: ShoppingListItem[] = [];
+    
+    shoppingListItems.forEach(item => {
+      if (foodItemNames.has(item.name.toLowerCase())) {
+        crossedOff.push(item);
+      } else {
+        regular.push(item);
+      }
+    });
+    
+    return { regularItems: regular, crossedOffItems: crossedOff };
+  }, [shoppingListItems, foodItems]);
+
   // Filter and sort previously used items (exclude items already in current list)
   const previouslyUsedItems = useMemo(() => {
     if (!selectedListId || shoppingListItems.length === 0) {
@@ -207,6 +227,23 @@ const Shop: React.FC = () => {
     } catch (error) {
       console.error('Error adding previously used item:', error);
       alert('Failed to add item to list. Please try again.');
+    }
+  };
+
+  // Handle uncrossing an item (remove from dashboard)
+  const handleUncrossItem = async (item: ShoppingListItem) => {
+    if (!user) return;
+
+    try {
+      // Find the matching foodItem by name (case-insensitive)
+      const foodItem = foodItems.find(fi => fi.name.toLowerCase() === item.name.toLowerCase());
+      if (foodItem) {
+        await foodItemService.deleteFoodItem(foodItem.id);
+        // Item will automatically move back to regular list since it's no longer in foodItems
+      }
+    } catch (error) {
+      console.error('Error removing item from dashboard:', error);
+      alert('Failed to remove item from dashboard. Please try again.');
     }
   };
 
@@ -625,8 +662,11 @@ const Shop: React.FC = () => {
               <p>Your shopping list is empty. Add items above to get started.</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {shoppingListItems.map((item) => (
+            <>
+              {/* Regular Items */}
+              {regularItems.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {regularItems.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleItemClick(item)}
@@ -718,7 +758,124 @@ const Shop: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
+                </div>
+              )}
+
+              {/* Crossed Off Items */}
+              {crossedOffItems.length > 0 && (
+                <div style={{ marginTop: '1.5rem' }}>
+                  <h3 style={{ 
+                    fontSize: '1rem', 
+                    fontWeight: '600', 
+                    color: '#1f2937', 
+                    marginBottom: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderBottom: '2px solid #e5e7eb'
+                  }}>
+                    Crossed off
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {crossedOffItems.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleUncrossItem(item)}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          backgroundColor: '#f9fafb',
+                          transition: 'background-color 0.2s',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f9fafb';
+                        }}
+                      >
+                        <div style={{ 
+                          fontSize: '1rem', 
+                          fontWeight: '500', 
+                          color: '#9ca3af',
+                          textDecoration: 'line-through'
+                        }}>
+                          {item.name}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              if (!user) return;
+                              
+                              try {
+                                let userItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
+                                if (!userItem) {
+                                  // Create a userItem if it doesn't exist (with default expiration length)
+                                  await userItemsService.createOrUpdateUserItem(user.uid, {
+                                    name: item.name,
+                                    expirationLength: 7, // Default 7 days
+                                    category: undefined
+                                  });
+                                  const newUserItem = await userItemsService.getUserItemByName(user.uid, item.name);
+                                  if (newUserItem) {
+                                    userItem = newUserItem;
+                                  }
+                                }
+                                if (userItem) {
+                                  setEditingUserItem(userItem);
+                                }
+                              } catch (error) {
+                                console.error('Error loading/creating user item:', error);
+                              }
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#6b7280',
+                              cursor: 'pointer',
+                              padding: '0.25rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              minWidth: '36px',
+                              minHeight: '36px',
+                              zIndex: 10
+                            }}
+                            aria-label="Edit item"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(item.id, e)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#6b7280',
+                              cursor: 'pointer',
+                              padding: '0.25rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              minWidth: '36px',
+                              minHeight: '36px'
+                            }}
+                            aria-label="Delete item"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
