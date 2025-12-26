@@ -381,18 +381,6 @@ const Shop: React.FC = () => {
     navigate('/add', { state: { fromShoppingList: true, shoppingListItemId: item.id, itemName: item.name } });
   };
 
-  const handleDelete = async (itemId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this item from your shopping list?')) {
-      try {
-        await shoppingListService.deleteShoppingListItem(itemId);
-      } catch (error) {
-        console.error('Error deleting item:', error);
-        alert('Failed to delete item. Please try again.');
-      }
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -696,7 +684,6 @@ const Shop: React.FC = () => {
                   {regularItems.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => handleItemClick(item)}
                   style={{
                     padding: '0.5rem 1rem',
                     border: '1px solid #e5e7eb',
@@ -704,16 +691,9 @@ const Shop: React.FC = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    cursor: 'pointer',
                     backgroundColor: '#ffffff',
                     transition: 'background-color 0.2s',
                     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
                   }}
                 >
                   <div style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937' }}>
@@ -721,22 +701,23 @@ const Shop: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
-                      onClick={(e) => handleDelete(item.id, e)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#6b7280',
-                        cursor: 'pointer',
-                        padding: '0.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minWidth: '36px',
-                        minHeight: '36px'
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleItemClick(item);
                       }}
-                      aria-label="Delete item"
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#002B4D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                      aria-label="Add item"
                     >
-                      🗑️
+                      Add
                     </button>
                   </div>
                 </div>
@@ -761,7 +742,6 @@ const Shop: React.FC = () => {
                     {crossedOffItems.map((item) => (
                       <div
                         key={item.id}
-                        onClick={() => handleUncrossItem(item)}
                         style={{
                           padding: '0.5rem 1rem',
                           border: '1px solid #e5e7eb',
@@ -769,16 +749,9 @@ const Shop: React.FC = () => {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          cursor: 'pointer',
                           backgroundColor: '#f9fafb',
                           transition: 'background-color 0.2s',
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f3f4f6';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f9fafb';
                         }}
                       >
                         <div style={{ 
@@ -791,22 +764,23 @@ const Shop: React.FC = () => {
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                           <button
-                            onClick={(e) => handleDelete(item.id, e)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: '#6b7280',
-                              cursor: 'pointer',
-                              padding: '0.25rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minWidth: '36px',
-                              minHeight: '36px'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUncrossItem(item);
                             }}
-                            aria-label="Delete item"
+                            style={{
+                              padding: '0.5rem 1rem',
+                              backgroundColor: '#002B4D',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              cursor: 'pointer'
+                            }}
+                            aria-label="Add to active list"
                           >
-                            🗑️
+                            Add
                           </button>
                         </div>
                       </div>
