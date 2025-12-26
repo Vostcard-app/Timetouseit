@@ -33,8 +33,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
   const handleTouchEnd = () => {
     setIsDragging(false);
     if (translateX >= SWIPE_THRESHOLD) {
-      // Show confirmation before deleting
-      const confirmed = window.confirm('Are you sure you want to delete this item?');
+      // Show confirmation before tossing
+      const confirmed = window.confirm('Are you sure you want to toss this item?');
       if (confirmed) {
         onDelete();
       }
@@ -69,8 +69,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
       const handleGlobalMouseUp = () => {
         setIsDragging(false);
         if (translateX >= SWIPE_THRESHOLD) {
-          // Show confirmation before deleting
-          const confirmed = window.confirm('Are you sure you want to delete this item?');
+          // Show confirmation before tossing
+          const confirmed = window.confirm('Are you sure you want to toss this item?');
           if (confirmed) {
             onDelete();
           }
@@ -112,7 +112,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
     >
-      {/* Delete background indicator */}
+      {/* Toss background indicator */}
       <div
         style={{
           position: 'absolute',
@@ -130,17 +130,17 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
         }}
       >
         <span style={{ color: 'white', fontWeight: '600', fontSize: '0.875rem' }}>
-          Delete
+          Toss
         </span>
       </div>
 
       {/* Item content */}
       <div
         onClick={(e) => {
-          // Only trigger onClick if not dragging/swiping and delete button wasn't clicked
+          // Only trigger onClick if not dragging/swiping and toss button wasn't clicked
           const target = e.target as HTMLElement;
-          const isDeleteButton = target.closest('button[aria-label="Delete item"]');
-          if (!isDragging && translateX < 10 && !isDeleteButton && onClick) {
+          const isTossButton = target.closest('button[aria-label="Toss item"]');
+          if (!isDragging && translateX < 10 && !isTossButton && onClick) {
             onClick();
           }
         }}
@@ -164,6 +164,12 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
             {item.name}
           </span>
           <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            Purchased
+          </span>
+          <span style={{ fontSize: '0.875rem', color: '#1f2937', fontWeight: '500' }}>
+            {item.addedDate ? formatDate(item.addedDate) : 'No date'}
+          </span>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
             {item.isFrozen ? 'Thaws' : 'Expires'}
           </span>
           <span style={{ fontSize: '0.875rem', color: '#1f2937', fontWeight: '500' }}>
@@ -181,26 +187,26 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
               e.stopPropagation();
               e.preventDefault();
               // Show confirmation before deleting
-              const confirmed = window.confirm('Are you sure you want to delete this item?');
+              const confirmed = window.confirm('Are you sure you want to toss this item?');
               if (confirmed) {
                 onDelete();
               }
             }}
             style={{
-              background: 'none',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#ef4444',
+              color: 'white',
               border: 'none',
-              color: '#6b7280',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+              fontWeight: '500',
               cursor: 'pointer',
-              padding: '0.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: '36px',
+              minWidth: '60px',
               minHeight: '36px'
             }}
-            aria-label="Delete item"
+            aria-label="Toss item"
           >
-            🗑️
+            Toss
           </button>
         </div>
       </div>
