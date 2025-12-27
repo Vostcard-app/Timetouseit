@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { shoppingListService, shoppingListsService, userSettingsService, userItemsService } from '../services/firebaseService';
+import { shoppingListService, shoppingListsService, userSettingsService, userItemsService, foodItemService } from '../services/firebaseService';
 import { findFoodItems } from '../services/foodkeeperService';
 import type { ShoppingListItem, ShoppingList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
@@ -255,15 +255,28 @@ const Shop: React.FC = () => {
 
   // Handle adding crossed-off item directly to active list
   const handleAddCrossedOffItem = async (item: ShoppingListItem) => {
-    if (!user || !selectedListId) {
-      alert('Please select a list first');
+    if (!user) {
+      alert('Please log in first');
       return;
     }
 
     try {
-      await shoppingListService.addShoppingListItem(user.uid, selectedListId, item.name);
+      // Find the matching food item from dashboard (case-insensitive)
+      const itemNameLower = item.name.trim().toLowerCase();
+      const matchingFoodItem = foodItems.find(
+        fi => fi.name.trim().toLowerCase() === itemNameLower
+      );
+
+      if (matchingFoodItem) {
+        // Delete the food item from dashboard - this will automatically make the shopping list item active
+        await foodItemService.deleteFoodItem(matchingFoodItem.id);
+      } else {
+        // This shouldn't happen since the item is crossed out, but handle gracefully
+        console.warn('No matching food item found for crossed-off item:', item.name);
+      }
+
       // Update lastUsed for the userItem if it exists
-      const userItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
+      const userItem = userItems.find(ui => ui.name.toLowerCase() === itemNameLower);
       if (userItem) {
         await userItemsService.createOrUpdateUserItem(user.uid, {
           name: userItem.name,
@@ -272,8 +285,8 @@ const Shop: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error adding crossed-off item:', error);
-      alert('Failed to add item to list. Please try again.');
+      console.error('Error handling crossed-off item:', error);
+      alert('Failed to update item. Please try again.');
     }
   };
 
