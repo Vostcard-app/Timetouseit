@@ -464,17 +464,6 @@ const Calendar: React.FC = () => {
                 width: '16px',
                 height: '16px',
                 borderRadius: '50%',
-                backgroundColor: '#22c55e',
-              }}
-            />
-            <span style={{ fontSize: '0.875rem' }}>Fresh</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div
-              style={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
                 backgroundColor: '#f59e0b',
               }}
             />
@@ -1397,6 +1386,7 @@ const Calendar: React.FC = () => {
           />
           <span style={{ fontSize: '0.875rem' }}>Expired</span>
         </div>
+      </div>
       </div>
 
       {/* Hamburger Menu */}
