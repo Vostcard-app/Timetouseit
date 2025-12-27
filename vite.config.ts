@@ -60,7 +60,7 @@ export default defineConfig({
         dir: 'ltr'
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,webp}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,webp}', 'logo.png'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [

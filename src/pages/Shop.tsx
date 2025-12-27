@@ -731,19 +731,16 @@ const Shop: React.FC = () => {
         }}>
           {/* Logo - behind everything */}
           <img 
-            src={`${import.meta.env.BASE_URL}logo.png`}
+            src="/logo.png"
             alt="Logo"
             onLoad={() => {
               console.log('Logo loaded successfully');
             }}
             onError={(e) => {
               console.error('Failed to load logo:', e);
-              console.error('Logo path attempted:', `${import.meta.env.BASE_URL}logo.png`);
-              // Try fallback path
-              const img = e.currentTarget as HTMLImageElement;
-              if (img.src !== '/logo.png') {
-                img.src = '/logo.png';
-              }
+              console.error('Logo path attempted: /logo.png');
+              console.error('Current image src:', (e.currentTarget as HTMLImageElement).src);
+              console.error('Window location:', window.location.href);
             }}
             style={{ 
               position: 'absolute',
