@@ -13,6 +13,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
+  const justDeletedRef = useRef(false);
   const itemRef = useRef<HTMLDivElement>(null);
   const SWIPE_THRESHOLD = 100; // Minimum swipe distance to trigger delete
 
@@ -139,10 +140,11 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
       <div
         onClick={(e) => {
           // Only trigger onClick if not dragging/swiping and buttons weren't clicked
+          // Also prevent if we just deleted (to avoid navigation after toss)
           const target = e.target as HTMLElement;
           const isTossButton = target.closest('button[aria-label="Toss item"]');
           const isFreezeButton = target.closest('button[aria-label="Freeze item"]');
-          if (!isDragging && translateX < 10 && !isTossButton && !isFreezeButton && onClick) {
+          if (!isDragging && translateX < 10 && !isTossButton && !isFreezeButton && !justDeletedRef.current && onClick) {
             onClick();
           }
         }}
@@ -218,13 +220,48 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
+                // Set flag immediately to prevent any onClick from firing
+                justDeletedRef.current = true;
                 // Show confirmation before deleting
                 const confirmed = window.confirm('Are you sure you want to toss this item?');
                 if (confirmed) {
+                  // Prevent any navigation - user stays on dashboard
+                  e.stopPropagation();
+                  e.preventDefault();
+                  // Reset any state that might trigger navigation
+                  setTranslateX(0);
+                  // Call delete handler
                   onDelete();
+                  // Keep flag set for longer to prevent any delayed events
+                  setTimeout(() => {
+                    justDeletedRef.current = false;
+                  }, 500);
+                } else {
+                  // User cancelled - clear the flag immediately
+                  justDeletedRef.current = false;
                 }
                 // Explicitly prevent any navigation
                 return false;
+              }}
+              onMouseDown={(e) => {
+                // Prevent event from bubbling up
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onTouchStart={(e) => {
+                // Prevent event from bubbling up
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onMouseUp={(e) => {
+                // Prevent event from bubbling up
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onTouchEnd={(e) => {
+                // Prevent event from bubbling up
+                e.stopPropagation();
+                e.preventDefault();
               }}
               style={{
                 padding: '0.5rem 1rem',
