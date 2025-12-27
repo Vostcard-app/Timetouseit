@@ -223,6 +223,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
                 if (confirmed) {
                   onDelete();
                 }
+                // Explicitly prevent any navigation
+                return false;
               }}
               style={{
                 padding: '0.5rem 1rem',
@@ -237,6 +239,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
                 minHeight: '36px'
               }}
               aria-label="Toss item"
+              type="button"
             >
               Toss
             </button>

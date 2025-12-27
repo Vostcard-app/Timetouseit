@@ -155,91 +155,57 @@ const Calendar: React.FC = () => {
         rowIndex++;
       } else {
         // For all non-expired items (both 'fresh' and 'expiring_soon'), 
-        // ALWAYS create yellow 3-day event + red 1-day event
+        // Create: 2 yellow days (expiring soon), 2 blue days (freeze), 1 red day (expired)
         if (currentView === 'week') {
-          // Week view: Create a single spanning yellow event for 3 days before expiration
-          // Event should span: [3 days before] to [1 day before expiration] = 3 days total
-          const threeDaysBefore = addDays(expirationDate, -3);
-          const dayBeforeExpiration = addDays(expirationDate, -1);
-          let eventStart = setToMidnight(threeDaysBefore);
-          // End at the end of day before expiration (23:59:59.999)
-          // This ensures exactly 3 days: day -3, day -2, day -1
-          let eventEnd = setToEndOfDay(dayBeforeExpiration);
-          
-          // Get the start of the current week view to ensure events are visible
+          // Week view: Create spanning events
           const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
           
-          // If yellow event starts before the week view, adjust it to start at week start
-          // This ensures the event is visible even if it starts before the current week
-          const originalStart = eventStart;
-          if (eventStart < weekStart) {
-            eventStart = setToMidnight(weekStart);
+          // Yellow event: Days -4 to -3 (2 days)
+          const fourDaysBefore = addDays(expirationDate, -4);
+          const threeDaysBefore = addDays(expirationDate, -3);
+          let yellowStart = setToMidnight(fourDaysBefore);
+          let yellowEnd = setToEndOfDay(threeDaysBefore);
+          
+          // Adjust if yellow event starts before the week view
+          if (yellowStart < weekStart) {
+            yellowStart = setToMidnight(weekStart);
           }
           
-          // Verify date calculation creates exactly 3 days (or less if clipped to week start)
-          // Calculate days: from start to end (inclusive)
-          const calculatedDays = Math.ceil((eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          
-          if (calculatedDays !== 3 && eventStart === originalStart) {
-            console.warn(`⚠️ Yellow event span is ${calculatedDays} days, expected 3 days for item: ${item.name}`);
-          }
-          
-          // Always create yellow event for all non-expired items
-          const yellowEvent = {
+          // Yellow event (expiring soon)
+          allEvents.push({
             title: item.name,
-            start: eventStart,
-            end: eventEnd, // End at end of day before expiration
+            start: yellowStart,
+            end: yellowEnd,
             resource: {
               itemId: item.id,
               status: 'expiring_soon',
               rowIndex: rowIndex,
             },
-          } as CalendarEvent;
-          allEvents.push(yellowEvent);
+          } as CalendarEvent);
           
-          // Debug: Verify yellow event was created with correct span
-          console.log('✅ Created yellow event:', {
-            item: item.name,
-            expirationDate: expirationDate.toISOString().split('T')[0],
-            start: yellowEvent.start ? yellowEvent.start.toISOString().split('T')[0] : 'undefined',
-            end: yellowEvent.end ? yellowEvent.end.toISOString() : 'undefined',
-            endDate: yellowEvent.end ? new Date(yellowEvent.end).toISOString().split('T')[0] : 'undefined',
-            spanDays: calculatedDays,
-            weekStart: weekStart.toISOString().split('T')[0],
-            adjusted: eventStart < setToMidnight(threeDaysBefore),
-            status: yellowEvent.resource.status,
-            inCurrentWeek: yellowEvent.start && yellowEvent.end && 
-              yellowEvent.start <= weekStart && 
-              yellowEvent.end >= weekStart
-          });
+          // Blue event: Days -2 to -1 (2 days)
+          const twoDaysBefore = addDays(expirationDate, -2);
+          const oneDayBefore = addDays(expirationDate, -1);
+          let blueStart = setToMidnight(twoDaysBefore);
+          let blueEnd = setToEndOfDay(oneDayBefore);
           
-          // Red: Show on the expiration date itself (no title - adjacent to yellow span)
+          // Adjust if blue event starts before the week view
+          if (blueStart < weekStart) {
+            blueStart = setToMidnight(weekStart);
+          }
+          
+          // Blue event (freeze)
           allEvents.push({
-            title: '', // Empty title since it's adjacent to yellow span
-            start: setToMidnight(expirationDate),
-            end: setToEndOfDay(expirationDate),
+            title: item.name,
+            start: blueStart,
+            end: blueEnd,
             resource: {
               itemId: item.id,
-              status: 'expired', // Use expired status for red color on expiration day
+              status: 'expiring_soon', // Use expiring_soon status but isFreezeDate will override color
               rowIndex: rowIndex,
-              isAdjacentToYellow: true, // Flag to indicate this is adjacent to yellow span
+              isFreezeDate: true,
             },
           } as CalendarEvent);
-        } else {
-          // Day/month view: Create individual events for each day
-          for (let i = 3; i >= 1; i--) {
-            const dayBefore = addDays(expirationDate, -i);
-            allEvents.push({
-              title: item.name,
-              start: setToMidnight(dayBefore),
-              end: setToEndOfDay(dayBefore),
-              resource: {
-                itemId: item.id,
-                status: 'expiring_soon',
-                rowIndex: rowIndex,
-              },
-            } as CalendarEvent);
-          }
           
           // Red: Show on the expiration date itself
           allEvents.push({
@@ -248,7 +214,70 @@ const Calendar: React.FC = () => {
             end: setToEndOfDay(expirationDate),
             resource: {
               itemId: item.id,
-              status: 'expired', // Use expired status for red color on expiration day
+              status: 'expired',
+              rowIndex: rowIndex,
+            },
+          } as CalendarEvent);
+        } else {
+          // Day/month view: Create individual events for each day
+          // Day -4: Yellow (expiring soon)
+          allEvents.push({
+            title: item.name,
+            start: setToMidnight(addDays(expirationDate, -4)),
+            end: setToEndOfDay(addDays(expirationDate, -4)),
+            resource: {
+              itemId: item.id,
+              status: 'expiring_soon',
+              rowIndex: rowIndex,
+            },
+          } as CalendarEvent);
+          
+          // Day -3: Yellow (expiring soon)
+          allEvents.push({
+            title: item.name,
+            start: setToMidnight(addDays(expirationDate, -3)),
+            end: setToEndOfDay(addDays(expirationDate, -3)),
+            resource: {
+              itemId: item.id,
+              status: 'expiring_soon',
+              rowIndex: rowIndex,
+            },
+          } as CalendarEvent);
+          
+          // Day -2: Blue (freeze)
+          allEvents.push({
+            title: item.name,
+            start: setToMidnight(addDays(expirationDate, -2)),
+            end: setToEndOfDay(addDays(expirationDate, -2)),
+            resource: {
+              itemId: item.id,
+              status: 'expiring_soon', // Use expiring_soon status but isFreezeDate will override color
+              rowIndex: rowIndex,
+              isFreezeDate: true,
+            },
+          } as CalendarEvent);
+          
+          // Day -1: Blue (freeze)
+          allEvents.push({
+            title: item.name,
+            start: setToMidnight(addDays(expirationDate, -1)),
+            end: setToEndOfDay(addDays(expirationDate, -1)),
+            resource: {
+              itemId: item.id,
+              status: 'expiring_soon', // Use expiring_soon status but isFreezeDate will override color
+              rowIndex: rowIndex,
+              isFreezeDate: true,
+            },
+          } as CalendarEvent);
+          
+          // Day 0: Red (expired)
+          allEvents.push({
+            title: item.name,
+            start: setToMidnight(expirationDate),
+            end: setToEndOfDay(expirationDate),
+            resource: {
+              itemId: item.id,
+              status: 'expired',
               rowIndex: rowIndex,
             },
           } as CalendarEvent);
@@ -322,9 +351,15 @@ const Calendar: React.FC = () => {
       });
     }
     
-    // Use orange color for thaw dates, otherwise use status color
-    // Freeze dates can use a different color if needed, for now use default
-    const color = event.resource.isThawDate ? '#F4A261' : getStatusColor(event.resource.status);
+    // Use orange color for thaw dates, blue for freeze dates, otherwise use status color
+    let color: string;
+    if (event.resource.isThawDate) {
+      color = '#F4A261'; // Orange for thaw dates
+    } else if (event.resource.isFreezeDate) {
+      color = '#3b82f6'; // Blue for freeze dates
+    } else {
+      color = getStatusColor(event.resource.status);
+    }
     const backgroundColor = color;
     const borderColor = color;
     const textColor = '#ffffff'; // White text for readability
