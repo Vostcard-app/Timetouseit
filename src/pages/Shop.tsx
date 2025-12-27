@@ -187,30 +187,24 @@ const Shop: React.FC = () => {
     return findFoodItems(newItemName.trim(), 5); // Limit to 5 suggestions
   }, [newItemName]);
 
-  // Separate items into active and crossed off based on whether they exist in dashboard
+  // Separate items into active and crossed off based on crossedOff field
   const { regularItems, crossedOffItems } = useMemo(() => {
     const regular: ShoppingListItem[] = [];
     const crossedOff: ShoppingListItem[] = [];
     
-    // Create a set of dashboard item names (case-insensitive)
-    const dashboardItemNames = new Set(
-      foodItems.map(item => item.name.trim().toLowerCase())
-    );
-    
-    // Separate shopping list items
+    // Separate shopping list items based on crossedOff field
     shoppingListItems.forEach(item => {
-      const itemNameLower = item.name.trim().toLowerCase();
-      if (dashboardItemNames.has(itemNameLower)) {
-        // Item exists in dashboard - mark as crossed off
+      if (item.crossedOff === true) {
+        // Item is marked as crossed off
         crossedOff.push(item);
       } else {
-        // Item not in dashboard - show as active
+        // Item is not crossed off (crossedOff is false or undefined)
         regular.push(item);
       }
     });
     
     return { regularItems: regular, crossedOffItems: crossedOff };
-  }, [shoppingListItems, foodItems]);
+  }, [shoppingListItems]);
 
   // Filter and sort previously used items (exclude items already in current list)
   const previouslyUsedItems = useMemo(() => {
@@ -261,18 +255,18 @@ const Shop: React.FC = () => {
     }
 
     try {
-      // Find the matching food item from dashboard (case-insensitive)
+      // Set crossedOff to false to make the item active again
+      await shoppingListService.updateShoppingListItemCrossedOff(item.id, false);
+
+      // Find the matching food item from dashboard (case-insensitive) and delete it if it exists
       const itemNameLower = item.name.trim().toLowerCase();
       const matchingFoodItem = foodItems.find(
         fi => fi.name.trim().toLowerCase() === itemNameLower
       );
 
       if (matchingFoodItem) {
-        // Delete the food item from dashboard - this will automatically make the shopping list item active
+        // Delete the food item from dashboard
         await foodItemService.deleteFoodItem(matchingFoodItem.id);
-      } else {
-        // This shouldn't happen since the item is crossed out, but handle gracefully
-        console.warn('No matching food item found for crossed-off item:', item.name);
       }
 
       // Update lastUsed for the userItem if it exists

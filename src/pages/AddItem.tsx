@@ -230,6 +230,16 @@ const AddItem: React.FC = () => {
       // The item should remain in the shopping list so it can be shown as "crossed off"
       // It will only be removed when user explicitly uncrosses it or deletes it
       
+      // Mark shopping list item as crossed off when adding to dashboard from shop list
+      if (fromShoppingList && shoppingListItemId) {
+        try {
+          await shoppingListService.updateShoppingListItemCrossedOff(shoppingListItemId, true);
+        } catch (error) {
+          console.error('Error marking shopping list item as crossed off:', error);
+          // Don't block the save if this fails
+        }
+      }
+      
       // Reset and go back to appropriate view
       setShowForm(false);
       setEditingItem(null);

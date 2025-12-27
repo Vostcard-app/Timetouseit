@@ -230,16 +230,27 @@ export const shoppingListService = {
   },
 
   // Add item to shopping list
-      async addShoppingListItem(userId: string, listId: string, name: string): Promise<string> {
-        const cleanData: any = {
-          userId,
-          listId,
-          name,
-          createdAt: Timestamp.now()
-        };
+  async addShoppingListItem(userId: string, listId: string, name: string, crossedOff?: boolean): Promise<string> {
+    const cleanData: any = {
+      userId,
+      listId,
+      name,
+      createdAt: Timestamp.now()
+    };
+    
+    if (crossedOff !== undefined) {
+      cleanData.crossedOff = crossedOff;
+    }
     
     const docRef = await addDoc(collection(db, 'shoppingList'), cleanData);
     return docRef.id;
+  },
+
+  // Update crossedOff status of a shopping list item
+  async updateShoppingListItemCrossedOff(itemId: string, crossedOff: boolean): Promise<void> {
+    await updateDoc(doc(db, 'shoppingList', itemId), {
+      crossedOff
+    });
   },
 
   // Delete item from shopping list

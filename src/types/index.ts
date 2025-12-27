@@ -43,6 +43,7 @@ export interface ShoppingListItem {
   listId: string;
   name: string;
   createdAt: Date;
+  crossedOff?: boolean;
 }
 
 export interface UserSettings {
