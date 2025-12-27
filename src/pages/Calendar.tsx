@@ -100,7 +100,6 @@ const Calendar: React.FC = () => {
       // Use thawDate for frozen items, expirationDate for regular items
       const dateField = isFrozen && item.thawDate ? item.thawDate : (item.expirationDate || new Date());
       const expirationDate = new Date(dateField);
-      const status = isFrozen ? 'fresh' : getFoodItemStatus(expirationDate, 7); // Frozen items don't have expiration status
 
       // Helper function to set time to midnight (00:00:00) for top positioning
       const setToMidnight = (date: Date): Date => {
