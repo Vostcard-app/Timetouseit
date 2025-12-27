@@ -723,29 +723,52 @@ const Shop: React.FC = () => {
         </div>
 
         {/* Shopping List Items */}
-        <div style={{ position: 'relative', minHeight: '400px' }}>
+        <div style={{ 
+          position: 'relative', 
+          minHeight: '400px',
+          width: '100%',
+          paddingBottom: '2rem'
+        }}>
           {/* Logo - behind everything */}
           <img 
             src="/logo.png" 
             alt="Logo"
+            onLoad={() => {
+              console.log('Logo loaded successfully');
+            }}
+            onError={(e) => {
+              console.error('Failed to load logo:', e);
+              console.error('Logo path attempted: /logo.png');
+            }}
             style={{ 
               position: 'absolute',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              maxWidth: '80%',
-              maxHeight: '80%',
+              maxWidth: '60%',
+              maxHeight: '60%',
+              minWidth: '200px',
+              minHeight: '200px',
+              width: 'auto',
+              height: 'auto',
               opacity: 1,
               zIndex: 0,
               pointerEvents: 'none',
-              objectFit: 'contain'
+              objectFit: 'contain',
+              display: 'block'
             }}
           />
           
           {/* Items - in front */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
             {shoppingListItems.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+              <div style={{ 
+                padding: '2rem', 
+                textAlign: 'center', 
+                color: '#6b7280',
+                position: 'relative',
+                zIndex: 1
+              }}>
                 <p>Your shopping list is empty. Add items above to get started.</p>
               </div>
             ) : (
