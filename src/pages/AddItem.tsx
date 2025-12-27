@@ -113,13 +113,13 @@ const AddItem: React.FC = () => {
     try {
       // If coming from shopping list and "no expiration" is selected
       if (fromShoppingList && noExpiration) {
-        // Just delete from shopping list, don't add to food items
+        // Mark item as crossed off, don't add to food items
         if (shoppingListItemId) {
           try {
-            await shoppingListService.deleteShoppingListItem(shoppingListItemId);
+            await shoppingListService.updateShoppingListItemCrossedOff(shoppingListItemId, true);
           } catch (error) {
-            console.error('Error deleting shopping list item:', error);
-            alert('Failed to remove item from shopping list. Please try again.');
+            console.error('Error marking shopping list item as crossed off:', error);
+            alert('Failed to mark item as crossed off. Please try again.');
             throw error;
           }
         }
