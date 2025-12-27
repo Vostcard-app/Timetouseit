@@ -139,23 +139,8 @@ const Calendar: React.FC = () => {
         return; // Don't process frozen items with normal expiration logic
       }
 
-      if (status === 'expired') {
-        // Red: Show on expiration date and continue showing as red for expired items
-        // For day view, show on the expiration date (react-big-calendar will filter by date)
-        allEvents.push({
-          title: item.name,
-          start: setToMidnight(expirationDate),
-          end: setToEndOfDay(expirationDate),
-          resource: {
-            itemId: item.id,
-            status: 'expired',
-            rowIndex: rowIndex,
-          },
-        } as CalendarEvent);
-        rowIndex++;
-      } else {
-        // For all non-expired items (both 'fresh' and 'expiring_soon'), 
-        // Create: 2 yellow days (expiring soon), 2 blue days (freeze), 1 red day (expired)
+      // For all items (fresh, expiring_soon, and expired), 
+      // Create: 2 yellow days (expiring soon), 2 blue days (freeze), 1 red day (expired)
         if (currentView === 'week') {
           // Week view: Create spanning events
           const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
@@ -283,7 +268,6 @@ const Calendar: React.FC = () => {
           } as CalendarEvent);
         }
         rowIndex++;
-      }
     });
 
     // Debug: Log all events by status

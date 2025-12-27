@@ -13,8 +13,6 @@ export const getFoodItemStatus = (expirationDate: Date | string, reminderDays: n
 
 export const getStatusColor = (status: FoodItemStatus): string => {
   switch (status) {
-    case 'fresh':
-      return '#22c55e'; // green
     case 'expiring_soon':
       return '#f59e0b'; // amber
     case 'expired':
@@ -39,8 +37,6 @@ export const getStatusLabel = (status: FoodItemStatus): string => {
 
 export const getStatusBgColor = (status: FoodItemStatus): string => {
   switch (status) {
-    case 'fresh':
-      return '#dcfce7'; // light green
     case 'expiring_soon':
       return '#fef3c7'; // light amber
     case 'expired':
