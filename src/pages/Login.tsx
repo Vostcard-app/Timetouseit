@@ -25,6 +25,8 @@ const getErrorMessage = (errorCode: string, errorMessage?: string): string => {
       return 'Incorrect password. Please try again.';
     case 'auth/email-already-in-use':
       return 'An account with this email already exists.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account with this email already exists with a different sign-in method. Please sign in with Google or Facebook instead.';
     case 'auth/weak-password':
       return 'Password should be at least 6 characters.';
     case 'auth/invalid-email':
@@ -36,6 +38,11 @@ const getErrorMessage = (errorCode: string, errorMessage?: string): string => {
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection.';
     case 'auth/invalid-credential':
+      // This could mean wrong password OR account exists with different provider
+      // Check error message for more context
+      if (errorMessage?.includes('different') || errorMessage?.includes('provider')) {
+        return 'This account was created with Google or Facebook. Please sign in using that method instead.';
+      }
       return 'Invalid email or password.';
     case 'auth/invalid-api-key':
       return 'Firebase API key is invalid. Please check your configuration.';
