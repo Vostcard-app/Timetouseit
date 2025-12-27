@@ -633,69 +633,36 @@ const Calendar: React.FC = () => {
               );
             }
             
-            // Normal (non-frozen) items: Calculate 4-day span: 3 days before expiration (yellow) + expiration day (red)
+            // Normal (non-frozen) items: Calculate 5-day span: 2 yellow, 2 blue, 1 red
             // For non-frozen items, use expirationDate
             if (!item.expirationDate) {
               return null; // Skip items without expiration date
             }
             const expirationDate = new Date(item.expirationDate);
+            const fourDaysBefore = addDays(expirationDate, -4);
             const threeDaysBefore = addDays(expirationDate, -3);
+            const twoDaysBefore = addDays(expirationDate, -2);
+            const oneDayBefore = addDays(expirationDate, -1);
             
-            // Get column indices for the 4-day span (3 yellow days + 1 red day)
-            const yellowStartCol = getColumnIndex(threeDaysBefore);
+            // Get column indices for the 5-day span
+            const dayMinus4Col = getColumnIndex(fourDaysBefore);
+            const dayMinus3Col = getColumnIndex(threeDaysBefore);
+            const dayMinus2Col = getColumnIndex(twoDaysBefore);
+            const dayMinus1Col = getColumnIndex(oneDayBefore);
             const redCol = getColumnIndex(expirationDate);
             
-            // Debug: Log item rendering info
-            console.log(`🔍 Item: ${item.name}`, {
-              status,
-              expirationDate: expirationDate.toISOString().split('T')[0],
-              threeDaysBefore: threeDaysBefore.toISOString().split('T')[0],
-              yellowStartCol,
-              redCol,
-              weekStart: weekStart.toISOString().split('T')[0],
-              weekEnd: weekDays[6].toISOString().split('T')[0],
-              spanIntersectsWeek: (yellowStartCol !== null || redCol !== null)
-            });
-
-            // Render all non-expired items with 3 yellow + 1 red pattern
-            // (expired items are filtered out above)
-            // Create a single continuous block spanning from yellowStartCol to redCol
-            // Use the actual dates to determine span, even if columns are null (span might extend beyond week)
-            const spanStartCol = yellowStartCol;
-            const spanEndCol = redCol;
-            
-            // Check if span intersects with week - if expiration date or any part of yellow span is in week
-            const expirationInWeek = redCol !== null;
-            const yellowSpanInWeek = yellowStartCol !== null;
-            const spanIntersectsWeek = expirationInWeek || yellowSpanInWeek;
+            // Check if any part of the span intersects with week
+            const spanIntersectsWeek = dayMinus4Col !== null || dayMinus3Col !== null || 
+                                      dayMinus2Col !== null || dayMinus1Col !== null || redCol !== null;
             
             // Only render if the span intersects with the current week view
             if (!spanIntersectsWeek) {
-              console.log(`⚠️ Item ${item.name} span doesn't intersect current week - skipping`, {
-                threeDaysBefore: threeDaysBefore.toISOString().split('T')[0],
-                expirationDate: expirationDate.toISOString().split('T')[0],
-                weekStart: weekStart.toISOString().split('T')[0],
-                weekEnd: weekDays[6].toISOString().split('T')[0]
-              });
               return null;
             }
             
-            // Calculate middle column for centering item name
-            // If span is fully in week, use middle of span. Otherwise use available column
-            const middleCol = spanStartCol !== null && spanEndCol !== null 
-              ? Math.floor((spanStartCol + spanEndCol) / 2)
-              : (spanStartCol !== null ? spanStartCol : (spanEndCol !== null ? spanEndCol : 0));
-            
-            // Determine actual start and end columns to render (clip to week bounds if needed)
-            const renderStartCol = spanStartCol !== null ? spanStartCol : 0;
-            const renderEndCol = spanEndCol !== null ? spanEndCol : 6;
-
-            console.log(`✅ Rendering item: ${item.name}`, {
-              spanStartCol,
-              spanEndCol,
-              middleCol,
-              status
-            });
+            // Check if we have any columns to render
+            const allCols = [dayMinus4Col, dayMinus3Col, dayMinus2Col, dayMinus1Col, redCol].filter(col => col !== null) as number[];
+            if (allCols.length === 0) return null;
 
             return (
               <div
@@ -714,34 +681,23 @@ const Calendar: React.FC = () => {
                 }}
               >
                 {weekDays.map((_, colIndex) => {
-                  // Check if this column is part of the span
-                  // Span goes from yellowStartCol (or 0 if null) to redCol (or 6 if null)
-                  const isInSpan = colIndex >= renderStartCol && colIndex <= renderEndCol;
+                  // Check if this column is part of the 5-day span
+                  const isDayMinus4 = colIndex === dayMinus4Col;
+                  const isDayMinus3 = colIndex === dayMinus3Col;
+                  const isDayMinus2 = colIndex === dayMinus2Col;
+                  const isDayMinus1 = colIndex === dayMinus1Col;
                   const isRedDay = colIndex === redCol;
-                  
-                  // Determine if this is the second yellow day (should be blue)
-                  // The span is: 3 days before expiration (yellow) + expiration day (red)
-                  // Day 1 (3 days before): First yellow day
-                  // Day 2 (2 days before): Second yellow day (blue)
-                  // Day 3 (1 day before): Third yellow day
-                  // Day 4 (expiration): Red day
-                  // Calculate based on actual date difference
-                  let isSecondYellowDay = false;
-                  if (isInSpan && !isRedDay) {
-                    const currentDay = startOfDay(weekDays[colIndex]);
-                    const expirationDay = startOfDay(expirationDate);
-                    const twoDaysBefore = addDays(expirationDay, -2);
-                    // Check if current day is exactly 2 days before expiration
-                    isSecondYellowDay = currentDay.getTime() === twoDaysBefore.getTime();
-                  }
+                  const isInSpan = isDayMinus4 || isDayMinus3 || isDayMinus2 || isDayMinus1 || isRedDay;
 
                   if (isInSpan) {
-                    // Single continuous 4-day block (2 yellow days + 1 blue day + 1 red day)
-                    let backgroundColor = '#eab308'; // Yellow
+                    // Determine color based on which day it is
+                    let backgroundColor = '#eab308'; // Default yellow
                     if (isRedDay) {
                       backgroundColor = '#ef4444'; // Red for expiration day
-                    } else if (isSecondYellowDay) {
-                      backgroundColor = '#3b82f6'; // Blue for second yellow day
+                    } else if (isDayMinus2 || isDayMinus1) {
+                      backgroundColor = '#3b82f6'; // Blue for days -2 and -1
+                    } else if (isDayMinus4 || isDayMinus3) {
+                      backgroundColor = '#eab308'; // Yellow for days -4 and -3
                     }
                     
                     return (
@@ -765,7 +721,6 @@ const Calendar: React.FC = () => {
                           whiteSpace: 'nowrap'
                         }}
                       >
-                        {/* Show item name in both yellow and red sections */}
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
                           {item.name}
                         </span>
