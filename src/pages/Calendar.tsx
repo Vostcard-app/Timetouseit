@@ -464,7 +464,7 @@ const Calendar: React.FC = () => {
                 width: '16px',
                 height: '16px',
                 borderRadius: '50%',
-                backgroundColor: '#f59e0b',
+                backgroundColor: '#eab308',
               }}
             />
             <span style={{ fontSize: '0.875rem' }}>Expiring Soon</span>
@@ -737,7 +737,7 @@ const Calendar: React.FC = () => {
 
                   if (isInSpan) {
                     // Single continuous 4-day block (2 yellow days + 1 blue day + 1 red day)
-                    let backgroundColor = '#f59e0b'; // Default yellow
+                    let backgroundColor = '#eab308'; // Yellow
                     if (isRedDay) {
                       backgroundColor = '#ef4444'; // Red for expiration day
                     } else if (isSecondYellowDay) {
@@ -1000,13 +1000,13 @@ const Calendar: React.FC = () => {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        background-color: #f59e0b !important;
-        border-color: #f59e0b !important;
+        background-color: #eab308 !important;
+        border-color: #eab308 !important;
       }
       /* Debug: Make sure yellow events are visible - target by background color */
-      .rbc-time-view .rbc-event[style*="rgb(245, 158, 11)"],
-      .rbc-time-view .rbc-event[style*="#f59e0b"],
-      .rbc-time-view .rbc-event[style*="background-color: rgb(245, 158, 11)"] {
+      .rbc-time-view .rbc-event[style*="rgb(234, 179, 8)"],
+      .rbc-time-view .rbc-event[style*="#eab308"],
+      .rbc-time-view .rbc-event[style*="background-color: rgb(234, 179, 8)"] {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
