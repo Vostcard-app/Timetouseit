@@ -113,13 +113,18 @@ const Admin: React.FC = () => {
         errors.push('Failed to load user items collection');
       }
 
-      // Load userSettings
+      // Load userSettings and collect emails
+      const userEmails = new Map<string, string>();
       try {
         const userSettings = await getDocs(collection(db, 'userSettings'));
         userSettings.forEach(doc => {
           const userId = doc.id;
           if (userId && typeof userId === 'string') {
             userIds.add(userId);
+            const settingsData = doc.data();
+            if (settingsData?.email) {
+              userEmails.set(userId, settingsData.email);
+            }
           }
         });
       } catch (settingsError: any) {
@@ -134,6 +139,7 @@ const Admin: React.FC = () => {
           const stats = await adminService.getUserStats(uid);
           userInfos.push({
             uid,
+            email: userEmails.get(uid),
             ...stats,
           });
         } catch (userStatsError: any) {
@@ -142,6 +148,7 @@ const Admin: React.FC = () => {
           // Optionally add user with zero stats
           userInfos.push({
             uid,
+            email: userEmails.get(uid),
             foodItemsCount: 0,
             shoppingListsCount: 0,
             userItemsCount: 0,
@@ -395,7 +402,7 @@ const Admin: React.FC = () => {
             }}>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+                gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 1fr',
                 gap: '1rem',
                 padding: '1rem',
                 backgroundColor: '#f9fafb',
@@ -405,6 +412,7 @@ const Admin: React.FC = () => {
                 fontSize: '0.875rem'
               }}>
                 <div>User ID</div>
+                <div>Email</div>
                 <div style={{ textAlign: 'center' }}>Food Items</div>
                 <div style={{ textAlign: 'center' }}>Shopping Lists</div>
                 <div style={{ textAlign: 'center' }}>User Items</div>
@@ -415,7 +423,7 @@ const Admin: React.FC = () => {
                   key={userInfo.uid}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+                    gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 1fr',
                     gap: '1rem',
                     padding: '1rem',
                     borderBottom: '1px solid #e5e7eb',
@@ -424,6 +432,9 @@ const Admin: React.FC = () => {
                 >
                   <div style={{ fontFamily: 'monospace', fontSize: '0.875rem', color: '#1f2937', wordBreak: 'break-all' }}>
                     {userInfo.uid}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#374151' }}>
+                    {userInfo.email || 'N/A'}
                   </div>
                   <div style={{ textAlign: 'center', color: '#6b7280' }}>{userInfo.foodItemsCount}</div>
                   <div style={{ textAlign: 'center', color: '#6b7280' }}>{userInfo.shoppingListsCount}</div>

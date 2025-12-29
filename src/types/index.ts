@@ -48,6 +48,7 @@ export interface ShoppingListItem {
 
 export interface UserSettings {
   userId: string;
+  email?: string; // User's email address
   reminderDays: number; // Days before expiration to send reminder
   notificationsEnabled: boolean;
   defaultCategory?: string;

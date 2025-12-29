@@ -154,6 +154,7 @@ const Login: React.FC = () => {
           try {
             await userSettingsService.updateUserSettings({
               userId,
+              email: userCredential.user.email || email,
               reminderDays: 7,
               notificationsEnabled: true
             });
