@@ -7,6 +7,7 @@ import { getSuggestedExpirationDate } from '../services/foodkeeperService';
 import { freezeGuidelines, freezeCategoryLabels, notRecommendedToFreeze, type FreezeCategory } from '../data/freezeGuidelines';
 import { userItemsService } from '../services/firebaseService';
 import { addMonths, addDays } from 'date-fns';
+import { analyticsService } from '../services/analyticsService';
 
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
@@ -217,6 +218,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     const file = e.target.files?.[0];
     if (file) {
       setPhotoFile(file);
+      // Track engagement: feature_used (photo upload)
+      if (user) {
+        analyticsService.trackEngagement(user.uid, 'feature_used', {
+          feature: 'photo_upload',
+        });
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result as string);
@@ -607,7 +614,15 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         {onScanBarcode && (
           <button
             type="button"
-            onClick={onScanBarcode}
+            onClick={() => {
+              // Track engagement: feature_used (barcode scanner)
+              if (user) {
+                analyticsService.trackEngagement(user.uid, 'feature_used', {
+                  feature: 'barcode_scanner',
+                });
+              }
+              onScanBarcode();
+            }}
             style={{
               width: '100%',
               padding: '0.75rem',

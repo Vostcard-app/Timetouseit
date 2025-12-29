@@ -18,6 +18,7 @@ import type { DocumentData } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
 import type { FoodItem, FoodItemData, UserSettings, ShoppingListItem, ShoppingList, UserItem, UserItemData, UserCategory, UserCategoryData } from '../types';
+import { analyticsService } from './analyticsService';
 
 // Food Items Service
 export const foodItemService = {
@@ -72,6 +73,15 @@ export const foodItemService = {
         console.error('Error message:', error.message);
         console.error('Full error object:', JSON.stringify(error, null, 2));
         
+        // Track sync failure
+        if (userId) {
+          analyticsService.trackQuality(userId, 'sync_failed', {
+            errorType: error.code || 'unknown',
+            errorMessage: error.message || 'Unknown Firestore error',
+            action: 'subscribe_food_items',
+          });
+        }
+        
         // If index is missing or still building
         if (error.code === 'failed-precondition') {
           // Only log once to reduce console noise
@@ -96,6 +106,37 @@ export const foodItemService = {
 
   // Add a new food item
   async addFoodItem(userId: string, data: FoodItemData, status: 'fresh' | 'expiring_soon' | 'expired'): Promise<string> {
+    // Check if this is the first item with expiration/thaw date (activation event)
+    const hasDate = (data.isFrozen && data.thawDate) || (!data.isFrozen && data.expirationDate);
+    let isActivation = false;
+    let timeToActivation: number | null = null;
+    
+    if (hasDate) {
+      // Check if user has any existing food items with dates
+      const existingItemsQuery = query(
+        collection(db, 'foodItems'),
+        where('userId', '==', userId)
+      );
+      const existingSnapshot = await getDocs(existingItemsQuery);
+      
+      // Check if any existing items have expiration or thaw dates
+      const hasExistingItemsWithDates = existingSnapshot.docs.some(doc => {
+        const itemData = doc.data();
+        return itemData.expirationDate || itemData.thawDate;
+      });
+      
+      if (!hasExistingItemsWithDates) {
+        // This is the first item with a date - activation event!
+        isActivation = true;
+        
+        // Calculate time to activation
+        const signupTime = await analyticsService.getUserSignupTime(userId);
+        if (signupTime) {
+          timeToActivation = Math.floor((Date.now() - signupTime.getTime()) / 1000); // seconds
+        }
+      }
+    }
+    
     // Remove undefined fields (Firestore doesn't allow undefined)
     const cleanData: any = {
       userId,
@@ -124,6 +165,21 @@ export const foodItemService = {
     if (data.freezeCategory) cleanData.freezeCategory = data.freezeCategory;
     
     const docRef = await addDoc(collection(db, 'foodItems'), cleanData);
+    
+    // Track activation if this is the first item with a date
+    if (isActivation) {
+      await analyticsService.trackActivation(userId, {
+        timeToActivation: timeToActivation || undefined,
+        itemName: data.name,
+        itemId: docRef.id,
+      });
+      
+      // Track funnel: activation
+      await analyticsService.trackFunnel(userId, 'funnel_activation', {
+        funnelStep: 'activation',
+      });
+    }
+    
     return docRef.id;
   },
 

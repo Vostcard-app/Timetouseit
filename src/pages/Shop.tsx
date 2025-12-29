@@ -7,6 +7,7 @@ import { findFoodItems } from '../services/foodkeeperService';
 import type { ShoppingListItem, ShoppingList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useFoodItems } from '../hooks/useFoodItems';
+import { analyticsService } from '../services/analyticsService';
 
 const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
 
@@ -299,6 +300,12 @@ const Shop: React.FC = () => {
     try {
       // Set crossedOff to false to make the item active again
       await shoppingListService.updateShoppingListItemCrossedOff(item.id, false);
+      
+      // Track engagement: shopping_list_item_crossed_off (uncrossed)
+      await analyticsService.trackEngagement(user.uid, 'shopping_list_item_crossed_off', {
+        itemName: item.name,
+        action: 'uncrossed',
+      });
 
       // Find the matching food item from dashboard (case-insensitive) and delete it if it exists
       const itemNameLower = item.name.trim().toLowerCase();
@@ -359,6 +366,11 @@ const Shop: React.FC = () => {
 
     try {
       await shoppingListService.addShoppingListItem(user.uid, listIdToUse, newItemName.trim());
+      
+      // Track engagement: shopping_list_item_added
+      await analyticsService.trackEngagement(user.uid, 'shopping_list_item_added', {
+        itemName: newItemName.trim(),
+      });
       setNewItemName('');
       setShowDropdown(false);
     } catch (error) {

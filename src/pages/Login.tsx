@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { userSettingsService, shoppingListsService } from '../services/firebaseService';
+import { analyticsService } from '../services/analyticsService';
 
 // Helper function to get user-friendly error messages
 const getErrorMessage = (errorCode: string, errorMessage?: string): string => {
@@ -151,6 +152,18 @@ const Login: React.FC = () => {
         // New user - initialize default settings
         if (userCredential.user && userCredential.user.uid) {
           const userId = userCredential.user.uid;
+          
+          // Track new user creation
+          const acquisitionSource = analyticsService.detectAcquisitionSource();
+          await analyticsService.trackAcquisition(userId, 'new_user_created', {
+            source: acquisitionSource,
+          });
+          
+          // Track funnel: signup
+          await analyticsService.trackFunnel(userId, 'funnel_signup', {
+            funnelStep: 'signup',
+          });
+          
           try {
             await userSettingsService.updateUserSettings({
               userId,
@@ -163,16 +176,37 @@ const Login: React.FC = () => {
             await shoppingListsService.getDefaultShoppingList(userId);
           } catch (initError) {
             console.error('Error initializing user settings:', initError);
+            // Track error
+            await analyticsService.trackQuality(userId, 'error_occurred', {
+              errorType: 'initialization_error',
+              errorMessage: initError instanceof Error ? initError.message : 'Unknown error',
+              action: 'user_initialization',
+            });
             // Don't block sign-up if initialization fails
           }
         }
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Track session started
+        if (userCredential.user && userCredential.user.uid) {
+          await analyticsService.trackAcquisition(userCredential.user.uid, 'session_started', {
+            source: analyticsService.detectAcquisitionSource(),
+          });
+        }
       }
       navigate('/shop');
     } catch (err: any) {
       const errorMessage = getErrorMessage(err.code || '', err.message || '');
       setError(errorMessage);
+      
+      // Track error (use anonymous tracking if user not available)
+      const userId = 'anonymous'; // User not authenticated yet in error case
+      analyticsService.trackQuality(userId, 'error_occurred', {
+        errorType: isSignUp ? 'signup_error' : 'login_error',
+        errorMessage: err.message || errorMessage,
+        action: isSignUp ? 'signup' : 'login',
+      });
     } finally {
       setLoading(false);
     }

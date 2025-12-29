@@ -10,6 +10,7 @@ import HamburgerMenu from '../components/HamburgerMenu';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { addDays, startOfDay, format, parse, startOfWeek, getDay, eachDayOfInterval, isSameDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
+import { analyticsService } from '../services/analyticsService';
 
 const locales = {
   'en-US': enUS,
@@ -40,6 +41,13 @@ const Calendar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Track calendar view
+  useEffect(() => {
+    if (user) {
+      analyticsService.trackEngagement(user.uid, 'calendar_viewed', {});
+    }
+  }, [user]);
   
   // Check if we should default to week view (from Dashboard navigation)
   const defaultViewFromState = (location.state as any)?.defaultView;

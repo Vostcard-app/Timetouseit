@@ -18,10 +18,24 @@ import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import { notificationService } from './services/notificationService';
 import { useFoodItems } from './hooks/useFoodItems';
+import { analyticsService } from './services/analyticsService';
+import { useSessionTracking } from './hooks/useSessionTracking';
 
 function App() {
   const [user, loading] = useAuthState(auth);
   const { foodItems } = useFoodItems(user || null);
+
+  // Track sessions and retention
+  useSessionTracking();
+
+  // Track funnel visit (app load)
+  useEffect(() => {
+    if (user) {
+      analyticsService.trackFunnel(user.uid, 'funnel_visit', {
+        funnelStep: 'visit',
+      });
+    }
+  }, [user]);
 
   // Request notification permission on mount
   useEffect(() => {

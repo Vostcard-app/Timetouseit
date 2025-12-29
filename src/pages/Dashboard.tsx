@@ -10,6 +10,7 @@ import { notRecommendedToFreeze } from '../data/freezeGuidelines';
 import SwipeableListItem from '../components/SwipeableListItem';
 import HamburgerMenu from '../components/HamburgerMenu';
 import type { FoodItem } from '../types';
+import { analyticsService } from '../services/analyticsService';
 
 type FilterType = 'all' | 'fresh' | 'expiring_soon' | 'expired';
 
@@ -47,6 +48,15 @@ const Dashboard: React.FC = () => {
   }, [foodItems, filter]);
 
   const handleDelete = async (itemId: string) => {
+    // Track engagement: core_action_used (toss)
+    if (user) {
+      const item = foodItems.find(i => i.id === itemId);
+      await analyticsService.trackEngagement(user.uid, 'core_action_used', {
+        action: 'toss',
+        itemId,
+        itemName: item?.name,
+      });
+    }
     // Note: Confirmation is now handled in SwipeableListItem component
     // This function is called only after user confirms
     try {
@@ -66,6 +76,14 @@ const Dashboard: React.FC = () => {
     console.log('🔍 ===== FREEZE BUTTON CLICKED =====');
     console.log('🔍 handleFreezeItem called with item:', item);
     console.log('🔍 Item name:', item.name);
+    // Track engagement: core_action_used (freeze)
+    if (user) {
+      analyticsService.trackEngagement(user.uid, 'core_action_used', {
+        action: 'freeze',
+        itemId: item.id,
+        itemName: item.name,
+      });
+    }
     const normalizedName = item.name.trim().toLowerCase();
     console.log('🔍 Normalized name:', normalizedName);
     console.log('🔍 notRecommendedToFreeze list length:', notRecommendedToFreeze.length);

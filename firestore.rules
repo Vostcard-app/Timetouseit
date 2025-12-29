@@ -60,5 +60,26 @@ service cloud.firestore {
       // Allow admins to list all user categories
       allow list: if request.auth != null && isAdmin();
     }
+
+    // Analytics Events collection
+    match /analyticsEvents/{eventId} {
+      // Allow authenticated users to write their own analytics events
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      
+      // Allow admins to read all analytics events
+      allow read: if request.auth != null && isAdmin();
+      
+      // Allow collection-level queries for admins
+      allow list: if request.auth != null && isAdmin();
+    }
+
+    // Analytics Aggregates collection
+    match /analyticsAggregates/{aggregateId} {
+      // Only admins can read aggregates
+      allow read: if request.auth != null && isAdmin();
+      
+      // Allow collection-level queries for admins
+      allow list: if request.auth != null && isAdmin();
+    }
   }
 }

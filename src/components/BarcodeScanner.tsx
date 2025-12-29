@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { barcodeService } from '../services/barcodeService';
 import type { BarcodeScanResult } from '../services/barcodeService';
+import { analyticsService } from '../services/analyticsService';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../firebase/firebaseConfig';
 
 interface BarcodeScannerProps {
   onScan: (result: BarcodeScanResult) => void;
@@ -9,6 +12,7 @@ interface BarcodeScannerProps {
 }
 
 const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onError, onClose }) => {
+  const [user] = useAuthState(auth);
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<any>(null);
   const [hasCamera, setHasCamera] = useState<boolean | null>(null);
@@ -31,6 +35,12 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onError, onClos
         const scanner = await barcodeService.scanBarcode(
           videoRef.current!,
           (result) => {
+            // Track engagement: barcode_scanned
+            if (user) {
+              analyticsService.trackEngagement(user.uid, 'barcode_scanned', {
+                feature: 'barcode_scanner',
+              });
+            }
             onScan(result);
             stopScanning();
           },

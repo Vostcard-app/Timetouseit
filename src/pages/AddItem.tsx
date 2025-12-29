@@ -12,6 +12,7 @@ import BarcodeScanner from '../components/BarcodeScanner';
 import type { BarcodeScanResult } from '../services/barcodeService';
 import { findFoodItems } from '../services/foodkeeperService';
 import { differenceInDays } from 'date-fns';
+import { analyticsService } from '../services/analyticsService';
 
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -191,12 +192,26 @@ const AddItem: React.FC = () => {
         // For non-frozen items, calculate status from expirationDate
         const status = data.isFrozen ? 'fresh' : (data.expirationDate ? getFoodItemStatus(data.expirationDate) : 'fresh');
         await foodItemService.updateFoodItem(editingItem.id, { ...itemData, status });
+        
+        // Track engagement: item_updated
+        await analyticsService.trackEngagement(user.uid, 'item_updated', {
+          itemId: editingItem.id,
+          itemName: data.name,
+          category: data.category,
+        });
       } else {
         // Add new item
         // For frozen items, status might not be relevant, but we'll use 'fresh' as default
         // For non-frozen items, calculate status from expirationDate
         const status = data.isFrozen ? 'fresh' : (data.expirationDate ? getFoodItemStatus(data.expirationDate) : 'fresh');
-        await foodItemService.addFoodItem(user.uid, itemData, status);
+        const itemId = await foodItemService.addFoodItem(user.uid, itemData, status);
+        
+        // Track engagement: item_added
+        await analyticsService.trackEngagement(user.uid, 'item_added', {
+          itemId,
+          itemName: data.name,
+          category: data.category,
+        });
         
         // Save to userItems database if item has expiration or thaw date
         const targetDate = data.isFrozen ? data.thawDate : data.expirationDate;
@@ -221,6 +236,12 @@ const AddItem: React.FC = () => {
             });
           } catch (error) {
             console.error('Error saving to userItems:', error);
+            // Track error
+            await analyticsService.trackQuality(user.uid, 'error_occurred', {
+              errorType: 'userItems_save_error',
+              errorMessage: error instanceof Error ? error.message : 'Unknown error',
+              action: 'save_user_item',
+            });
             // Don't block the save if userItems save fails
           }
         }
@@ -251,6 +272,14 @@ const AddItem: React.FC = () => {
       }
     } catch (error) {
       console.error('Error saving food item:', error);
+      // Track action failure
+      if (user) {
+        await analyticsService.trackQuality(user.uid, 'action_failed', {
+          errorType: 'add_item_error',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          action: 'add_food_item',
+        });
+      }
       throw error;
     }
   };
