@@ -164,6 +164,22 @@ const Login: React.FC = () => {
         }}>
           TossItTime
         </h1>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '1.5rem'
+        }}>
+          <img
+            src="/logo.png"
+            alt="TossItTime Logo"
+            style={{
+              maxWidth: '200px',
+              width: '100%',
+              height: 'auto',
+              display: 'block'
+            }}
+          />
+        </div>
         <p style={{ 
           margin: '0 0 1.5rem 0', 
           color: '#6b7280',

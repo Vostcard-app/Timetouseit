@@ -29,31 +29,18 @@ export default defineConfig({
             type: 'image/svg+xml',
             purpose: 'any'
           },
-          // Add these icons when ready (see PWA_ICONS_SETUP.md):
-          // {
-          //   src: '/icons/icon-192.png',
-          //   sizes: '192x192',
-          //   type: 'image/png',
-          //   purpose: 'any'
-          // },
-          // {
-          //   src: '/icons/icon-512.png',
-          //   sizes: '512x512',
-          //   type: 'image/png',
-          //   purpose: 'any'
-          // },
-          // {
-          //   src: '/icons/icon-192-maskable.png',
-          //   sizes: '192x192',
-          //   type: 'image/png',
-          //   purpose: 'maskable'
-          // },
-          // {
-          //   src: '/icons/icon-512-maskable.png',
-          //   sizes: '512x512',
-          //   type: 'image/png',
-          //   purpose: 'maskable'
-          // }
+          {
+            src: '/icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          }
         ],
         categories: ['food', 'lifestyle', 'productivity'],
         lang: 'en',
