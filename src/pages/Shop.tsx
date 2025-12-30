@@ -626,7 +626,7 @@ const Shop: React.FC = () => {
                     return (
                       <option key={list.id} value={list.id} style={{ fontSize: '1.25rem' }}>
                         {displayName}
-                      </option>
+                    </option>
                     );
                   })}
                   <option value="__add_list__" style={{ fontStyle: 'italic', color: '#6b7280' }}>
@@ -783,7 +783,7 @@ const Shop: React.FC = () => {
           
           {/* Items - in front */}
           <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
-            {shoppingListItems.length === 0 ? (
+          {shoppingListItems.length === 0 ? (
               <div style={{ 
                 padding: '2rem', 
                 textAlign: 'center', 
@@ -791,13 +791,13 @@ const Shop: React.FC = () => {
                 position: 'relative',
                 zIndex: 1
               }}>
-                <p>Your shopping list is empty. Add items above to get started.</p>
-              </div>
-            ) : (
-              <>
-                {/* Regular Items */}
-                {regularItems.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+              <p>Your shopping list is empty. Add items above to get started.</p>
+            </div>
+          ) : (
+            <>
+              {/* Regular Items */}
+              {regularItems.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                     {regularItems.map((item) => {
                       const SwipeableActiveItem = () => {
                         const [translateX, setTranslateX] = useState(0);
@@ -873,7 +873,7 @@ const Shop: React.FC = () => {
                         return (
                           <div
                             ref={itemRef}
-                            style={{
+                  style={{
                               position: 'relative',
                               overflow: 'hidden',
                               borderRadius: '8px',
@@ -914,63 +914,63 @@ const Shop: React.FC = () => {
                               onMouseDown={handleMouseDown}
                               style={{
                                 padding: '0.25rem 0.75rem',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                backgroundColor: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: '#ffffff',
                                 transform: `translateX(${translateX}px)`,
                                 transition: isDragging ? 'none' : 'transform 0.2s',
                                 cursor: 'grab',
                                 userSelect: 'none'
-                              }}
-                            >
+                  }}
+                >
                               <div style={{ fontSize: '1.25rem', fontWeight: '500', color: '#1f2937' }}>
-                                {item.name}
-                              </div>
-                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleItemClick(item);
-                                  }}
-                                  style={{
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: '#002B4D',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    fontSize: '0.875rem',
-                                    fontWeight: '500',
-                                    cursor: 'pointer'
-                                  }}
+                    {item.name}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleItemClick(item);
+                      }}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#002B4D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
                                   aria-label="Add to calendar"
-                                >
+                    >
                                   + Cal
-                                </button>
-                              </div>
-                            </div>
+                    </button>
+                  </div>
+                </div>
                           </div>
                         );
                       };
 
                       return <SwipeableActiveItem key={item.id} />;
                     })}
-                  </div>
-                )}
+                </div>
+              )}
 
                 {/* Merged List: Crossed Off and Previously Used Items */}
                 {mergedItems.length > 0 && (
-                  <div style={{ marginTop: '1.5rem' }}>
-                    <h3 style={{ 
-                      fontSize: '1.125rem', 
-                      fontWeight: '600', 
+                <div style={{ marginTop: '1.5rem' }}>
+                  <h3 style={{ 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
                       color: '#1f2937', 
                       marginBottom: '0.5rem' 
-                    }}>
+                  }}>
                       Previously Used
-                    </h3>
+                  </h3>
                     <div style={{ 
                       marginBottom: '1rem',
                       fontSize: '1.25rem', 
@@ -980,7 +980,7 @@ const Shop: React.FC = () => {
                     }}>
                       Swipe to add
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {mergedItems.map((mergedItem) => {
                         // Only make userItems swipeable (not crossed-off shopping list items)
                         if (mergedItem.type === 'userItem') {
@@ -1058,7 +1058,7 @@ const Shop: React.FC = () => {
                             return (
                               <div
                                 ref={itemRef}
-                                style={{
+                        style={{
                                   position: 'relative',
                                   overflow: 'hidden',
                                   borderRadius: '8px',
@@ -1099,26 +1099,26 @@ const Shop: React.FC = () => {
                                   onMouseDown={handleMouseDown}
                                   style={{
                                     padding: '0.25rem 0.75rem',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
                                     backgroundColor: '#ffffff',
                                     transform: `translateX(${translateX}px)`,
                                     transition: isDragging ? 'none' : 'transform 0.2s',
                                     cursor: 'grab',
                                     userSelect: 'none'
-                                  }}
-                                >
-                                  <div style={{ 
+                        }}
+                      >
+                        <div style={{ 
                                     fontSize: '1.25rem', 
-                                    fontWeight: '500', 
+                          fontWeight: '500', 
                                     color: '#1f2937',
                                     textDecoration: mergedItem.isCrossedOff ? 'line-through' : 'none'
-                                  }}>
+                        }}>
                                     {mergedItem.name}
-                                  </div>
+                        </div>
                                   {mergedItem.expirationLength !== undefined && (
                                     <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                                       {mergedItem.expirationLength} days
@@ -1216,7 +1216,7 @@ const Shop: React.FC = () => {
                                     {/* Swipe background indicator */}
                                     {translateX !== 0 && (
                                       <div
-                                        style={{
+                            style={{
                                           position: 'absolute',
                                           ...(isLeftSwipe ? { right: 0 } : { left: 0 }),
                                           top: 0,
@@ -1227,37 +1227,37 @@ const Shop: React.FC = () => {
                                           alignItems: 'center',
                                           justifyContent: isLeftSwipe ? 'flex-end' : 'flex-start',
                                           ...(isLeftSwipe ? { paddingRight: '1rem' } : { paddingLeft: '1rem' }),
-                                          color: 'white',
-                                          fontSize: '0.875rem',
-                                          fontWeight: '500',
+                              color: 'white',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
                                           opacity: swipeOpacity,
                                           transition: isDragging ? 'none' : 'opacity 0.2s'
-                                        }}
+                            }}
                                       >
                                         {isSwiped ? '✓ Active' : (isLeftSwipe ? '← Swipe' : '→ Swipe')}
-                                      </div>
-                                    )}
-                                    
+                </div>
+              )}
+
                                     {/* Item content */}
                                     <div
                                       onTouchStart={handleTouchStart}
                                       onTouchMove={handleTouchMove}
                                       onTouchEnd={handleTouchEnd}
                                       onMouseDown={handleMouseDown}
-                                      style={{
+                  style={{
                                         padding: '0.25rem 0.75rem',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '8px',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                                         backgroundColor: '#ffffff',
                                         transform: `translateX(${translateX}px)`,
                                         transition: isDragging ? 'none' : 'transform 0.2s',
                                         cursor: 'grab',
                                         userSelect: 'none'
-                                      }}
-                                    >
+                  }}
+                >
                                       <div style={{ 
                                         fontSize: '1.25rem', 
                                         fontWeight: '500', 
@@ -1265,9 +1265,9 @@ const Shop: React.FC = () => {
                                         textDecoration: 'line-through'
                                       }}>
                                         {mergedItem.name}
-                                      </div>
-                                    </div>
-                                  </div>
+                  </div>
+                    </div>
+                  </div>
                                 );
                               };
                               return <SwipeableCrossedOffItem key={mergedItem.id} />;
@@ -1275,12 +1275,12 @@ const Shop: React.FC = () => {
                           );
                         }
                       })}
-                    </div>
-                  </div>
+            </div>
+          </div>
                 )}
 
               </>
-            )}
+        )}
           </div>
         </div>
       </div>

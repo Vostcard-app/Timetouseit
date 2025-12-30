@@ -152,67 +152,67 @@ const Calendar: React.FC = () => {
       // Create: 2 yellow days (expiring soon), 2 blue days (freeze), 1 red day (expired)
       // Create individual events for each day (works for both week and day/month views)
       // Day -4: Yellow (expiring soon)
-      allEvents.push({
-        title: item.name,
+        allEvents.push({
+          title: item.name,
         start: setToMidnight(addDays(expirationDate, -4)),
         end: setToEndOfDay(addDays(expirationDate, -4)),
-        resource: {
-          itemId: item.id,
+          resource: {
+            itemId: item.id,
           status: 'expiring_soon',
-          rowIndex: rowIndex,
-        },
-      } as CalendarEvent);
+            rowIndex: rowIndex,
+          },
+        } as CalendarEvent);
       
       // Day -3: Yellow (expiring soon)
       allEvents.push({
-        title: item.name,
+            title: item.name,
         start: setToMidnight(addDays(expirationDate, -3)),
         end: setToEndOfDay(addDays(expirationDate, -3)),
-        resource: {
-          itemId: item.id,
-          status: 'expiring_soon',
-          rowIndex: rowIndex,
-        },
+            resource: {
+              itemId: item.id,
+              status: 'expiring_soon',
+              rowIndex: rowIndex,
+            },
       } as CalendarEvent);
-      
+          
       // Day -2: Blue (freeze)
-      allEvents.push({
+          allEvents.push({
         title: item.name,
         start: setToMidnight(addDays(expirationDate, -2)),
         end: setToEndOfDay(addDays(expirationDate, -2)),
-        resource: {
-          itemId: item.id,
+            resource: {
+              itemId: item.id,
           status: 'expiring_soon', // Use expiring_soon status but isFreezeDate will override color
-          rowIndex: rowIndex,
+              rowIndex: rowIndex,
           isFreezeDate: true,
-        },
-      } as CalendarEvent);
+            },
+          } as CalendarEvent);
       
       // Day -1: Blue (freeze)
-      allEvents.push({
-        title: item.name,
+            allEvents.push({
+              title: item.name,
         start: setToMidnight(addDays(expirationDate, -1)),
         end: setToEndOfDay(addDays(expirationDate, -1)),
-        resource: {
-          itemId: item.id,
+              resource: {
+                itemId: item.id,
           status: 'expiring_soon', // Use expiring_soon status but isFreezeDate will override color
-          rowIndex: rowIndex,
+                rowIndex: rowIndex,
           isFreezeDate: true,
-        },
-      } as CalendarEvent);
-      
+              },
+            } as CalendarEvent);
+          
       // Day 0: Red (expired)
-      allEvents.push({
-        title: item.name,
-        start: setToMidnight(expirationDate),
-        end: setToEndOfDay(expirationDate),
-        resource: {
-          itemId: item.id,
+          allEvents.push({
+            title: item.name,
+            start: setToMidnight(expirationDate),
+            end: setToEndOfDay(expirationDate),
+            resource: {
+              itemId: item.id,
           status: 'expired',
-          rowIndex: rowIndex,
-        },
-      } as CalendarEvent);
-      rowIndex++;
+              rowIndex: rowIndex,
+            },
+          } as CalendarEvent);
+        rowIndex++;
     });
 
     // Debug: Log all events by status
@@ -1472,7 +1472,7 @@ const Calendar: React.FC = () => {
           />
           <span style={{ fontSize: '0.875rem' }}>Expired</span>
         </div>
-      </div>
+        </div>
       </div>
 
       {/* Hamburger Menu */}

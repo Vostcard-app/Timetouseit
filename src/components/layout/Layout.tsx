@@ -1,10 +1,20 @@
+/**
+ * Layout Component
+ * Main application layout wrapper with header and content area
+ * Automatically hides header on pages that have their own navigation
+ */
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
+  /** Child components to render inside the layout */
   children: React.ReactNode;
 }
 
+/**
+ * Layout component that provides consistent page structure
+ */
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   // Hide Layout header on Dashboard, Calendar, Shop, EditLists, and EditItems since they have their own banners

@@ -157,11 +157,11 @@ const EditItems: React.FC = () => {
       
       if (editingItem.type === 'userItem') {
         // Update all userItems with the same name
-        await userItemsService.updateAllUserItemsByName(
-          user.uid,
-          editingItem.name,
-          updatedData
-        );
+      await userItemsService.updateAllUserItemsByName(
+        user.uid,
+        editingItem.name,
+        updatedData
+      );
       } else if (editingItem.type === 'shoppingListItem' && editingItem.shoppingListItemId) {
         // Update the shopping list item name
         await shoppingListService.updateShoppingListItemName(
@@ -196,14 +196,14 @@ const EditItems: React.FC = () => {
     try {
       if (item.type === 'userItem') {
         // Delete all userItems with this name
-        const q = query(
-          collection(db, 'userItems'),
-          where('userId', '==', user.uid),
-          where('name', '==', item.name)
-        );
-        const querySnapshot = await getDocs(q);
-        const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
-        await Promise.all(deletePromises);
+      const q = query(
+        collection(db, 'userItems'),
+        where('userId', '==', user.uid),
+        where('name', '==', item.name)
+      );
+      const querySnapshot = await getDocs(q);
+      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
       } else if (item.type === 'shoppingListItem' && item.shoppingListItemId) {
         // Delete the shopping list item
         await shoppingListService.deleteShoppingListItem(item.shoppingListItemId);
@@ -367,7 +367,7 @@ const EditItems: React.FC = () => {
                   <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                     {item.type === 'userItem' && item.expirationLength !== undefined && (
                       <>
-                        Expiration: {item.expirationLength} days
+                    Expiration: {item.expirationLength} days
                         {item.userItem?.category && ` • Category: ${item.userItem.category}`}
                       </>
                     )}
@@ -604,54 +604,54 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
 
           {(item.type === 'userItem' || item.type === 'shoppingListItem') && (
             <>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                  Suggested Expiration (days)
-                </label>
-                <input
-                  type="number"
-                  value={expirationLength}
-                  onChange={(e) => setExpirationLength(parseInt(e.target.value) || 1)}
-                  min="1"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    outline: 'none'
-                  }}
-                  required
-                />
-              </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+              Suggested Expiration (days)
+            </label>
+            <input
+              type="number"
+              value={expirationLength}
+              onChange={(e) => setExpirationLength(parseInt(e.target.value) || 1)}
+              min="1"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                outline: 'none'
+              }}
+              required
+            />
+          </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                  Category (optional)
-                </label>
-                <select
-                  value={category}
-                  onChange={handleCategoryChange}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    backgroundColor: '#ffffff',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="">None</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                  <option value="__add_category__">Add Category</option>
-                </select>
-              </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+              Category (optional)
+            </label>
+            <select
+              value={category}
+              onChange={handleCategoryChange}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                outline: 'none',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">None</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+              <option value="__add_category__">Add Category</option>
+            </select>
+          </div>
             </>
           )}
           

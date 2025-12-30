@@ -1,3 +1,17 @@
+/**
+ * HamburgerMenu Component
+ * Side navigation menu that slides in from the right
+ * Includes app navigation, settings, and admin links
+ * 
+ * @example
+ * ```tsx
+ * <HamburgerMenu 
+ *   isOpen={isMenuOpen}
+ *   onClose={() => setIsMenuOpen(false)}
+ * />
+ * ```
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
@@ -6,10 +20,15 @@ import { auth } from '../../firebase/firebaseConfig';
 import { adminService } from '../../services/adminService';
 
 interface HamburgerMenuProps {
+  /** Whether the menu is currently open */
   isOpen: boolean;
+  /** Callback to close the menu */
   onClose: () => void;
 }
 
+/**
+ * HamburgerMenu component with slide-in navigation
+ */
 const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [user] = useAuthState(auth);

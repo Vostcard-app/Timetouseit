@@ -1,14 +1,35 @@
+/**
+ * SwipeableListItem Component
+ * A list item that can be swiped right to reveal delete action
+ * 
+ * @example
+ * ```tsx
+ * <SwipeableListItem 
+ *   item={foodItem}
+ *   onDelete={() => handleDelete()}
+ *   onClick={() => navigate('/item-detail')}
+ * />
+ * ```
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import type { FoodItem } from '../../types';
 import { formatDate } from '../../utils/dateUtils';
 
 interface SwipeableListItemProps {
+  /** The food item to display */
   item: FoodItem;
+  /** Callback when item is swiped and deleted */
   onDelete: () => void;
+  /** Callback when item is clicked/tapped */
   onClick?: () => void;
+  /** Callback when freeze button is clicked */
   onFreeze?: () => void;
 }
 
+/**
+ * SwipeableListItem component with swipe-to-delete functionality
+ */
 const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, onClick, onFreeze }) => {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);

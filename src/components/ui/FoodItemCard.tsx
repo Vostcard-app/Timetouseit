@@ -1,15 +1,36 @@
+/**
+ * FoodItemCard Component
+ * Displays a card view of a food item with its details, status, and actions
+ * 
+ * @example
+ * ```tsx
+ * <FoodItemCard 
+ *   item={foodItem} 
+ *   onClick={() => navigate('/item-detail')}
+ *   onDelete={() => handleDelete()}
+ * />
+ * ```
+ */
+
 import React from 'react';
 import type { FoodItem } from '../../types';
 import { formatDate, formatRelativeDate } from '../../utils/dateUtils';
 import StatusBadge from './StatusBadge';
 
 interface FoodItemCardProps {
+  /** The food item to display */
   item: FoodItem;
+  /** Callback when the card is clicked */
   onClick?: () => void;
+  /** Callback when delete button is clicked */
   onDelete?: () => void;
+  /** Callback when mark as used button is clicked */
   onMarkUsed?: () => void;
 }
 
+/**
+ * FoodItemCard component that displays food item information in a card format
+ */
 const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, onClick, onDelete, onMarkUsed }) => {
 
   return (

@@ -42,3 +42,6 @@ export type {
 } from './common';
 
 export { getErrorInfo } from './common';
+
+// Component Types
+export type * from './components';

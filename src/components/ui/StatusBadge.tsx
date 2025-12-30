@@ -1,12 +1,27 @@
+/**
+ * StatusBadge Component
+ * Displays a colored badge indicating the status of a food item
+ * 
+ * @example
+ * ```tsx
+ * <StatusBadge status="expiring_soon" />
+ * ```
+ */
+
 import React from 'react';
 import type { FoodItemStatus } from '../../types';
 import { getStatusColor, getStatusLabel, getStatusBgColor } from '../../utils/statusUtils';
 
 interface StatusBadgeProps {
+  /** The status of the food item */
   status: FoodItemStatus;
+  /** Optional CSS class name */
   className?: string;
 }
 
+/**
+ * StatusBadge component that displays a colored badge for food item status
+ */
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = '' }) => {
   const color = getStatusColor(status);
   const bgColor = getStatusBgColor(status);
