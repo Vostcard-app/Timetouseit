@@ -167,6 +167,30 @@ const Settings: React.FC = () => {
       <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '2rem', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
+            Account
+          </h2>
+          <p style={{ margin: '0 0 1rem 0', color: '#6b7280' }}>
+            Signed in as: {user.email}
+          </p>
+          <button
+            onClick={handleSignOut}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+
+        <div style={{ marginBottom: '2rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
             Notifications
           </h2>
           <div style={{ marginBottom: '1rem' }}>
@@ -204,7 +228,7 @@ const Settings: React.FC = () => {
           )}
         </div>
 
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '2rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
           <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
             Reminder Settings
           </h2>
@@ -232,30 +256,6 @@ const Settings: React.FC = () => {
               You'll receive reminders when items are expiring within this many days.
             </p>
           </div>
-        </div>
-
-        <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
-            Account
-          </h2>
-          <p style={{ margin: '0 0 1rem 0', color: '#6b7280' }}>
-            Signed in as: {user.email}
-          </p>
-          <button
-            onClick={handleSignOut}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            Sign Out
-          </button>
         </div>
 
         <div style={{ marginTop: '2rem', display: 'flex', gap: '0.5rem' }}>
