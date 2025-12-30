@@ -282,6 +282,42 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
           >
             Edit categories
           </Link>
+          <Link
+            to="/user-guide"
+            onClick={() => handleLinkClick('/user-guide')}
+            style={{
+              display: 'flex',
+              padding: '1rem 1.5rem',
+              color: '#1f2937',
+              textDecoration: 'none',
+              fontSize: '1rem',
+              fontWeight: '500',
+              transition: 'background-color 0.2s',
+              borderLeft: '3px solid transparent',
+              minHeight: '44px', // Touch target size for mobile
+              alignItems: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f3f4f6';
+              e.currentTarget.style.borderLeftColor = '#002B4D';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderLeftColor = 'transparent';
+            }}
+            onTouchStart={(e) => {
+              e.currentTarget.style.backgroundColor = '#f3f4f6';
+              e.currentTarget.style.borderLeftColor = '#002B4D';
+            }}
+            onTouchEnd={(e) => {
+              setTimeout(() => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderLeftColor = 'transparent';
+              }, 200);
+            }}
+          >
+            User Guide
+          </Link>
           {isAdmin && (
             <Link
               to="/admin"
