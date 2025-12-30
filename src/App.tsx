@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase/firebaseConfig';
-import Layout from './components/Layout';
+import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import AddItem from './pages/AddItem';
 import ItemDetail from './pages/ItemDetail';

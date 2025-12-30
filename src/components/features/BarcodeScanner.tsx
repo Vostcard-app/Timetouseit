@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { barcodeService } from '../services/barcodeService';
-import type { BarcodeScanResult } from '../services/barcodeService';
-import { analyticsService } from '../services/analyticsService';
+import { barcodeService } from '../../services/barcodeService';
+import type { BarcodeScanResult } from '../../services/barcodeService';
+import { analyticsService } from '../../services/analyticsService';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase/firebaseConfig';
+import { auth } from '../../firebase/firebaseConfig';
 
 interface BarcodeScannerProps {
   onScan: (result: BarcodeScanResult) => void;

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { shoppingListsService, shoppingListService } from '../services/firebaseService';
+import { shoppingListsService, shoppingListService } from '../services';
 import type { ShoppingList } from '../types';
-import HamburgerMenu from '../components/HamburgerMenu';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 
 const EditLists: React.FC = () => {
   const [user] = useAuthState(auth);

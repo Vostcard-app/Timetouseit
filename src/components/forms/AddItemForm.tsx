@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase/firebaseConfig';
-import type { FoodItemData, FoodItem, UserItem } from '../types';
-import { getSuggestedExpirationDate } from '../services/foodkeeperService';
-import { freezeGuidelines, freezeCategoryLabels, notRecommendedToFreeze, type FreezeCategory } from '../data/freezeGuidelines';
-import { userItemsService } from '../services';
+import { auth } from '../../firebase/firebaseConfig';
+import type { FoodItemData, FoodItem, UserItem } from '../../types';
+import { getSuggestedExpirationDate } from '../../services/foodkeeperService';
+import { freezeGuidelines, freezeCategoryLabels, notRecommendedToFreeze, type FreezeCategory } from '../../data/freezeGuidelines';
+import { userItemsService } from '../../services';
 import { addMonths, addDays } from 'date-fns';
-import { analyticsService } from '../services/analyticsService';
+import { analyticsService } from '../../services/analyticsService';
 
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;

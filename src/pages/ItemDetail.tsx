@@ -4,9 +4,9 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
 import type { FoodItem } from '../types';
-import { foodItemService } from '../services/firebaseService';
+import { foodItemService } from '../services';
 import { formatDate, formatRelativeDate } from '../utils/dateUtils';
-import StatusBadge from '../components/StatusBadge';
+import StatusBadge from '../components/ui/StatusBadge';
 
 const ItemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

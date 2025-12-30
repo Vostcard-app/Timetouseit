@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { userSettingsService } from '../services/firebaseService';
+import { userSettingsService } from '../services';
 import { notificationService } from '../services/notificationService';
 import type { UserSettings } from '../types';
 

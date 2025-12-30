@@ -1,94 +1,44 @@
-export interface FoodItem {
-  id: string;
-  userId: string;
-  name: string;
-  barcode?: string;
-  expirationDate?: Date; // Optional - frozen items use thawDate instead
-  thawDate?: Date; // For frozen items
-  addedDate: Date;
-  photoUrl?: string;
-  quantity?: number;
-  category?: string;
-  status: 'fresh' | 'expiring_soon' | 'expired';
-  reminderSent?: boolean;
-  notes?: string;
-  isFrozen?: boolean;
-  freezeCategory?: string;
-}
+/**
+ * Types Barrel Export
+ * Central export point for all type definitions
+ */
 
-export interface FoodItemData {
-  name: string;
-  barcode?: string;
-  expirationDate?: Date; // Optional - frozen items use thawDate instead
-  thawDate?: Date; // For frozen items
-  photoUrl?: string;
-  quantity?: number;
-  category?: string;
-  notes?: string;
-  isFrozen?: boolean;
-  freezeCategory?: string;
-}
+// Food Item Types
+export type {
+  FoodItem,
+  FoodItemData,
+  FoodItemStatus,
+  FoodKeeperItem
+} from './foodItem';
 
-export interface ShoppingList {
-  id: string;
-  userId: string;
-  name: string;
-  createdAt: Date;
-  isDefault?: boolean;
-}
+// Shopping List Types
+export type {
+  ShoppingList,
+  ShoppingListItem
+} from './shoppingList';
 
-export interface ShoppingListItem {
-  id: string;
-  userId: string;
-  listId: string;
-  name: string;
-  createdAt: Date;
-  crossedOff?: boolean;
-}
+// User Types
+export type {
+  UserSettings,
+  UserItem,
+  UserItemData,
+  UserCategory,
+  UserCategoryData,
+  UserInfo
+} from './user';
 
-export interface UserSettings {
-  userId: string;
-  email?: string; // User's email address
-  reminderDays: number; // Days before expiration to send reminder
-  notificationsEnabled: boolean;
-  defaultCategory?: string;
-  lastUsedShoppingListId?: string;
-}
+// Navigation Types
+export type {
+  AddItemLocationState,
+  CalendarLocationState
+} from './navigation';
 
-export type FoodItemStatus = 'fresh' | 'expiring_soon' | 'expired';
+// Common Types
+export type {
+  FirestoreData,
+  FirestoreUpdateData,
+  ErrorWithCode,
+  CSSPropertiesWithVars
+} from './common';
 
-export interface FoodKeeperItem {
-  name: string;
-  category: string;
-  refrigeratorDays?: number | null;
-  freezerDays?: number | null;
-  pantryDays?: number | null;
-}
-
-export interface UserItem {
-  id: string;
-  userId: string;
-  name: string;
-  expirationLength: number; // Number of days from addedDate to expiration
-  category?: string;
-  createdAt: Date;
-  lastUsed?: Date; // Track when last added to a list
-}
-
-export interface UserItemData {
-  name: string;
-  expirationLength: number;
-  category?: string;
-}
-
-export interface UserCategory {
-  id: string;
-  userId: string;
-  name: string;
-  createdAt: Date;
-}
-
-export interface UserCategoryData {
-  name: string;
-}
-
+export { getErrorInfo } from './common';

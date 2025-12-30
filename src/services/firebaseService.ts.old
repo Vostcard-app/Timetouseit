@@ -17,7 +17,7 @@ import {
 import type { DocumentData } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
-import type { FoodItem, FoodItemData, UserSettings, ShoppingListItem, ShoppingList, UserItem, UserItemData, UserCategory, UserCategoryData } from '../types';
+import type { FoodItem, FoodItemData, UserSettings, ShoppingListItem, ShoppingList, UserItem, UserItemData, UserCategory, UserCategoryData, FirestoreUpdateData, ErrorWithCode } from '../types';
 import { analyticsService } from './analyticsService';
 
 // Food Items Service
@@ -85,12 +85,12 @@ export const foodItemService = {
         // If index is missing or still building
         if (error.code === 'failed-precondition') {
           // Only log once to reduce console noise
-          if (!(window as any).__firestoreIndexWarningShown) {
+          if (!window.__firestoreIndexWarningShown) {
             console.warn('⚠️ Firestore index required for food items query.');
             console.warn('📋 Create the index here:', error.message.match(/https:\/\/[^\s]+/)?.[0] || 'Firebase Console → Firestore → Indexes');
             console.warn('💡 The app will work, but food items won\'t load until the index is created and enabled.');
             console.warn('💡 If you just created the index, wait 2-5 minutes for it to build, then refresh.');
-            (window as any).__firestoreIndexWarningShown = true;
+            window.__firestoreIndexWarningShown = true;
           }
           callback([]); // Return empty array so app doesn't break
         } else {
@@ -138,7 +138,7 @@ export const foodItemService = {
     }
     
     // Remove undefined fields (Firestore doesn't allow undefined)
-    const cleanData: any = {
+    const cleanData: Record<string, unknown> = {
       userId,
       name: data.name,
       addedDate: Timestamp.now(),
@@ -188,19 +188,19 @@ export const foodItemService = {
     const docRef = doc(db, 'foodItems', itemId);
     
     // Filter out undefined values (Firestore doesn't allow undefined)
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     Object.keys(updates).forEach(key => {
-      const value = (updates as any)[key];
+      const value = updates[key as keyof typeof updates];
       if (value !== undefined) {
         updateData[key] = value;
       }
     });
     
     // Convert Date objects to Firestore Timestamps
-    if (updateData.expirationDate) {
+    if (updateData.expirationDate && updateData.expirationDate instanceof Date) {
       updateData.expirationDate = Timestamp.fromDate(updateData.expirationDate);
     }
-    if (updateData.thawDate) {
+    if (updateData.thawDate && updateData.thawDate instanceof Date) {
       updateData.thawDate = Timestamp.fromDate(updateData.thawDate);
     }
     
@@ -264,7 +264,7 @@ export const shoppingListService = {
       },
       (error) => {
         if (error.code === 'failed-precondition') {
-          if (!(window as any).__shoppingListIndexWarningShown) {
+          if (!window.__shoppingListIndexWarningShown) {
             const indexUrl = error.message.match(/https:\/\/[^\s]+/)?.[0];
             console.warn('⚠️ Firestore index required for shopping list query.');
             if (indexUrl) {
@@ -273,7 +273,7 @@ export const shoppingListService = {
               console.warn('📋 Go to Firebase Console → Firestore → Indexes to create the index.');
             }
             console.warn('💡 Shopping list items won\'t load until the index is created and enabled.');
-            (window as any).__shoppingListIndexWarningShown = true;
+            window.__shoppingListIndexWarningShown = true;
           }
           callback([]); // Return empty array so app doesn't break
         } else {
@@ -288,7 +288,7 @@ export const shoppingListService = {
 
   // Add item to shopping list
   async addShoppingListItem(userId: string, listId: string, name: string, crossedOff?: boolean): Promise<string> {
-    const cleanData: any = {
+    const cleanData: Record<string, unknown> = {
       userId,
       listId,
       name,
@@ -362,9 +362,10 @@ export const shoppingListsService = {
         })) as ShoppingList[];
         callback(lists);
       },
-      (error: any) => {
+      (error: Error) => {
         // Check if it's an index error
-        if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
+        const errWithCode = error as ErrorWithCode;
+        if (errWithCode?.code === 'failed-precondition' && error?.message?.includes('index')) {
           console.warn('⚠️ Firestore index required for shopping lists query.');
           if (error.message.includes('create_composite')) {
             const indexUrl = error.message.match(/https:\/\/[^\s]+/)?.[0];
@@ -384,7 +385,7 @@ export const shoppingListsService = {
 
   // Create a new shopping list
   async createShoppingList(userId: string, name: string, isDefault: boolean = false): Promise<string> {
-    const cleanData: any = {
+    const cleanData: Record<string, unknown> = {
       userId,
       name,
       createdAt: Timestamp.now(),
@@ -403,7 +404,7 @@ export const shoppingListsService = {
   async updateShoppingList(listId: string, data: Partial<ShoppingList>): Promise<void> {
     try {
       const docRef = doc(db, 'shoppingLists', listId);
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
       await updateDoc(docRef, updateData);
@@ -481,7 +482,7 @@ export const userSettingsService = {
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      await updateDoc(docRef, settings as any);
+      await updateDoc(docRef, settings as FirestoreUpdateData<UserSettings>);
     } else {
       // Use setDoc to create with userId as document ID
       await setDoc(docRef, settings);
@@ -560,7 +561,7 @@ export const userItemsService = {
       return existing.id;
     } else {
       // Create new item
-      const cleanData: any = {
+      const cleanData: Record<string, unknown> = {
         userId,
         name: data.name,
         expirationLength: data.expirationLength,
@@ -580,7 +581,7 @@ export const userItemsService = {
   // Update user item by ID
   async updateUserItem(itemId: string, data: Partial<UserItemData>): Promise<void> {
     const docRef = doc(db, 'userItems', itemId);
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (data.name !== undefined) updateData.name = data.name;
     if (data.expirationLength !== undefined) updateData.expirationLength = data.expirationLength;
@@ -599,7 +600,7 @@ export const userItemsService = {
     
     const querySnapshot = await getDocs(q);
     const updatePromises = querySnapshot.docs.map(doc => {
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.expirationLength !== undefined) updateData.expirationLength = data.expirationLength;
       if (data.category !== undefined) updateData.category = data.category || null;
@@ -647,12 +648,13 @@ export const userItemsService = {
         console.log('📦 userItemsService: Mapped items count:', items.length);
         callback(items);
       },
-      (error: any) => {
+      (error: Error) => {
         console.error('❌ Error in user items subscription:', error);
-        console.error('❌ Error code:', error.code);
+        const errWithCode = error as ErrorWithCode;
+        console.error('❌ Error code:', errWithCode.code);
         console.error('❌ Error message:', error.message);
         // Check if it's an index error
-        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        if (errWithCode.code === 'failed-precondition' || error.message?.includes('index')) {
           console.warn('⚠️ Firestore index required for userItems query.');
           console.warn('📋 Create the index here: https://console.firebase.google.com/v1/r/project/tossittime/firestore/indexes');
           console.warn('💡 Falling back to query without orderBy...');
@@ -683,7 +685,7 @@ export const userItemsService = {
               });
               callback(items);
             },
-            (fallbackError: any) => {
+            (fallbackError: Error) => {
               console.error('❌ Error in fallback user items subscription:', fallbackError);
               callback([]);
             }
@@ -756,7 +758,7 @@ export const userCategoriesService = {
   // Update category
   async updateCategory(categoryId: string, data: Partial<UserCategoryData>): Promise<void> {
     const docRef = doc(db, 'userCategories', categoryId);
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (data.name !== undefined) {
       // Check if another category with this name exists
@@ -802,10 +804,11 @@ export const userCategoriesService = {
         })) as UserCategory[];
         callback(categories);
       },
-      (error: any) => {
+      (error: Error) => {
         console.error('❌ Error in user categories subscription:', error);
         // Fallback: try without orderBy if index is missing
-        if (error.code === 'failed-precondition' && error.message?.includes('index')) {
+        const errWithCode = error as ErrorWithCode;
+        if (errWithCode.code === 'failed-precondition' && error.message?.includes('index')) {
           console.warn('⚠️ Firestore index for userCategories (userId, name) is missing. Attempting fallback query without orderBy.');
           const fallbackQ = query(
             collection(db, 'userCategories'),
@@ -820,7 +823,7 @@ export const userCategoriesService = {
             // Sort manually if fallback is used
             categories.sort((a, b) => a.name.localeCompare(b.name));
             callback(categories);
-          }, (fallbackError: any) => {
+          }, (fallbackError: Error) => {
             console.error('❌ Fallback query for user categories also failed:', fallbackError);
             callback([]);
           });

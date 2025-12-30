@@ -1,6 +1,6 @@
 import React from 'react';
-import type { FoodItem } from '../types';
-import { formatDate, formatRelativeDate } from '../utils/dateUtils';
+import type { FoodItem } from '../../types';
+import { formatDate, formatRelativeDate } from '../../utils/dateUtils';
 import StatusBadge from './StatusBadge';
 
 interface FoodItemCardProps {

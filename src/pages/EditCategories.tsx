@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { userCategoriesService } from '../services/firebaseService';
+import { userCategoriesService } from '../services';
 import type { UserCategory, UserCategoryData } from '../types';
-import HamburgerMenu from '../components/HamburgerMenu';
+import { getErrorInfo } from '../types';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 
 const EditCategories: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -47,9 +48,10 @@ const EditCategories: React.FC = () => {
       setError(null);
       await userCategoriesService.updateCategory(editingCategory.id, updatedData);
       setEditingCategory(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorInfo = getErrorInfo(err);
       console.error('Error updating category:', err);
-      setError(err.message || 'Failed to update category. Please try again.');
+      setError(errorInfo.message || 'Failed to update category. Please try again.');
     }
   };
 
@@ -77,9 +79,10 @@ const EditCategories: React.FC = () => {
       setError(null);
       await userCategoriesService.createCategory(user.uid, data);
       setShowAddForm(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorInfo = getErrorInfo(err);
       console.error('Error adding category:', err);
-      setError(err.message || 'Failed to add category. Please try again.');
+      setError(errorInfo.message || 'Failed to add category. Please try again.');
     }
   };
 

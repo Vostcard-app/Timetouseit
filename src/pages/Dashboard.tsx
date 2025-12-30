@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
-import { foodItemService } from '../services/firebaseService';
+import { foodItemService } from '../services';
 import { formatDate } from '../utils/dateUtils';
 import { notRecommendedToFreeze } from '../data/freezeGuidelines';
-import SwipeableListItem from '../components/SwipeableListItem';
-import HamburgerMenu from '../components/HamburgerMenu';
+import SwipeableListItem from '../components/ui/SwipeableListItem';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 import type { FoodItem } from '../types';
 import { analyticsService } from '../services/analyticsService';
 
@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
   // Check for Firestore index warning
   useEffect(() => {
     const checkIndexWarning = () => {
-      if ((window as any).__firestoreIndexWarningShown) {
+      if (window.__firestoreIndexWarningShown) {
         setShowIndexWarning(true);
       }
     };

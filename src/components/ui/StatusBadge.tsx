@@ -1,6 +1,6 @@
 import React from 'react';
-import type { FoodItemStatus } from '../types';
-import { getStatusColor, getStatusLabel, getStatusBgColor } from '../utils/statusUtils';
+import type { FoodItemStatus } from '../../types';
+import { getStatusColor, getStatusLabel, getStatusBgColor } from '../../utils/statusUtils';
 
 interface StatusBadgeProps {
   status: FoodItemStatus;

@@ -2,23 +2,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { shoppingListService, shoppingListsService, userSettingsService, userItemsService } from '../services/firebaseService';
+import { shoppingListService, shoppingListsService, userSettingsService, userItemsService } from '../services';
 import { findFoodItems } from '../services/foodkeeperService';
-import type { ShoppingListItem, ShoppingList } from '../types';
-import HamburgerMenu from '../components/HamburgerMenu';
+import type { ShoppingListItem, ShoppingList, UserItem } from '../types';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { analyticsService } from '../services/analyticsService';
 
-const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
-
-// Helper function to capitalize first letter of each word
-const capitalizeItemName = (name: string): string => {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
+import { STORAGE_KEYS } from '../constants';
+import { capitalizeItemName } from '../utils/formatting';
 
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -35,7 +27,7 @@ const Shop: React.FC = () => {
   const [inputFocused, setInputFocused] = useState(false);
   const [showAddListToast, setShowAddListToast] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const [userItems, setUserItems] = useState<any[]>([]);
+  const [userItems, setUserItems] = useState<UserItem[]>([]);
   const lastUsedListIdRef = useRef<string | null>(null);
   const settingsLoadedRef = useRef(false);
 
@@ -109,7 +101,7 @@ const Shop: React.FC = () => {
     if (!settingsLoaded) return;
     if (shoppingLists.length === 0) return;
 
-    const storedId = localStorage.getItem(LAST_LIST_STORAGE_KEY);
+    const storedId = localStorage.getItem(STORAGE_KEYS.LAST_SHOPPING_LIST_ID);
     const savedId = lastUsedListIdRef.current;
 
     // Keep current valid selection
@@ -242,7 +234,7 @@ const Shop: React.FC = () => {
     expirationLength?: number;
     shoppingListItemId?: string;
     shoppingListItem?: ShoppingListItem;
-    userItem?: any;
+    userItem?: UserItem;
   };
 
   const mergedItems = useMemo(() => {
@@ -419,7 +411,7 @@ const Shop: React.FC = () => {
 
     setSelectedListId(listId);
     lastUsedListIdRef.current = listId;
-    localStorage.setItem(LAST_LIST_STORAGE_KEY, listId);
+      localStorage.setItem(STORAGE_KEYS.LAST_SHOPPING_LIST_ID, listId);
 
     if (user) {
       userSettingsService
@@ -455,7 +447,7 @@ const Shop: React.FC = () => {
       // Automatically select the newly created list
       setSelectedListId(listId);
       lastUsedListIdRef.current = listId;
-      localStorage.setItem(LAST_LIST_STORAGE_KEY, listId);
+      localStorage.setItem(STORAGE_KEYS.LAST_SHOPPING_LIST_ID, listId);
       // Persistence will be handled by the effect
     } catch (error) {
       console.error('Error creating shopping list:', error);

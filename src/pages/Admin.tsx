@@ -5,9 +5,10 @@ import { auth } from '../firebase/firebaseConfig';
 import { adminService } from '../services/adminService';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
-import HamburgerMenu from '../components/HamburgerMenu';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 import { analyticsAggregationService } from '../services/analyticsAggregationService';
 import type { DashboardOverview, RetentionMetrics, FunnelMetrics, EngagementMetrics } from '../types/analytics';
+import { getErrorInfo } from '../types';
 
 interface UserInfo {
   uid: string;
@@ -79,7 +80,7 @@ const Admin: React.FC = () => {
       try {
         const stats = await adminService.getSystemStats();
         setSystemStats(stats);
-      } catch (statsError: any) {
+      } catch (statsError: unknown) {
         console.error('Error loading system stats:', statsError);
         errors.push('Failed to load system statistics');
       }
@@ -96,7 +97,7 @@ const Admin: React.FC = () => {
             userIds.add(userId);
           }
         });
-      } catch (foodError: any) {
+      } catch (foodError: unknown) {
         console.error('Error loading foodItems:', foodError);
         errors.push('Failed to load food items collection');
       }
@@ -110,7 +111,7 @@ const Admin: React.FC = () => {
             userIds.add(userId);
           }
         });
-      } catch (shoppingError: any) {
+      } catch (shoppingError: unknown) {
         console.error('Error loading shoppingLists:', shoppingError);
         errors.push('Failed to load shopping lists collection');
       }
@@ -124,7 +125,7 @@ const Admin: React.FC = () => {
             userIds.add(userId);
           }
         });
-      } catch (userItemsError: any) {
+      } catch (userItemsError: unknown) {
         console.error('Error loading userItems:', userItemsError);
         errors.push('Failed to load user items collection');
       }
@@ -150,7 +151,7 @@ const Admin: React.FC = () => {
             userEmails.set(user.uid, user.email);
           }
         }
-      } catch (settingsError: any) {
+      } catch (settingsError: unknown) {
         console.error('Error loading userSettings:', settingsError);
         errors.push('Failed to load user settings collection');
       }
@@ -165,7 +166,7 @@ const Admin: React.FC = () => {
             email: userEmails.get(uid),
             ...stats,
           });
-        } catch (userStatsError: any) {
+        } catch (userStatsError: unknown) {
           console.error(`Error loading stats for user ${uid}:`, userStatsError);
           // Skip this user but continue with others
           // Optionally add user with zero stats
@@ -186,9 +187,10 @@ const Admin: React.FC = () => {
       if (errors.length > 0) {
         setError(`Some data failed to load: ${errors.join(', ')}. Partial data is shown below.`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInfo = getErrorInfo(error);
       console.error('Unexpected error loading admin data:', error);
-      setError(`Failed to load admin data: ${error.message || 'Unknown error'}`);
+      setError(`Failed to load admin data: ${errorInfo.message || 'Unknown error'}`);
     } finally {
       setLoadingUsers(false);
     }
@@ -218,9 +220,10 @@ const Admin: React.FC = () => {
       setRetentionMetrics(retention);
       setFunnelMetrics(funnel);
       setEngagementMetrics(engagement);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInfo = getErrorInfo(error);
       console.error('Error loading analytics:', error);
-      setAnalyticsError(`Failed to load analytics: ${error.message || 'Unknown error'}`);
+      setAnalyticsError(`Failed to load analytics: ${errorInfo.message || 'Unknown error'}`);
     } finally {
       setLoadingAnalytics(false);
     }
@@ -248,15 +251,16 @@ const Admin: React.FC = () => {
       try {
         const stats = await adminService.getSystemStats();
         setSystemStats(stats);
-      } catch (statsError: any) {
+      } catch (statsError: unknown) {
         console.error('Error updating stats after deletion:', statsError);
         // Don't show error for stats update failure
       }
       // Remove error message if deletion was successful
       setError(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInfo = getErrorInfo(error);
       console.error('Error deleting user:', error);
-      setError(`Failed to delete user data: ${error.message || 'Unknown error'}`);
+      setError(`Failed to delete user data: ${errorInfo.message || 'Unknown error'}`);
     } finally {
       setDeletingUserId(null);
     }

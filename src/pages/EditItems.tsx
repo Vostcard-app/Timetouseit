@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase/firebaseConfig';
-import { userItemsService, userCategoriesService, shoppingListService, shoppingListsService } from '../services/firebaseService';
+import { userItemsService, userCategoriesService, shoppingListService, shoppingListsService } from '../services';
 import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import type { UserItem, UserItemData, UserCategory, UserCategoryData, ShoppingListItem, ShoppingList } from '../types';
-import HamburgerMenu from '../components/HamburgerMenu';
+import { getErrorInfo } from '../types';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 
 type MergedEditItem = {
   id: string;
@@ -514,8 +515,9 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
       setTimeout(() => {
         setCategory(data.name);
       }, 100);
-    } catch (err: any) {
-      alert(err.message || 'Failed to add category. Please try again.');
+    } catch (err: unknown) {
+      const errorInfo = getErrorInfo(err);
+      alert(errorInfo.message || 'Failed to add category. Please try again.');
     }
   };
 

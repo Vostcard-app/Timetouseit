@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase/firebaseConfig';
-import { userItemsService, userCategoriesService } from '../services';
-import type { UserItem, UserCategory, UserCategoryData } from '../types';
-import { getErrorInfo } from '../types';
+import { auth } from '../../firebase/firebaseConfig';
+import { userItemsService, userCategoriesService } from '../../services';
+import type { UserItem, UserCategory, UserCategoryData } from '../../types';
+import { getErrorInfo } from '../../types';
 
 interface EditItemModalProps {
   item: UserItem | null;

@@ -7,8 +7,9 @@ import {
   RecaptchaVerifier
 } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { userSettingsService, shoppingListsService } from '../services/firebaseService';
+import { userSettingsService, shoppingListsService } from '../services';
 import { analyticsService } from '../services/analyticsService';
+import { getErrorInfo } from '../types';
 
 // Helper function to get user-friendly error messages
 const getErrorMessage = (errorCode: string, errorMessage?: string): string => {
@@ -64,7 +65,7 @@ const Login: React.FC = () => {
   useEffect(() => {
     // Listen for console errors related to API keys
     const originalError = console.error;
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       const errorStr = args.join(' ');
       if (errorStr.includes('API key not valid') || errorStr.includes('INVALID_ARGUMENT')) {
         setError('Firebase API key is invalid. Please check your configuration. See API_KEY_FIX_NOW.md for help.');
@@ -135,7 +136,7 @@ const Login: React.FC = () => {
           try {
             await recaptchaVerifierRef.current.verify();
             console.log('✅ reCAPTCHA verified');
-          } catch (recaptchaError: any) {
+          } catch (recaptchaError: unknown) {
             console.error('reCAPTCHA verification failed:', recaptchaError);
             setError('Please complete the security verification.');
             setLoading(false);
@@ -196,15 +197,16 @@ const Login: React.FC = () => {
         }
       }
       navigate('/shop');
-    } catch (err: any) {
-      const errorMessage = getErrorMessage(err.code || '', err.message || '');
+    } catch (err: unknown) {
+      const errorInfo = getErrorInfo(err);
+      const errorMessage = getErrorMessage(errorInfo.code || '', errorInfo.message);
       setError(errorMessage);
       
       // Track error (use anonymous tracking if user not available)
       const userId = 'anonymous'; // User not authenticated yet in error case
       analyticsService.trackQuality(userId, 'error_occurred', {
         errorType: isSignUp ? 'signup_error' : 'login_error',
-        errorMessage: err.message || errorMessage,
+        errorMessage: errorInfo.message || errorMessage,
         action: isSignUp ? 'signup' : 'login',
       });
     } finally {
@@ -225,8 +227,9 @@ const Login: React.FC = () => {
     try {
       await sendPasswordResetEmail(auth, email);
       setResetEmailSent(true);
-    } catch (err: any) {
-      const errorMessage = getErrorMessage(err.code || '', err.message || '');
+    } catch (err: unknown) {
+      const errorInfo = getErrorInfo(err);
+      const errorMessage = getErrorMessage(errorInfo.code || '', errorInfo.message);
       setError(errorMessage);
     } finally {
       setResetLoading(false);

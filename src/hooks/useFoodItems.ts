@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import type { FoodItem } from '../types';
-import { foodItemService, userSettingsService } from '../services/firebaseService';
+import { foodItemService, userSettingsService } from '../services';
 import { getFoodItemStatus } from '../utils/statusUtils';
 
 export const useFoodItems = (user: User | null) => {

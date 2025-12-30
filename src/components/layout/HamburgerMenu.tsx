@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase/firebaseConfig';
-import { adminService } from '../services/adminService';
+import { auth } from '../../firebase/firebaseConfig';
+import { adminService } from '../../services/adminService';
 
 interface HamburgerMenuProps {
   isOpen: boolean;

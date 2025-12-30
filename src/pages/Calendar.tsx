@@ -6,11 +6,12 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { getFoodItemStatus, getStatusColor } from '../utils/statusUtils';
-import HamburgerMenu from '../components/HamburgerMenu';
+import HamburgerMenu from '../components/layout/HamburgerMenu';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { addDays, startOfDay, format, parse, startOfWeek, getDay, eachDayOfInterval, isSameDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
 import { analyticsService } from '../services/analyticsService';
+import type { CalendarLocationState } from '../types';
 
 const locales = {
   'en-US': enUS,
@@ -50,7 +51,8 @@ const Calendar: React.FC = () => {
   }, [user]);
   
   // Check if we should default to week view (from Dashboard navigation)
-  const defaultViewFromState = (location.state as any)?.defaultView;
+  const locationState = location.state as CalendarLocationState | null;
+  const defaultViewFromState = locationState?.defaultView;
   const initialView = defaultViewFromState === 'week' ? 'week' : 'month';
   
   const [currentView, setCurrentView] = useState<View>(initialView);
@@ -318,7 +320,7 @@ const Calendar: React.FC = () => {
       baseStyle.bottom = 'auto';
       baseStyle.marginTop = '0px';
       // Set CSS variable for additional CSS override support
-      (baseStyle as any)['--rbc-event-top'] = `${topPosition}px`;
+      (baseStyle as React.CSSProperties & { '--rbc-event-top'?: string })['--rbc-event-top'] = `${topPosition}px`;
       // Ensure z-index so events appear above grid lines
       baseStyle.zIndex = 1;
       // For week view, ensure spanning events can span multiple days

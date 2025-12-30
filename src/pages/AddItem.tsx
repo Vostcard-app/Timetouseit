@@ -2,26 +2,19 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import type { FoodItemData, FoodItem } from '../types';
-import { foodItemService, shoppingListService, userItemsService } from '../services/firebaseService';
+import type { FoodItemData, FoodItem, AddItemLocationState } from '../types';
+import { foodItemService, shoppingListService, userItemsService } from '../services';
 import { getFoodItemStatus } from '../utils/statusUtils';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { formatDate } from '../utils/dateUtils';
-import AddItemForm from '../components/AddItemForm';
-import BarcodeScanner from '../components/BarcodeScanner';
+import AddItemForm from '../components/forms/AddItemForm';
+import BarcodeScanner from '../components/features/BarcodeScanner';
 import type { BarcodeScanResult } from '../services/barcodeService';
 import { findFoodItems } from '../services/foodkeeperService';
 import { differenceInDays } from 'date-fns';
 import { analyticsService } from '../services/analyticsService';
 
-// Helper function to capitalize first letter of each word
-const capitalizeItemName = (name: string): string => {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
+import { capitalizeItemName } from '../utils/formatting';
 
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -41,13 +34,14 @@ const AddItem: React.FC = () => {
   const [isFrozen, setIsFrozen] = useState(false);
   
   // Check if coming from shopping list
-  const fromShoppingList = (location.state as any)?.fromShoppingList;
-  const shoppingListItemId = (location.state as any)?.shoppingListItemId;
-  const shoppingListItemName = (location.state as any)?.itemName;
+  const locationState = location.state as AddItemLocationState | null;
+  const fromShoppingList = locationState?.fromShoppingList;
+  const shoppingListItemId = locationState?.shoppingListItemId;
+  const shoppingListItemName = locationState?.itemName;
   
   // Check if coming from Dashboard with item to edit
-  const dashboardEditingItem = (location.state as any)?.editingItem as FoodItem | undefined;
-  const forceFreeze = (location.state as any)?.forceFreeze as boolean | undefined;
+  const dashboardEditingItem = locationState?.editingItem;
+  const forceFreeze = locationState?.forceFreeze;
 
   // Initialize isFrozen from forceFreeze if provided
   React.useEffect(() => {

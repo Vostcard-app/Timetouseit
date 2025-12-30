@@ -1,5 +1,6 @@
 import { doc, getDocs, collection, query, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import type { UserInfo } from '../types';
 
 // Configure admin emails here
 const ADMIN_EMAILS = [
@@ -23,7 +24,7 @@ export const adminService = {
   },
 
   // Get all users (admin only)
-  async getAllUsers(): Promise<any[]> {
+  async getAllUsers(): Promise<UserInfo[]> {
     // Note: Firebase Auth doesn't provide a direct way to list all users
     // We'll need to collect user data from Firestore collections
     // This gets users from foodItems collection
