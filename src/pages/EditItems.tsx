@@ -22,7 +22,7 @@ const EditItems: React.FC = () => {
   const [user] = useAuthState(auth);
   const [userItems, setUserItems] = useState<UserItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
-  const [crossedOffItems, setCrossedOffItems] = useState<ShoppingListItem[]>([]);
+  const [allShoppingListItems, setAllShoppingListItems] = useState<ShoppingListItem[]>([]);
   const [mergedItems, setMergedItems] = useState<MergedEditItem[]>([]);
   const [editingItem, setEditingItem] = useState<MergedEditItem | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,10 +69,10 @@ const EditItems: React.FC = () => {
     return () => unsubscribe();
   }, [user]);
 
-  // Load crossed-off items from all shopping lists
+  // Load ALL items from all shopping lists (both active and crossed-off)
   useEffect(() => {
     if (!user || shoppingLists.length === 0) {
-      setCrossedOffItems([]);
+      setAllShoppingListItems([]);
       return;
     }
 
@@ -84,21 +84,20 @@ const EditItems: React.FC = () => {
         user.uid,
         list.id,
         (items) => {
-          // Filter for crossed-off items
-          const crossedOff = items.filter(item => item.crossedOff === true);
-          itemsByList.set(list.id, crossedOff);
+          // Get ALL items (both active and crossed-off)
+          itemsByList.set(list.id, items);
           
-          // Combine all crossed-off items from all lists
-          const allCrossedOff: ShoppingListItem[] = [];
+          // Combine all items from all lists
+          const allItems: ShoppingListItem[] = [];
           itemsByList.forEach(listItems => {
             listItems.forEach(item => {
-              if (!allCrossedOff.find(existing => existing.id === item.id)) {
-                allCrossedOff.push(item);
+              if (!allItems.find(existing => existing.id === item.id)) {
+                allItems.push(item);
               }
             });
           });
           
-          setCrossedOffItems(allCrossedOff);
+          setAllShoppingListItems(allItems);
         }
       );
       unsubscribes.push(unsubscribe);
@@ -109,37 +108,41 @@ const EditItems: React.FC = () => {
     };
   }, [user, shoppingLists]);
 
-  // Merge userItems and crossed-off items
+  // Merge userItems and all shopping list items
   useEffect(() => {
     const merged: MergedEditItem[] = [];
+    const processedNames = new Set<string>();
     
-    // Add crossed-off items first
-    crossedOffItems.forEach(item => {
+    // Add all shopping list items (both active and crossed-off)
+    allShoppingListItems.forEach(item => {
+      processedNames.add(item.name.toLowerCase());
       merged.push({
         id: item.id,
         name: item.name,
-        isCrossedOff: true,
+        isCrossedOff: item.crossedOff === true,
         type: 'shoppingListItem',
         shoppingListItemId: item.id,
         shoppingListItem: item
       });
     });
     
-    // Add userItems (previously used items)
+    // Add userItems that don't have a corresponding shopping list item
     userItems.forEach(item => {
-      merged.push({
-        id: item.id,
-        name: item.name,
-        isCrossedOff: false,
-        type: 'userItem',
-        expirationLength: item.expirationLength,
-        userItem: item
-      });
+      if (!processedNames.has(item.name.toLowerCase())) {
+        merged.push({
+          id: item.id,
+          name: item.name,
+          isCrossedOff: false,
+          type: 'userItem',
+          expirationLength: item.expirationLength,
+          userItem: item
+        });
+      }
     });
     
     setMergedItems(merged);
     setLoading(false);
-  }, [userItems, crossedOffItems]);
+  }, [userItems, allShoppingListItems]);
 
   const handleEdit = (item: MergedEditItem) => {
     setEditingItem(item);
@@ -159,23 +162,18 @@ const EditItems: React.FC = () => {
           updatedData
         );
       } else if (editingItem.type === 'shoppingListItem' && editingItem.shoppingListItemId) {
-        // For shopping list items, we can update the name
-        // Note: Shopping list items don't have expirationLength, so we'll need to handle this differently
-        // For now, we'll just update the name in the shopping list item
+        // Update the shopping list item name
         await shoppingListService.updateShoppingListItemName(
           editingItem.shoppingListItemId,
           updatedData.name
         );
         
-        // If there's a corresponding userItem, update it too
-        const matchingUserItem = userItems.find(ui => ui.name.toLowerCase() === editingItem.name.toLowerCase());
-        if (matchingUserItem) {
-          await userItemsService.updateAllUserItemsByName(
-            user.uid,
-            editingItem.name,
-            updatedData
-          );
-        }
+        // Create or update the corresponding UserItem
+        await userItemsService.createOrUpdateUserItem(user.uid, {
+          name: updatedData.name,
+          expirationLength: updatedData.expirationLength || 7,
+          category: updatedData.category
+        });
       }
       
       setEditingItem(null);
@@ -373,79 +371,50 @@ const EditItems: React.FC = () => {
                       </>
                     )}
                     {item.type === 'shoppingListItem' && (
-                      <>Crossed off item</>
+                      <>
+                        {item.isCrossedOff ? 'Crossed off' : 'Active'} shopping list item
+                        {(() => {
+                          const matchingUserItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
+                          if (matchingUserItem && matchingUserItem.expirationLength) {
+                            return ` • Expiration: ${matchingUserItem.expirationLength} days`;
+                          }
+                          return '';
+                        })()}
+                      </>
                     )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {item.type === 'userItem' && (
-                    <>
-                      <button
-                        onClick={() => handleEdit(item)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#002B4D',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                  {item.type === 'shoppingListItem' && (
-                    <>
-                      <button
-                        onClick={() => handleEdit(item)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#002B4D',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
+                  <button
+                    onClick={() => handleEdit(item)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#002B4D',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
@@ -483,12 +452,20 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<UserCategory[]>([]);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [userItems, setUserItems] = useState<UserItem[]>([]);
 
   useEffect(() => {
     setName(item.name);
-    setExpirationLength(item.expirationLength || 0);
-    setCategory(item.userItem?.category || '');
-  }, [item]);
+    // For shopping list items, try to get expirationLength from matching UserItem
+    if (item.type === 'shoppingListItem') {
+      const matchingUserItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
+      setExpirationLength(matchingUserItem?.expirationLength || 7);
+      setCategory(matchingUserItem?.category || '');
+    } else {
+      setExpirationLength(item.expirationLength || 0);
+      setCategory(item.userItem?.category || '');
+    }
+  }, [item, userItems]);
 
   // Load categories
   useEffect(() => {
@@ -498,6 +475,20 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
       user.uid,
       (cats) => {
         setCategories(cats);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Load userItems to get expirationLength for shopping list items
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = userItemsService.subscribeToUserItems(
+      user.uid,
+      (items) => {
+        setUserItems(items);
       }
     );
 
@@ -536,25 +527,17 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
       return;
     }
 
-    if (item.type === 'userItem' && expirationLength < 1) {
+    if (expirationLength < 1) {
       setError('Expiration length must be at least 1 day.');
       return;
     }
 
-    if (item.type === 'userItem') {
-      onSave({
-        name: name.trim(),
-        expirationLength,
-        category: category.trim() || undefined
-      });
-    } else {
-      // For shopping list items, only save the name
-      onSave({
-        name: name.trim(),
-        expirationLength: 0,
-        category: undefined
-      });
-    }
+    // Save with expiration and category for both userItems and shopping list items
+    onSave({
+      name: name.trim(),
+      expirationLength,
+      category: category.trim() || undefined
+    });
   };
 
   return (
@@ -617,7 +600,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
             />
           </div>
 
-          {item.type === 'userItem' && (
+          {(item.type === 'userItem' || item.type === 'shoppingListItem') && (
             <>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
@@ -672,7 +655,9 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
           
           {item.type === 'shoppingListItem' && (
             <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f3f4f6', borderRadius: '6px', fontSize: '0.875rem', color: '#6b7280' }}>
-              This is a crossed-off shopping list item. Only the name can be edited.
+              {item.isCrossedOff 
+                ? 'This is a crossed-off shopping list item. Editing will update both the shopping list item and the master list.'
+                : 'This is an active shopping list item. Editing will update both the shopping list item and the master list.'}
             </div>
           )}
 

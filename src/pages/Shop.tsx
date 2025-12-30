@@ -386,6 +386,18 @@ const Shop: React.FC = () => {
     try {
       await shoppingListService.addShoppingListItem(user.uid, listIdToUse, newItemName.trim());
       
+      // Create/update UserItem to ensure item is in master list
+      try {
+        await userItemsService.createOrUpdateUserItem(user.uid, {
+          name: newItemName.trim(),
+          expirationLength: 7, // Default, can be edited later
+          category: undefined // Can be set later
+        });
+      } catch (userItemError) {
+        console.error('Error creating UserItem:', userItemError);
+        // Don't block the add if UserItem creation fails
+      }
+      
       // Track engagement: shopping_list_item_added
       await analyticsService.trackEngagement(user.uid, 'shopping_list_item_added', {
         itemName: newItemName.trim(),
