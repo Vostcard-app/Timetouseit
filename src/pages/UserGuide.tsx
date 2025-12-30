@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Banner from '../components/layout/Banner';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 
 const UserGuide: React.FC = () => {
-  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -23,17 +21,16 @@ const UserGuide: React.FC = () => {
           padding: '2rem',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
         }}>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: '700',
+            color: '#1f2937',
+            marginBottom: '0.5rem'
+          }}>
+            User Guide
+          </h1>
 
-        <h1 style={{
-          fontSize: '2rem',
-          fontWeight: '700',
-          color: '#1f2937',
-          marginBottom: '0.5rem'
-        }}>
-          User Guide
-        </h1>
-
-        <div style={{
+          <div style={{
           fontSize: '1rem',
           lineHeight: '1.75',
           color: '#4b5563'
@@ -298,6 +295,7 @@ const UserGuide: React.FC = () => {
               If you have questions or encounter any issues, please contact support through the app settings.
             </p>
           </section>
+          </div>
         </div>
       </div>
       <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../firebase/firebaseConfig';
 import { userItemsService, userCategoriesService, shoppingListService, shoppingListsService } from '../services';
