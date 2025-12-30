@@ -247,29 +247,38 @@ const Shop: React.FC = () => {
 
   const mergedItems = useMemo(() => {
     const merged: MergedItem[] = [];
+    const processedNames = new Set<string>();
     
     // Add crossed-off items first
     crossedOffItems.forEach(item => {
-      merged.push({
-        id: item.id,
-        name: item.name,
-        isCrossedOff: true,
-        type: 'shoppingListItem',
-        shoppingListItemId: item.id,
-        shoppingListItem: item
-      });
+      const nameLower = item.name.toLowerCase();
+      if (!processedNames.has(nameLower)) {
+        processedNames.add(nameLower);
+        merged.push({
+          id: item.id,
+          name: item.name,
+          isCrossedOff: true,
+          type: 'shoppingListItem',
+          shoppingListItemId: item.id,
+          shoppingListItem: item
+        });
+      }
     });
     
-    // Add previously used items
+    // Add previously used items (only if not already added)
     previouslyUsedItems.forEach(item => {
-      merged.push({
-        id: item.id,
-        name: item.name,
-        isCrossedOff: false,
-        type: 'userItem',
-        expirationLength: item.expirationLength,
-        userItem: item
-      });
+      const nameLower = item.name.toLowerCase();
+      if (!processedNames.has(nameLower)) {
+        processedNames.add(nameLower);
+        merged.push({
+          id: item.id,
+          name: item.name,
+          isCrossedOff: false,
+          type: 'userItem',
+          expirationLength: item.expirationLength,
+          userItem: item
+        });
+      }
     });
     
     return merged;

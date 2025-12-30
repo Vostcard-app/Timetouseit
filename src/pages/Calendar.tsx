@@ -515,7 +515,7 @@ const Calendar: React.FC = () => {
                 textAlign: 'center',
                 fontWeight: '600',
                 borderRight: index < 6 ? '1px solid #d1d5db' : 'none',
-                backgroundColor: isSameDay(day, today) ? '#f3f4f6' : '#ffffff'
+                backgroundColor: isSameDay(day, today) ? '#e5e7eb' : '#ffffff'
               }}
             >
               <div style={{ fontSize: '0.875rem' }}>{format(day, 'EEE')}</div>
@@ -599,12 +599,15 @@ const Calendar: React.FC = () => {
                       return (
                         <div
                           key={colIndex}
+                          className="calendar-week-event"
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             navigate('/add', { state: { editingItem: item } });
                           }}
                           onTouchEnd={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             navigate('/add', { state: { editingItem: item } });
                           }}
                           style={{
@@ -724,12 +727,15 @@ const Calendar: React.FC = () => {
                     return (
                       <div
                         key={colIndex}
+                        className="calendar-week-event"
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           navigate('/add', { state: { editingItem: item } });
                         }}
                         onTouchEnd={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           navigate('/add', { state: { editingItem: item } });
                         }}
                         style={{
@@ -1096,6 +1102,10 @@ const Calendar: React.FC = () => {
       .rbc-time-view .rbc-time-gutter {
         display: none !important;
       }
+      /* Darken today's date background */
+      .rbc-today {
+        background-color: #e5e7eb !important;
+      }
       /* Override any time-based positioning from react-big-calendar */
       .rbc-time-view .rbc-day-slot .rbc-events-container .rbc-event {
         /* Remove any default top positioning that react-big-calendar might add */
@@ -1239,7 +1249,7 @@ const Calendar: React.FC = () => {
         onTouchStart={(e) => {
           // Don't capture touch if it's on an interactive element
           const target = e.target as HTMLElement;
-          if (target.closest('button') || target.closest('.rbc-event') || target.closest('[role="button"]') || target.closest('a')) {
+          if (target.closest('button') || target.closest('.rbc-event') || target.closest('[role="button"]') || target.closest('a') || target.closest('.calendar-week-event')) {
             return;
           }
           const touch = e.touches[0];
@@ -1249,7 +1259,7 @@ const Calendar: React.FC = () => {
         onTouchMove={(e) => {
           // Don't capture touch if it's on an interactive element
           const target = e.target as HTMLElement;
-          if (target.closest('button') || target.closest('.rbc-event') || target.closest('[role="button"]') || target.closest('a')) {
+          if (target.closest('button') || target.closest('.rbc-event') || target.closest('[role="button"]') || target.closest('a') || target.closest('.calendar-week-event')) {
             return;
           }
           if (!touchStart) return;
@@ -1259,7 +1269,7 @@ const Calendar: React.FC = () => {
         onTouchEnd={(e) => {
           // Don't capture touch if it's on an interactive element
           const target = e.target as HTMLElement;
-          if (target.closest('button') || target.closest('.rbc-event') || target.closest('[role="button"]') || target.closest('a')) {
+          if (target.closest('button') || target.closest('.rbc-event') || target.closest('[role="button"]') || target.closest('a') || target.closest('.calendar-week-event')) {
             setTouchStart(null);
             setTouchEnd(null);
             return;
