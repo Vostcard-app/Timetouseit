@@ -14,6 +14,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [user] = useAuthState(auth);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showOtherApps, setShowOtherApps] = useState(false);
 
   // Check admin status
   useEffect(() => {
@@ -318,6 +319,132 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
           >
             User Guide
           </Link>
+          <div>
+            <button
+              onClick={() => setShowOtherApps(!showOtherApps)}
+              style={{
+                display: 'flex',
+                padding: '1rem 1.5rem',
+                color: '#1f2937',
+                textDecoration: 'none',
+                fontSize: '1rem',
+                fontWeight: '500',
+                transition: 'background-color 0.2s',
+                borderLeft: '3px solid transparent',
+                minHeight: '44px',
+                alignItems: 'center',
+                background: 'none',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                justifyContent: 'space-between'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.borderLeftColor = '#002B4D';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderLeftColor = 'transparent';
+              }}
+              onTouchStart={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.borderLeftColor = '#002B4D';
+              }}
+              onTouchEnd={(e) => {
+                setTimeout(() => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderLeftColor = 'transparent';
+                }, 200);
+              }}
+            >
+              <span>Our other apps</span>
+              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                {showOtherApps ? '▼' : '▶'}
+              </span>
+            </button>
+            {showOtherApps && (
+              <div style={{ backgroundColor: '#f9fafb' }}>
+                <a
+                  href="https://vostcard.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onClose}
+                  style={{
+                    display: 'flex',
+                    padding: '0.75rem 1.5rem 0.75rem 3rem',
+                    color: '#1f2937',
+                    textDecoration: 'none',
+                    fontSize: '0.95rem',
+                    fontWeight: '400',
+                    transition: 'background-color 0.2s',
+                    borderLeft: '3px solid transparent',
+                    minHeight: '44px',
+                    alignItems: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderLeftColor = '#002B4D';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.borderLeftColor = 'transparent';
+                  }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderLeftColor = '#002B4D';
+                  }}
+                  onTouchEnd={(e) => {
+                    setTimeout(() => {
+                      e.currentTarget.style.backgroundColor = '#f9fafb';
+                      e.currentTarget.style.borderLeftColor = 'transparent';
+                    }, 200);
+                  }}
+                >
+                  Vostcard
+                </a>
+                <a
+                  href="https://whatspacked.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onClose}
+                  style={{
+                    display: 'flex',
+                    padding: '0.75rem 1.5rem 0.75rem 3rem',
+                    color: '#1f2937',
+                    textDecoration: 'none',
+                    fontSize: '0.95rem',
+                    fontWeight: '400',
+                    transition: 'background-color 0.2s',
+                    borderLeft: '3px solid transparent',
+                    minHeight: '44px',
+                    alignItems: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderLeftColor = '#002B4D';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.borderLeftColor = 'transparent';
+                  }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderLeftColor = '#002B4D';
+                  }}
+                  onTouchEnd={(e) => {
+                    setTimeout(() => {
+                      e.currentTarget.style.backgroundColor = '#f9fafb';
+                      e.currentTarget.style.borderLeftColor = 'transparent';
+                    }, 200);
+                  }}
+                >
+                  What's Packed
+                </a>
+              </div>
+            )}
+          </div>
           {isAdmin && (
             <Link
               to="/admin"
