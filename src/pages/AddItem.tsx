@@ -14,6 +14,15 @@ import { findFoodItems } from '../services/foodkeeperService';
 import { differenceInDays } from 'date-fns';
 import { analyticsService } from '../services/analyticsService';
 
+// Helper function to capitalize first letter of each word
+const capitalizeItemName = (name: string): string => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
@@ -156,8 +165,9 @@ const AddItem: React.FC = () => {
       // Build itemData without undefined fields
       // For frozen items: include thawDate, exclude expirationDate
       // For non-frozen items: include expirationDate, exclude thawDate
+      const capitalizedName = capitalizeItemName(data.name);
       const itemData: FoodItemData = {
-        name: data.name,
+        name: capitalizedName,
         quantity: data.quantity || 1
       };
       
@@ -196,7 +206,7 @@ const AddItem: React.FC = () => {
         // Track engagement: item_updated
         await analyticsService.trackEngagement(user.uid, 'item_updated', {
           itemId: editingItem.id,
-          itemName: data.name,
+          itemName: capitalizedName,
           category: data.category,
         });
       } else {
@@ -209,7 +219,7 @@ const AddItem: React.FC = () => {
         // Track engagement: item_added
         await analyticsService.trackEngagement(user.uid, 'item_added', {
           itemId,
-          itemName: data.name,
+          itemName: capitalizedName,
           category: data.category,
         });
         
@@ -223,14 +233,14 @@ const AddItem: React.FC = () => {
             // Get category from FoodKeeper or use form category
             let category = data.category;
             if (!category) {
-              const foodKeeperMatches = findFoodItems(data.name, 1);
+              const foodKeeperMatches = findFoodItems(capitalizedName, 1);
               if (foodKeeperMatches.length > 0) {
                 category = foodKeeperMatches[0].category;
               }
             }
             
             await userItemsService.createOrUpdateUserItem(user.uid, {
-              name: data.name,
+              name: capitalizedName,
               expirationLength: Math.max(1, expirationLength), // Ensure at least 1 day
               category: category
             });

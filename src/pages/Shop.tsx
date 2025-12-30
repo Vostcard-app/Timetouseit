@@ -11,6 +11,15 @@ import { analyticsService } from '../services/analyticsService';
 
 const LAST_LIST_STORAGE_KEY = 'tossittime:lastShoppingListId';
 
+// Helper function to capitalize first letter of each word
+const capitalizeItemName = (name: string): string => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
@@ -274,7 +283,8 @@ const Shop: React.FC = () => {
     }
 
     try {
-      await shoppingListService.addShoppingListItem(user.uid, selectedListId, itemName);
+      const capitalizedName = capitalizeItemName(itemName);
+      await shoppingListService.addShoppingListItem(user.uid, selectedListId, capitalizedName);
       // Update lastUsed for the userItem
       const userItem = userItems.find(ui => ui.name.toLowerCase() === itemName.toLowerCase());
       if (userItem) {
@@ -384,12 +394,13 @@ const Shop: React.FC = () => {
     }
 
     try {
-      await shoppingListService.addShoppingListItem(user.uid, listIdToUse, newItemName.trim());
+      const capitalizedName = capitalizeItemName(newItemName);
+      await shoppingListService.addShoppingListItem(user.uid, listIdToUse, capitalizedName);
       
       // Create/update UserItem to ensure item is in master list
       try {
         await userItemsService.createOrUpdateUserItem(user.uid, {
-          name: newItemName.trim(),
+          name: capitalizedName,
           expirationLength: 7, // Default, can be edited later
           category: undefined // Can be set later
         });
@@ -400,7 +411,7 @@ const Shop: React.FC = () => {
       
       // Track engagement: shopping_list_item_added
       await analyticsService.trackEngagement(user.uid, 'shopping_list_item_added', {
-        itemName: newItemName.trim(),
+        itemName: capitalizedName,
       });
       setNewItemName('');
       setShowDropdown(false);
@@ -614,7 +625,7 @@ const Shop: React.FC = () => {
                 padding: '0.75rem',
                 border: '1px solid #d1d5db',
                 borderRadius: '6px',
-                fontSize: '1rem',
+                fontSize: '1.25rem',
                 outline: 'none',
                 backgroundColor: '#ffffff',
                 cursor: 'pointer'
@@ -625,11 +636,15 @@ const Shop: React.FC = () => {
               ) : (
                 <>
                   {!selectedListId && <option value="">Select a list</option>}
-                  {shoppingLists.map((list) => (
-                    <option key={list.id} value={list.id}>
-                      {list.name}
-                    </option>
-                  ))}
+                  {shoppingLists.map((list) => {
+                    // Capitalize the list name for display
+                    const displayName = list.name === 'shop list' ? 'Shop list' : list.name;
+                    return (
+                      <option key={list.id} value={list.id}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
                   <option value="__add_list__" style={{ fontStyle: 'italic', color: '#6b7280' }}>
                     + Add list
                   </option>
