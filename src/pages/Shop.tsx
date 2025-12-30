@@ -741,37 +741,6 @@ const Shop: React.FC = () => {
           width: '100%',
           paddingBottom: '2rem'
         }}>
-          {/* Logo - behind everything */}
-          <img 
-            src="/logo.png"
-            alt="Logo"
-            onLoad={() => {
-              console.log('Logo loaded successfully');
-            }}
-            onError={(e) => {
-              console.error('Failed to load logo:', e);
-              console.error('Logo path attempted: /logo.png');
-              console.error('Current image src:', (e.currentTarget as HTMLImageElement).src);
-              console.error('Window location:', window.location.href);
-            }}
-            style={{ 
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              maxWidth: '60%',
-              maxHeight: '60%',
-              minWidth: '200px',
-              minHeight: '200px',
-              width: 'auto',
-              height: 'auto',
-              opacity: 1,
-              zIndex: 0,
-              pointerEvents: 'none',
-              objectFit: 'contain',
-              display: 'block'
-            }}
-          />
           
           {/* Items - in front */}
           <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
@@ -824,9 +793,9 @@ const Shop: React.FC = () => {
                           fontWeight: '500',
                           cursor: 'pointer'
                         }}
-                        aria-label="Buy item"
+                        aria-label="Add to calendar"
                       >
-                        Buy
+                        + Cal
                       </button>
                     </div>
                   </div>

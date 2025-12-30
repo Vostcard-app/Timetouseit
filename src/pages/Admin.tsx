@@ -37,6 +37,16 @@ const Admin: React.FC = () => {
   const [funnelMetrics, setFunnelMetrics] = useState<FunnelMetrics | null>(null);
   const [engagementMetrics, setEngagementMetrics] = useState<EngagementMetrics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState({
+    overview: true,
+    acquisition: false,
+    activation: false,
+    retention: false,
+    engagement: false,
+    funnel: false,
+    quality: false,
+  });
 
   // Check admin status
   useEffect(() => {
@@ -195,6 +205,7 @@ const Admin: React.FC = () => {
     if (!isAdmin) return;
     
     setLoadingAnalytics(true);
+    setAnalyticsError(null);
     try {
       const [overview, retention, funnel, engagement] = await Promise.all([
         analyticsAggregationService.calculateDashboardOverview(),
@@ -207,11 +218,20 @@ const Admin: React.FC = () => {
       setRetentionMetrics(retention);
       setFunnelMetrics(funnel);
       setEngagementMetrics(engagement);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading analytics:', error);
+      setAnalyticsError(`Failed to load analytics: ${error.message || 'Unknown error'}`);
     } finally {
       setLoadingAnalytics(false);
     }
+  };
+
+  // Toggle section expansion
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -418,9 +438,40 @@ const Admin: React.FC = () => {
 
         {/* Analytics Section */}
         <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
-            Analytics Dashboard
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ margin: '0', fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+              Analytics Dashboard
+            </h2>
+            {analyticsError && (
+              <button
+                onClick={loadAnalytics}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#002B4D',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+
+          {analyticsError && (
+            <div style={{
+              padding: '1rem',
+              backgroundColor: '#fee2e2',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              marginBottom: '1.5rem',
+              color: '#991b1b'
+            }}>
+              {analyticsError}
+            </div>
+          )}
           
           {loadingAnalytics ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
@@ -428,255 +479,592 @@ const Admin: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Overview Metrics */}
-              {analyticsOverview && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
-                    Overview
-                  </h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    marginBottom: '1.5rem'
-                  }}>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Users Today</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.newUsersToday}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Users This Week</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.newUsersThisWeek}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Users This Month</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.newUsersThisMonth}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Activation Rate</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.activationRate.toFixed(1)}%</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 7 Retention</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.day7Retention.toFixed(1)}%</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 30 Retention</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.day30Retention.toFixed(1)}%</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>WAU/MAU Ratio</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.wauMauRatio.toFixed(2)}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Actions/Session</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.averageActionsPerSession.toFixed(1)}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Error Rate</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.errorRate.toFixed(2)}%</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Retention Metrics */}
-              {retentionMetrics && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
-                    Retention Metrics
-                  </h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    marginBottom: '1.5rem'
-                  }}>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Daily Active Users</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.dau}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Weekly Active Users</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.wau}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Monthly Active Users</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.mau}</div>
-                    </div>
-                    <div style={{
-                      padding: '1.5rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 1 Retention</div>
-                      <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.day1Retention.toFixed(1)}%</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Funnel Metrics */}
-              {funnelMetrics && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
-                    Funnel Analysis
-                  </h3>
-                  <div style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Visits</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.visitCount}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Signups</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.signupCount}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                          {funnelMetrics.visitToSignupRate.toFixed(1)}% conversion
+              {/* Overview Section - Expanded by default */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('overview')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Overview</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.overview ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.overview && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    {analyticsOverview ? (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Users Today</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.newUsersToday}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Users This Week</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.newUsersThisWeek}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Users This Month</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{analyticsOverview.newUsersThisMonth}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Activation Rate</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: analyticsOverview.activationRate > 50 ? '#10b981' : analyticsOverview.activationRate > 25 ? '#f59e0b' : '#ef4444' }}>
+                            {analyticsOverview.activationRate.toFixed(1)}%
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 7 Retention</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: analyticsOverview.day7Retention > 40 ? '#10b981' : analyticsOverview.day7Retention > 20 ? '#f59e0b' : '#ef4444' }}>
+                            {analyticsOverview.day7Retention.toFixed(1)}%
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>WAU/MAU Ratio</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: analyticsOverview.wauMauRatio > 0.5 ? '#10b981' : analyticsOverview.wauMauRatio > 0.3 ? '#f59e0b' : '#ef4444' }}>
+                            {analyticsOverview.wauMauRatio.toFixed(2)}
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Actions/Session</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
+                            {analyticsOverview.averageActionsPerSession.toFixed(1)}
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Error Rate</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: analyticsOverview.errorRate < 1 ? '#10b981' : analyticsOverview.errorRate < 5 ? '#f59e0b' : '#ef4444' }}>
+                            {analyticsOverview.errorRate.toFixed(2)}%
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Activations</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.activationCount}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                          {funnelMetrics.signupToActivationRate.toFixed(1)}% conversion
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Return Usage</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.returnUsageCount}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                          {funnelMetrics.activationToReturnRate.toFixed(1)}% conversion
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Overall Conversion</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.overallConversionRate.toFixed(1)}%</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Engagement Metrics */}
-              {engagementMetrics && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
-                    Engagement Metrics
-                  </h3>
-                  <div style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Actions/Session</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{engagementMetrics.averageActionsPerSession.toFixed(1)}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Sessions/User</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{engagementMetrics.averageSessionsPerUser.toFixed(1)}</div>
-                      </div>
-                    </div>
-                    {engagementMetrics.mostUsedFeatures.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem', fontWeight: '600' }}>Most Used Features</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {engagementMetrics.mostUsedFeatures.slice(0, 5).map((feature) => (
-                            <div key={feature.feature} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
-                              <span style={{ fontSize: '0.875rem', color: '#1f2937' }}>{feature.feature}</span>
-                              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '600' }}>{feature.usageCount} users</span>
-                            </div>
-                          ))}
-                        </div>
+                    ) : (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        No analytics data available yet. Metrics will appear as users interact with the app.
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Acquisition Section */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('acquisition')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Acquisition</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.acquisition ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.acquisition && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                      Acquisition metrics will be displayed here. Check back soon for detailed acquisition data.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Activation Section */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('activation')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Activation</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.activation ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.activation && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    {analyticsOverview ? (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Activation Rate</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
+                            {analyticsOverview.activationRate.toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        No activation data available yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Retention Section */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('retention')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Retention</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.retention ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.retention && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    {retentionMetrics ? (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Daily Active Users</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.dau}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Weekly Active Users</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.wau}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Monthly Active Users</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.mau}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 1 Retention</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.day1Retention.toFixed(1)}%</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 7 Retention</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.day7Retention.toFixed(1)}%</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Day 30 Retention</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.day30Retention.toFixed(1)}%</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>WAU/MAU Ratio</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{retentionMetrics.wauMauRatio.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        No retention data available yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Engagement Section */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('engagement')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Engagement</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.engagement ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.engagement && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    {engagementMetrics ? (
+                      <>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                          gap: '1rem',
+                          marginBottom: '1.5rem'
+                        }}>
+                          <div style={{
+                            padding: '1.5rem',
+                            backgroundColor: '#f9fafb',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px'
+                          }}>
+                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Actions/Session</div>
+                            <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
+                              {engagementMetrics.averageActionsPerSession.toFixed(1)}
+                            </div>
+                          </div>
+                          <div style={{
+                            padding: '1.5rem',
+                            backgroundColor: '#f9fafb',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px'
+                          }}>
+                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Avg Sessions/User</div>
+                            <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
+                              {engagementMetrics.averageSessionsPerUser.toFixed(1)}
+                            </div>
+                          </div>
+                        </div>
+                        {engagementMetrics.mostUsedFeatures.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem', fontWeight: '600' }}>Most Used Features</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {engagementMetrics.mostUsedFeatures.slice(0, 5).map((feature) => (
+                                <div key={feature.feature} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
+                                  <span style={{ fontSize: '0.875rem', color: '#1f2937' }}>{feature.feature}</span>
+                                  <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '600' }}>{feature.usageCount} users</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        No engagement data available yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Funnel Section */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('funnel')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Funnel Analysis</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.funnel ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.funnel && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    {funnelMetrics ? (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Visits</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.visitCount}</div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Signups</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.signupCount}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                            {funnelMetrics.visitToSignupRate.toFixed(1)}% conversion
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Activations</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.activationCount}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                            {funnelMetrics.signupToActivationRate.toFixed(1)}% conversion
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Return Usage</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.returnUsageCount}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                            {funnelMetrics.activationToReturnRate.toFixed(1)}% conversion
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Overall Conversion</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>{funnelMetrics.overallConversionRate.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        No funnel data available yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Quality Section */}
+              <div style={{
+                marginBottom: '1.5rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <button
+                  onClick={() => toggleSection('quality')}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}
+                >
+                  <span>Quality & Errors</span>
+                  <span style={{ fontSize: '1.5rem', color: '#6b7280' }}>
+                    {expandedSections.quality ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.quality && (
+                  <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                    {analyticsOverview ? (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        <div style={{
+                          padding: '1.5rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Error Rate</div>
+                          <div style={{ fontSize: '2rem', fontWeight: '700', color: analyticsOverview.errorRate < 1 ? '#10b981' : analyticsOverview.errorRate < 5 ? '#f59e0b' : '#ef4444' }}>
+                            {analyticsOverview.errorRate.toFixed(2)}%
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        No quality data available yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
             </>
           )}
         </div>
