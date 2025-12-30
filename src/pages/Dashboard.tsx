@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
     return foodItems.filter(item => item.status === filter);
   }, [foodItems, filter]);
 
-  const handleDelete = async (itemId: string) => {
+  const handleDelete = useCallback(async (itemId: string) => {
     // Track engagement: core_action_used (toss)
     if (user) {
       const item = foodItems.find(i => i.id === itemId);
@@ -66,13 +66,13 @@ const Dashboard: React.FC = () => {
       console.error('Error deleting item:', error);
       alert('Failed to delete item. Please try again.');
     }
-  };
+  }, [user, foodItems]);
 
-  const handleItemClick = (item: typeof foodItems[0]) => {
+  const handleItemClick = useCallback((item: typeof foodItems[0]) => {
     navigate('/add', { state: { editingItem: item } });
-  };
+  }, [navigate]);
 
-  const handleFreezeItem = (item: typeof foodItems[0]) => {
+  const handleFreezeItem = useCallback((item: typeof foodItems[0]) => {
     console.log('🔍 ===== FREEZE BUTTON CLICKED =====');
     console.log('🔍 handleFreezeItem called with item:', item);
     console.log('🔍 Item name:', item.name);
@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
       console.log('✅ Item is safe to freeze, navigating directly');
       navigate('/add', { state: { editingItem: item, forceFreeze: true } });
     }
-  };
+  }, [navigate, user]);
 
   const handleDismissFreezeWarning = () => {
     console.log('❌ Freeze warning dismissed - staying on dashboard');

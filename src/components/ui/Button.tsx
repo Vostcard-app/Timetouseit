@@ -5,6 +5,8 @@
 
 import React from 'react';
 import type { ButtonProps as BaseButtonProps } from '../../types/components';
+import { buttonBase, combineStyles } from '../../utils/styles';
+import { theme } from '../../styles/theme';
 
 interface ButtonProps extends BaseButtonProps {
   loading?: boolean;
@@ -27,59 +29,47 @@ const Button: React.FC<ButtonProps> = ({
   'data-testid': testId,
   ...props
 }) => {
-  const baseStyles: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    borderRadius: '6px',
-    fontWeight: '500',
-    cursor: disabled || loading ? 'not-allowed' : 'pointer',
-    transition: 'all 0.2s',
-    opacity: disabled || loading ? 0.6 : 1,
-    width: fullWidth ? '100%' : 'auto',
-  };
-
   const variantStyles: Record<string, React.CSSProperties> = {
     primary: {
-      backgroundColor: '#002B4D',
+      backgroundColor: theme.colors.PRIMARY,
       color: '#ffffff',
     },
     secondary: {
-      backgroundColor: '#6b7280',
+      backgroundColor: theme.colors.SECONDARY,
       color: '#ffffff',
     },
     danger: {
-      backgroundColor: '#ef4444',
+      backgroundColor: theme.colors.ERROR,
       color: '#ffffff',
     },
     text: {
       backgroundColor: 'transparent',
-      color: '#002B4D',
-      padding: '0.5rem',
+      color: theme.colors.PRIMARY,
+      padding: theme.spacing.sm,
     },
   };
 
   const sizeStyles: Record<string, React.CSSProperties> = {
     small: {
-      padding: '0.375rem 0.75rem',
-      fontSize: '0.875rem',
+      padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+      fontSize: theme.typography.fontSize.sm,
     },
     medium: {
-      padding: '0.5rem 1rem',
-      fontSize: '1rem',
+      padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+      fontSize: theme.typography.fontSize.base,
     },
     large: {
-      padding: '0.75rem 1.5rem',
-      fontSize: '1.125rem',
+      padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
+      fontSize: theme.typography.fontSize.lg,
     },
   };
 
-  const combinedStyles: React.CSSProperties = {
-    ...baseStyles,
-    ...variantStyles[variant],
-    ...sizeStyles[size],
-  };
+  const combinedStyles: React.CSSProperties = combineStyles(
+    buttonBase(disabled || loading),
+    variantStyles[variant],
+    sizeStyles[size],
+    { width: fullWidth ? '100%' : 'auto' }
+  );
 
   return (
     <button

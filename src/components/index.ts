@@ -14,6 +14,7 @@ export { default as Select } from './ui/Select';
 export { default as Checkbox } from './ui/Checkbox';
 export { default as Modal } from './ui/Modal';
 export { default as LoadingSpinner } from './ui/LoadingSpinner';
+export { default as LoadingFallback } from './ui/LoadingFallback';
 
 // UI Components - Domain Specific
 export { default as FoodItemCard } from './ui/FoodItemCard';

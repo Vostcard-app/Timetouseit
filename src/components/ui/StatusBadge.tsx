@@ -22,7 +22,7 @@ interface StatusBadgeProps {
 /**
  * StatusBadge component that displays a colored badge for food item status
  */
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = '' }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, className = '' }) => {
   const color = getStatusColor(status);
   const bgColor = getStatusBgColor(status);
   const label = getStatusLabel(status);
@@ -45,7 +45,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = '' }) => 
       {label}
     </span>
   );
-};
+});
+
+StatusBadge.displayName = 'StatusBadge';
 
 export default StatusBadge;
 

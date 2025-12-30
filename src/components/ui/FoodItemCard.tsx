@@ -31,7 +31,7 @@ interface FoodItemCardProps {
 /**
  * FoodItemCard component that displays food item information in a card format
  */
-const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, onClick, onDelete, onMarkUsed }) => {
+const FoodItemCard: React.FC<FoodItemCardProps> = React.memo(({ item, onClick, onDelete, onMarkUsed }) => {
 
   return (
     <div
@@ -68,6 +68,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, onClick, onDelete, on
         <img
           src={item.photoUrl}
           alt={item.name}
+          loading="lazy"
           style={{
             width: '100%',
             height: '150px',
@@ -142,7 +143,7 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, onClick, onDelete, on
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              onDelete?.();
             }}
             style={{
               flex: 1,
@@ -162,7 +163,9 @@ const FoodItemCard: React.FC<FoodItemCardProps> = ({ item, onClick, onDelete, on
       </div>
     </div>
   );
-};
+});
+
+FoodItemCard.displayName = 'FoodItemCard';
 
 export default FoodItemCard;
 

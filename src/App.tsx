@@ -1,26 +1,31 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase/firebaseConfig';
 import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
-import AddItem from './pages/AddItem';
-import ItemDetail from './pages/ItemDetail';
-import Settings from './pages/Settings';
-import Calendar from './pages/Calendar';
-import Shop from './pages/Shop';
-import EditLists from './pages/EditLists';
-import EditItems from './pages/EditItems';
-import EditCategories from './pages/EditCategories';
-import Admin from './pages/Admin';
-import Login from './pages/Login';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import UserGuide from './pages/UserGuide';
+import LoadingFallback from './components/ui/LoadingFallback';
 import { notificationService } from './services/notificationService';
 import { useFoodItems } from './hooks/useFoodItems';
 import { analyticsService } from './services/analyticsService';
 import { useSessionTracking } from './hooks/useSessionTracking';
+
+// Core pages - load immediately (small, frequently used)
+import Login from './pages/Login';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+
+// Lazy load heavy pages for code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AddItem = lazy(() => import('./pages/AddItem'));
+const ItemDetail = lazy(() => import('./pages/ItemDetail'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Calendar = lazy(() => import('./pages/Calendar'));
+const Shop = lazy(() => import('./pages/Shop'));
+const EditLists = lazy(() => import('./pages/EditLists'));
+const EditItems = lazy(() => import('./pages/EditItems'));
+const EditCategories = lazy(() => import('./pages/EditCategories'));
+const Admin = lazy(() => import('./pages/Admin'));
+const UserGuide = lazy(() => import('./pages/UserGuide'));
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -94,21 +99,23 @@ function App() {
           element={
             user ? (
               <Layout>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/shop" replace />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/add" element={<AddItem />} />
-                  <Route path="/item/:id" element={<ItemDetail />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/calendar" element={<Calendar />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/edit-lists" element={<EditLists />} />
-                  <Route path="/edit-items" element={<EditItems />} />
-                  <Route path="/edit-categories" element={<EditCategories />} />
-                  <Route path="/user-guide" element={<UserGuide />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="*" element={<Navigate to="/shop" replace />} />
-                </Routes>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/shop" replace />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/add" element={<AddItem />} />
+                    <Route path="/item/:id" element={<ItemDetail />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/edit-lists" element={<EditLists />} />
+                    <Route path="/edit-items" element={<EditItems />} />
+                    <Route path="/edit-categories" element={<EditCategories />} />
+                    <Route path="/user-guide" element={<UserGuide />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="*" element={<Navigate to="/shop" replace />} />
+                  </Routes>
+                </Suspense>
               </Layout>
             ) : (
               <Navigate to="/login" replace />

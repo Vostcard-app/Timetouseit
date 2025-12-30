@@ -5,6 +5,8 @@
 
 import React from 'react';
 import type { InputProps as BaseInputProps } from '../../types/components';
+import { inputBase, text, margin, combineStyles } from '../../utils/styles';
+import { theme } from '../../styles/theme';
 
 interface InputProps extends BaseInputProps {
   id?: string;
@@ -35,20 +37,18 @@ const Input: React.FC<InputProps> = ({
   const inputId = id || `input-${name || Math.random().toString(36).substr(2, 9)}`;
 
   return (
-    <div className={className} style={{ marginBottom: '1rem' }} data-testid={testId ? `${testId}-wrapper` : undefined}>
+    <div className={className} style={margin('md')} data-testid={testId ? `${testId}-wrapper` : undefined}>
       {label && (
         <label
           htmlFor={inputId}
-          style={{
-            display: 'block',
-            marginBottom: '0.5rem',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            color: '#374151',
-          }}
+          style={combineStyles(
+            { display: 'block' },
+            margin('sm'),
+            text('sm', 'medium', theme.colors.gray[700])
+          )}
         >
           {label}
-          {required && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
+          {required && <span style={{ color: theme.colors.ERROR, marginLeft: theme.spacing.xs }}>*</span>}
         </label>
       )}
       <input
@@ -63,21 +63,12 @@ const Input: React.FC<InputProps> = ({
         autoFocus={autoFocus}
         maxLength={maxLength}
         data-testid={testId}
-        style={{
-          width: '100%',
-          padding: '0.5rem 0.75rem',
-          fontSize: '1rem',
-          border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`,
-          borderRadius: '6px',
-          backgroundColor: disabled ? '#f3f4f6' : '#ffffff',
-          color: '#1f2937',
-          transition: 'border-color 0.2s',
-        }}
+        style={inputBase(!!error, disabled)}
         onFocus={(e) => {
-          e.target.style.borderColor = error ? '#ef4444' : '#002B4D';
+          e.target.style.borderColor = error ? theme.colors.ERROR : theme.colors.PRIMARY;
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = error ? '#ef4444' : '#d1d5db';
+          e.target.style.borderColor = error ? theme.colors.ERROR : theme.colors.gray[300];
         }}
         {...props}
       />

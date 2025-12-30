@@ -30,7 +30,7 @@ interface SwipeableListItemProps {
 /**
  * SwipeableListItem component with swipe-to-delete functionality
  */
-const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, onClick, onFreeze }) => {
+const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, onDelete, onClick, onFreeze }) => {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -324,7 +324,9 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = ({ item, onDelete, o
       </div>
     </div>
   );
-};
+});
+
+SwipeableListItem.displayName = 'SwipeableListItem';
 
 export default SwipeableListItem;
 
