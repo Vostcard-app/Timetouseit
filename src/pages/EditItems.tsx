@@ -241,8 +241,8 @@ const EditItems: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '32px',
-                height: '32px',
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
                 backgroundColor: '#002B4D',
                 transition: 'background-color 0.2s'
@@ -256,8 +256,8 @@ const EditItems: React.FC = () => {
               aria-label="Go to shop"
             >
               <svg
-                width="20"
-                height="20"
+                width="40"
+                height="40"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
