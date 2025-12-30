@@ -386,7 +386,6 @@ const AddItem: React.FC = () => {
           onCancel={handleCancel}
           onToss={editingItem ? handleToss : undefined}
           initialName={fromShoppingList && shoppingListItemName ? shoppingListItemName : undefined}
-          fromShoppingList={fromShoppingList}
           forceFreeze={forceFreeze}
           externalIsFrozen={isFrozen}
           onIsFrozenChange={setIsFrozen}

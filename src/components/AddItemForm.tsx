@@ -17,13 +17,12 @@ interface AddItemFormProps {
   onScanBarcode?: () => void;
   initialItem?: FoodItem | null;
   initialName?: string;
-  fromShoppingList?: boolean;
   forceFreeze?: boolean;
   externalIsFrozen?: boolean;
   onIsFrozenChange?: (isFrozen: boolean) => void;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel, onToss, initialName, fromShoppingList, forceFreeze, externalIsFrozen, onIsFrozenChange }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel, onToss, initialName, forceFreeze, externalIsFrozen, onIsFrozenChange }) => {
   const [user] = useAuthState(auth);
   const [formData, setFormData] = useState<FoodItemData>({
     name: initialItem?.name || initialName || '',
@@ -573,35 +572,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         </button>
       </div>
 
-      {/* 5. Remove/ No Exp. button (only when coming from shopping list) */}
-      {fromShoppingList && (
-        <div style={{ marginBottom: '2rem' }}>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await onSubmit({ ...formData, expirationDate: new Date() }, undefined, true);
-              } catch (error) {
-                console.error('Error removing from list:', error);
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '0.875rem 1.5rem',
-              backgroundColor: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              minHeight: '44px'
-            }}
-          >
-            Remove/ No Exp.
-          </button>
-        </div>
-      )}
 
       {/* 6. Photo/Barcode Section */}
       <div style={{ 

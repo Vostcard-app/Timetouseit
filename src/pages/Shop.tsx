@@ -755,7 +755,7 @@ const Shop: React.FC = () => {
             marginTop: '0.5rem', 
             fontSize: '0.875rem', 
             color: '#6b7280',
-            textAlign: 'left'
+            textAlign: 'center'
           }}>
             Swipe to remove
           </div>
@@ -898,7 +898,7 @@ const Shop: React.FC = () => {
                               onTouchEnd={handleTouchEnd}
                               onMouseDown={handleMouseDown}
                               style={{
-                                padding: '0.5rem 1rem',
+                                padding: '0.25rem 0.75rem',
                                 border: '1px solid #e5e7eb',
                                 borderRadius: '8px',
                                 display: 'flex',
@@ -911,7 +911,7 @@ const Shop: React.FC = () => {
                                 userSelect: 'none'
                               }}
                             >
-                              <div style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937' }}>
+                              <div style={{ fontSize: '1.25rem', fontWeight: '500', color: '#1f2937' }}>
                                 {item.name}
                               </div>
                               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -966,7 +966,7 @@ const Shop: React.FC = () => {
                             }
                           }}
                           style={{
-                            padding: '0.5rem 1rem',
+                            padding: '0.25rem 0.75rem',
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                             display: 'flex',
@@ -989,7 +989,7 @@ const Shop: React.FC = () => {
                           }}
                         >
                           <div style={{ 
-                            fontSize: '1rem', 
+                            fontSize: '1.25rem', 
                             fontWeight: '500', 
                             color: mergedItem.isCrossedOff ? '#1f2937' : '#1f2937',
                             textDecoration: mergedItem.isCrossedOff ? 'line-through' : 'none'
