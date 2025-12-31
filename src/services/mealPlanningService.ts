@@ -22,7 +22,8 @@ import type {
   MealSuggestion,
   PlannedMeal,
   UnplannedEvent,
-  FoodItem
+  FoodItem,
+  MealType
 } from '../types';
 import {
   handleSubscriptionError,
@@ -42,7 +43,101 @@ import { addDays, startOfWeek, format, isSameDay } from 'date-fns';
  */
 export const mealPlanningService = {
   /**
-   * Generate meal suggestions using AI
+   * Generate 3 meal suggestions for a specific day
+   */
+  async generateDailySuggestions(
+    userId: string,
+    date: Date,
+    mealType: MealType
+  ): Promise<MealSuggestion[]> {
+    logServiceOperation('generateDailySuggestions', 'mealPlans', { userId, date, mealType });
+
+    try {
+      // Get user profile
+      const profile = await mealProfileService.getMealProfile(userId);
+      if (!profile) {
+        throw new Error('Meal profile not found. Please set up your meal preferences first.');
+      }
+
+      // Get expiring items (next 7-14 days)
+      const allItems = await foodItemService.getFoodItems(userId);
+      const now = new Date();
+      const twoWeeksFromNow = addDays(now, 14);
+      
+      const expiringItems = allItems.filter(item => {
+        const expDate = item.expirationDate || item.thawDate;
+        if (!expDate) return false;
+        return expDate >= now && expDate <= twoWeeksFromNow;
+      });
+
+      // Get leftover meals
+      const leftoverMeals = await leftoverMealService.getLeftoverMeals(
+        userId,
+        date,
+        date
+      );
+
+      // Get schedule for this day
+      const daySchedule = await mealProfileService.getEffectiveSchedule(userId, date);
+
+      // Build context for AI - focused on this specific day and meal type
+      const context = {
+        expiringItems: expiringItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          expirationDate: item.expirationDate,
+          thawDate: item.thawDate,
+          category: item.category
+        })),
+        leftoverMeals,
+        userPreferences: {
+          dislikedFoods: profile.dislikedFoods,
+          foodPreferences: profile.foodPreferences,
+          favoriteMeals: profile.favoriteMeals || [],
+          servingSize: profile.servingSize || 2,
+          mealDurationPreferences: profile.mealDurationPreferences
+        },
+        schedule: [daySchedule],
+        currentInventory: allItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          expirationDate: item.expirationDate,
+          thawDate: item.thawDate
+        }))
+      };
+
+      // Generate suggestions for this specific day and meal type
+      const allSuggestions = await generateMealSuggestions(context);
+      
+      // Filter to only this meal type and limit to 3
+      const filtered = allSuggestions
+        .filter(s => s.mealType === mealType && isSameDay(new Date(s.date), date))
+        .slice(0, 3);
+
+      // If we don't have 3 suggestions, generate more based on preferences only
+      if (filtered.length < 3 && expiringItems.length === 0) {
+        // Generate preference-based suggestions
+        const prefContext = {
+          ...context,
+          expiringItems: [],
+          currentInventory: []
+        };
+        const prefSuggestions = await generateMealSuggestions(prefContext);
+        const prefFiltered = prefSuggestions
+          .filter(s => s.mealType === mealType && isSameDay(new Date(s.date), date))
+          .slice(0, 3 - filtered.length);
+        filtered.push(...prefFiltered);
+      }
+
+      return filtered.slice(0, 3);
+    } catch (error) {
+      logServiceError('generateDailySuggestions', 'mealPlans', error, { userId });
+      throw toServiceError(error, 'mealPlans');
+    }
+  },
+
+  /**
+   * Generate meal suggestions using AI (legacy method - kept for compatibility)
    */
   async generateMealSuggestions(
     userId: string,

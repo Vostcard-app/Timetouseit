@@ -7,7 +7,8 @@ import OpenAI from 'openai';
 import type {
   MealSuggestion,
   MealPlanningContext,
-  ReplanningContext
+  ReplanningContext,
+  MealType
 } from '../types/mealPlan';
 
 // Initialize OpenAI client
@@ -39,7 +40,9 @@ export async function generateMealSuggestions(
 
   try {
     // Build prompt for meal planning
-    const prompt = buildMealPlanningPrompt(context);
+    // Extract target meal type from schedule if available
+    const targetMealType = context.schedule[0]?.meals[0]?.type;
+    const prompt = buildMealPlanningPrompt(context, targetMealType);
 
     const response = await client.chat.completions.create({
       model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo',
@@ -117,7 +120,7 @@ export async function replanMeals(
 /**
  * Build meal planning prompt
  */
-function buildMealPlanningPrompt(context: MealPlanningContext): string {
+function buildMealPlanningPrompt(context: MealPlanningContext, targetMealType?: MealType): string {
   const expiringItemsList = context.expiringItems
     .map(item => {
       const date = item.expirationDate || item.thawDate;
@@ -138,7 +141,19 @@ function buildMealPlanningPrompt(context: MealPlanningContext): string {
     })
     .join('\n');
 
-  return `Generate meal suggestions for the upcoming week based on the following information:
+  const targetDate = context.schedule[0]?.date;
+  const targetDateStr = targetDate ? targetDate.toLocaleDateString() : 'the specified date';
+  const mealTypeInstruction = targetMealType 
+    ? `Generate exactly 3 meal suggestions for ${targetMealType} on ${targetDateStr}.`
+    : 'Generate meal suggestions for the upcoming week.';
+
+  const priorityInstruction = context.expiringItems.length > 0
+    ? 'PRIORITIZE using expiring items and leftovers to prevent waste.'
+    : 'Since there are no expiring items, base suggestions on user preferences and favorite meals.';
+
+  return `${mealTypeInstruction} ${priorityInstruction}
+
+Based on the following information:
 
 EXPIRING ITEMS (use these soon to prevent waste):
 ${expiringItemsList || 'None'}
@@ -168,6 +183,8 @@ Generate meal suggestions that:
 6. Use items from current inventory when possible
 7. Suggest shopping list items only when necessary
 
+IMPORTANT: Generate exactly 3 meal suggestions for ${context.schedule[0]?.meals.find(m => m.type === 'breakfast' || m.type === 'lunch' || m.type === 'dinner')?.type || 'this meal type'}.
+
 Return a JSON object with this structure:
 {
   "meals": [
@@ -182,7 +199,9 @@ Return a JSON object with this structure:
       "priority": "high|medium|low"
     }
   ]
-}`;
+}
+
+Generate exactly 3 different meal suggestions.`;
 }
 
 /**
