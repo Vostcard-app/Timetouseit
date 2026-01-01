@@ -81,5 +81,40 @@ service cloud.firestore {
       // Allow collection-level queries for admins
       allow list: if request.auth != null && isAdmin();
     }
+
+    // Meal Profiles - users can only access their own, admins can read all
+    match /mealProfiles/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow admins to list all meal profiles
+      allow list: if request.auth != null && isAdmin();
+    }
+
+    // Meal Plans - users can only access their own, admins can read all
+    match /mealPlans/{planId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Allow admins to list all meal plans
+      allow list: if request.auth != null && isAdmin();
+    }
+
+    // Leftover Meals - users can only access their own, admins can read all
+    match /leftoverMeals/{mealId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Allow admins to list all leftover meals
+      allow list: if request.auth != null && isAdmin();
+    }
+
+    // Unplanned Events - users can only access their own, admins can read all
+    match /unplannedEvents/{eventId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Allow admins to list all unplanned events
+      allow list: if request.auth != null && isAdmin();
+    }
   }
 }
