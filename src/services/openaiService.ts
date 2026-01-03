@@ -63,13 +63,14 @@ async function callOpenAI(messages: Array<{ role: string; content: string }>, mo
  * Generate meal suggestions using AI
  */
 export async function generateMealSuggestions(
-  context: MealPlanningContext
+  context: MealPlanningContext,
+  targetMealType?: MealType
 ): Promise<MealSuggestion[]> {
   try {
     // Build prompt for meal planning
-    // Extract target meal type from schedule if available
-    const targetMealType = context.schedule[0]?.meals[0]?.type;
-    const prompt = buildMealPlanningPrompt(context, targetMealType);
+    // Use provided targetMealType, or extract from schedule if not provided
+    const mealType = targetMealType || context.schedule[0]?.meals[0]?.type;
+    const prompt = buildMealPlanningPrompt(context, mealType);
 
     const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo';
     
@@ -132,6 +133,100 @@ export async function replanMeals(
 }
 
 /**
+ * Build diet-specific restrictions text
+ */
+function buildDietRestrictions(dietApproach?: string, dietStrict?: boolean): string {
+  if (!dietApproach) return '';
+
+  const strictText = dietStrict ? 'STRICT MODE: Absolutely NO exceptions. ' : '';
+  
+  const restrictions: Record<string, string> = {
+    'Vegan': `${strictText}VEGAN DIET: NO animal products whatsoever. This means NO meat, poultry, fish, seafood, eggs, dairy, honey, or any other animal-derived ingredients. 
+
+CRITICAL: Hotdogs, sausages, bacon, and similar processed meats are NEVER vegan, even if labeled "vegan-style" or "plant-based style" in the meal name. Do NOT suggest meals containing hotdogs, sausages, bacon, ham, or any meat products.
+
+Common non-vegan items to absolutely exclude: hotdogs, hot dogs, sausages, bacon, ham, cheese, milk, butter, eggs, chicken, beef, pork, fish, seafood, honey, etc. 
+
+ONLY use plant-based ingredients: vegetables, fruits, grains, legumes, nuts, seeds, tofu, tempeh, plant-based milks, etc.`,
+    'Paleo': `${strictText}PALEO DIET: No grains, legumes, dairy, refined sugar, or processed foods. Focus on meat, fish, eggs, vegetables, fruits, nuts, and seeds.`,
+    'Keto': `${strictText}KETO DIET: Very low carb (typically under 20g net carbs per day), high fat, moderate protein. No grains, sugar, most fruits, starchy vegetables, or legumes.`,
+    'Whole30': `${strictText}WHOLE30 DIET: No sugar, alcohol, grains, legumes, dairy, or processed foods. Only whole, unprocessed foods.`,
+    'Mediterranean': `${strictText}MEDITERRANEAN DIET: Focus on vegetables, fruits, whole grains, legumes, nuts, olive oil, and fish. Limited red meat and processed foods.`,
+    'DASH': `${strictText}DASH DIET: Focus on vegetables, fruits, whole grains, lean proteins, and low-fat dairy. Limit sodium, saturated fats, and sweets.`,
+    'Weight Watchers': `${strictText}WEIGHT WATCHERS: Focus on balanced nutrition with portion control. Prioritize lean proteins, vegetables, fruits, and whole grains.`,
+    'Flexitarian': `${strictText}FLEXITARIAN DIET: Primarily vegetarian but allows occasional meat. Focus on plant-based foods with occasional animal products.`,
+    'Low-Carb': `${strictText}LOW-CARB DIET: Limit carbohydrates. Focus on proteins, healthy fats, and non-starchy vegetables. Avoid grains, sugar, and starchy foods.`,
+    'Plant-Based': `${strictText}PLANT-BASED DIET: Focus on whole plant foods. May include minimal animal products but primarily plant-focused.`
+  };
+
+  return restrictions[dietApproach] || `${strictText}Follow ${dietApproach} diet guidelines.`;
+}
+
+/**
+ * Filter inventory items by diet restrictions
+ */
+function filterInventoryByDiet(
+  inventory: Array<{ id: string; name: string; expirationDate?: Date; thawDate?: Date; category?: string }>,
+  dietApproach?: string,
+  dietStrict?: boolean
+): Array<{ id: string; name: string; expirationDate?: Date; thawDate?: Date; category?: string }> {
+  if (!dietApproach) {
+    return inventory;
+  }
+
+  // For Vegan diet, always filter out non-vegan items (vegan should be strict by nature)
+  if (dietApproach === 'Vegan') {
+    const nonVeganKeywords = [
+      'hotdog', 'hot dog', 'sausage', 'bacon', 'ham', 'pork', 'beef', 'chicken', 'turkey', 'duck', 'lamb', 'veal',
+      'cheese', 'milk', 'butter', 'cream', 'yogurt', 'sour cream', 'mayonnaise', 'egg', 'eggs',
+      'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'seafood', 'anchovy',
+      'honey', 'gelatin', 'whey', 'casein', 'lard', 'tallow'
+    ];
+    
+    return inventory.filter(item => {
+      const itemNameLower = item.name.toLowerCase();
+      return !nonVeganKeywords.some(keyword => itemNameLower.includes(keyword));
+    });
+  }
+
+  // For strict mode with other diets, filter out non-compliant items
+  if (dietStrict) {
+    // Add filtering logic for other strict diets if needed
+    // For now, return all items and let AI handle it with clear instructions
+    return inventory;
+  }
+
+  // For non-strict mode with other diets, return all items (AI will handle filtering)
+  return inventory;
+}
+
+/**
+ * Check if leftover meal is compliant with diet
+ */
+function isLeftoverCompliant(
+  meal: { mealName: string; ingredients: string[] },
+  dietApproach?: string,
+  dietStrict?: boolean
+): boolean {
+  if (!dietApproach) return true;
+
+  // For Vegan diet, always check compliance (vegan should be strict by nature)
+  if (dietApproach === 'Vegan') {
+    const nonVeganKeywords = [
+      'hotdog', 'hot dog', 'sausage', 'bacon', 'ham', 'pork', 'beef', 'chicken', 'turkey', 'duck', 'lamb', 'veal',
+      'cheese', 'milk', 'butter', 'cream', 'yogurt', 'sour cream', 'mayonnaise', 'egg', 'eggs',
+      'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'seafood', 'anchovy',
+      'honey', 'gelatin', 'whey', 'casein', 'lard', 'tallow'
+    ];
+    
+    const allText = `${meal.mealName} ${meal.ingredients.join(' ')}`.toLowerCase();
+    return !nonVeganKeywords.some(keyword => allText.includes(keyword));
+  }
+
+  return true;
+}
+
+/**
  * Build meal planning prompt
  */
 function buildMealPlanningPrompt(context: MealPlanningContext, targetMealType?: MealType): string {
@@ -162,23 +257,39 @@ function buildMealPlanningPrompt(context: MealPlanningContext, targetMealType?: 
     : 'Generate meal suggestions for the upcoming week.';
 
   const priorityInstruction = context.expiringItems.length > 0
-    ? 'PRIORITIZE using expiring items and leftovers to prevent waste.'
+    ? 'PRIORITIZE using expiring items and leftovers to prevent waste, BUT ONLY if they comply with the diet restrictions below.'
     : 'Since there are no expiring items, base suggestions on user preferences and favorite meals.';
+
+  // Build diet-specific restrictions
+  const dietRestrictions = buildDietRestrictions(context.userPreferences.dietApproach, context.userPreferences.dietStrict);
+  
+  // Filter inventory to only include items that comply with diet
+  const compliantInventory = filterInventoryByDiet(context.currentInventory, context.userPreferences.dietApproach, context.userPreferences.dietStrict);
+  const compliantExpiringItems = filterInventoryByDiet(context.expiringItems, context.userPreferences.dietApproach, context.userPreferences.dietStrict);
 
   return `${mealTypeInstruction} ${priorityInstruction}
 
+${dietRestrictions}
+
 Based on the following information:
 
-EXPIRING ITEMS (use these soon to prevent waste):
-${expiringItemsList || 'None'}
+EXPIRING ITEMS (use these soon to prevent waste, but ONLY if they comply with diet restrictions):
+${compliantExpiringItems.length > 0 ? compliantExpiringItems.map(item => {
+  const date = item.expirationDate || item.thawDate;
+  const daysUntil = date ? Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 'unknown';
+  return `- ${item.name} (expires in ${daysUntil} days, category: ${item.category || 'unknown'})`;
+}).join('\n') : 'None (all expiring items filtered out due to diet restrictions)'}
 
 AVAILABLE LEFTOVER MEALS:
-${leftoverMealsList || 'None'}
+${context.leftoverMeals
+  .filter(meal => isLeftoverCompliant(meal, context.userPreferences.dietApproach, context.userPreferences.dietStrict))
+  .map(meal => `- ${meal.mealName} (${meal.quantity}, ingredients: ${meal.ingredients.join(', ')})`)
+  .join('\n') || 'None'}
 
 USER PREFERENCES:
 - Disliked foods: ${context.userPreferences.dislikedFoods.join(', ') || 'None'}
 - Dietary preferences: ${context.userPreferences.foodPreferences.join(', ') || 'None'}
-- Diet approach: ${context.userPreferences.dietApproach || 'None'}${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? ' (STRICT - must strictly adhere to all diet criteria)' : ''}
+- Diet approach: ${context.userPreferences.dietApproach || 'None'}${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? ' (STRICT - must strictly adhere to all diet criteria, NO EXCEPTIONS)' : ''}
 - Favorite meals: ${context.userPreferences.favoriteMeals.join(', ') || 'None'}
 - Serving size: ${context.userPreferences.servingSize} people
 - Meal duration preferences: Breakfast ${context.userPreferences.mealDurationPreferences.breakfast} min, Lunch ${context.userPreferences.mealDurationPreferences.lunch} min, Dinner ${context.userPreferences.mealDurationPreferences.dinner} min
@@ -186,14 +297,16 @@ USER PREFERENCES:
 SCHEDULE:
 ${scheduleList}
 
-CURRENT INVENTORY:
-${context.currentInventory.map(item => `- ${item.name}`).join('\n') || 'None'}
+CURRENT INVENTORY (only items that comply with diet restrictions):
+${compliantInventory.length > 0 ? compliantInventory.map(item => `- ${item.name}`).join('\n') : 'None (all items filtered out due to diet restrictions)'}
 
 Generate meal suggestions that:
-1. Prioritize using expiring items and leftovers
+1. ${context.userPreferences.dietApproach && context.userPreferences.dietStrict 
+  ? 'STRICTLY comply with diet restrictions - DO NOT use any non-compliant items from inventory'
+  : 'Prioritize using expiring items and leftovers (only if compliant with diet)'}
 2. Match user preferences and dietary restrictions
 ${context.userPreferences.dietApproach && context.userPreferences.dietStrict 
-  ? `3. STRICTLY adhere to ${context.userPreferences.dietApproach} guidelines. Do not suggest any meals that violate the diet's core principles.`
+  ? `3. ABSOLUTELY NO exceptions to ${context.userPreferences.dietApproach} guidelines. Do not suggest any meals that violate the diet's core principles, even if it means not using expiring items.`
   : context.userPreferences.dietApproach 
     ? `3. Consider ${context.userPreferences.dietApproach} preferences but allow flexibility.`
     : '3. Include favorite meals when appropriate'}

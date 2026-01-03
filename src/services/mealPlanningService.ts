@@ -123,7 +123,7 @@ export const mealPlanningService = {
       };
 
       // Generate suggestions for this specific day and meal type
-      const allSuggestions = await generateMealSuggestions(context);
+      const allSuggestions = await generateMealSuggestions(context, mealType);
       
       // Filter to only this meal type and limit to 3
       const filtered = allSuggestions
