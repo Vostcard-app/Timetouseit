@@ -1,9 +1,8 @@
 /**
  * Netlify Function: OpenAI Proxy
  * Proxies OpenAI API requests to keep API key server-side
+ * Uses native fetch (available in Node 18+)
  */
-
-const fetch = require("node-fetch");
 
 exports.handler = async (event) => {
   // Only allow POST requests
