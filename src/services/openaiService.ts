@@ -16,25 +16,47 @@ import type {
 async function callOpenAI(messages: Array<{ role: string; content: string }>, model: string = 'gpt-3.5-turbo'): Promise<any> {
   const functionUrl = '/.netlify/functions/openai-proxy';
   
-  const response = await fetch(functionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    })
-  });
+  try {
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        
+        // Provide more specific error messages
+        if (response.status === 500 && errorMessage.includes('API key not configured')) {
+          errorMessage = 'OpenAI API key not configured in Netlify. Please add OPENAI_API_KEY to your Netlify environment variables.';
+        } else if (response.status === 404) {
+          errorMessage = 'Netlify Function not found. The OpenAI proxy function may not be deployed.';
+        }
+      } catch (e) {
+        // If we can't parse the error, use the status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Handle network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to reach the OpenAI proxy function. Please check your connection and ensure the Netlify Function is deployed.');
+    }
+    throw error;
   }
-
-  return await response.json();
 }
 
 /**

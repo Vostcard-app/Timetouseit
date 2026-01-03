@@ -83,7 +83,10 @@ const MealPlanner: React.FC = () => {
         setCurrentSuggestions(suggestions);
       } catch (error) {
         console.error('Error generating suggestions:', error);
-        alert('Failed to generate meal suggestions. Please make sure you have set up your meal profile and have an OpenAI API key configured.');
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Failed to generate meal suggestions. Please make sure you have set up your meal profile and have an OpenAI API key configured.';
+        alert(`Failed to generate meal suggestions.\n\n${errorMessage}`);
         setCurrentSuggestions([]);
       } finally {
         setGenerating(false);
