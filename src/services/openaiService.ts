@@ -1,9 +1,8 @@
 /**
  * OpenAI Service
- * Handles AI-powered meal planning using OpenAI API
+ * Handles AI-powered meal planning using OpenAI API via Netlify Function
  */
 
-import OpenAI from 'openai';
 import type {
   MealSuggestion,
   MealPlanningContext,
@@ -11,20 +10,32 @@ import type {
   MealType
 } from '../types/mealPlan';
 
-// Initialize OpenAI client
-const getOpenAIClient = (): OpenAI | null => {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+/**
+ * Call OpenAI API via Netlify Function
+ */
+async function callOpenAI(messages: Array<{ role: string; content: string }>, model: string = 'gpt-3.5-turbo'): Promise<any> {
+  const functionUrl = '/.netlify/functions/openai-proxy';
   
-  if (!apiKey) {
-    console.warn('⚠️ OpenAI API key not found. Meal planning features will be limited.');
-    return null;
+  const response = await fetch(functionUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.7,
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.error || `HTTP error! status: ${response.status}`);
   }
 
-  return new OpenAI({
-    apiKey,
-    dangerouslyAllowBrowser: true // Required for client-side usage
-  });
-};
+  return await response.json();
+}
 
 /**
  * Generate meal suggestions using AI
@@ -32,35 +43,26 @@ const getOpenAIClient = (): OpenAI | null => {
 export async function generateMealSuggestions(
   context: MealPlanningContext
 ): Promise<MealSuggestion[]> {
-  const client = getOpenAIClient();
-  
-  if (!client) {
-    throw new Error('OpenAI API key not configured');
-  }
-
   try {
     // Build prompt for meal planning
     // Extract target meal type from schedule if available
     const targetMealType = context.schedule[0]?.meals[0]?.type;
     const prompt = buildMealPlanningPrompt(context, targetMealType);
 
-    const response = await client.chat.completions.create({
-      model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful meal planning assistant. Suggest meals that use expiring ingredients and match user preferences. Return only valid JSON.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    });
+    const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo';
+    
+    const response = await callOpenAI([
+      {
+        role: 'system',
+        content: 'You are a helpful meal planning assistant. Suggest meals that use expiring ingredients and match user preferences. Return only valid JSON.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ], model);
 
-    const content = response.choices[0]?.message?.content;
+    const content = response.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error('No response from OpenAI');
     }
@@ -79,32 +81,22 @@ export async function generateMealSuggestions(
 export async function replanMeals(
   context: ReplanningContext
 ): Promise<MealSuggestion[]> {
-  const client = getOpenAIClient();
-  
-  if (!client) {
-    throw new Error('OpenAI API key not configured');
-  }
-
   try {
     const prompt = buildReplanningPrompt(context);
+    const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo';
 
-    const response = await client.chat.completions.create({
-      model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful meal planning assistant. Replan meals to prevent food waste after schedule changes. Prioritize items at risk of expiring. Return only valid JSON.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    });
+    const response = await callOpenAI([
+      {
+        role: 'system',
+        content: 'You are a helpful meal planning assistant. Replan meals to prevent food waste after schedule changes. Prioritize items at risk of expiring. Return only valid JSON.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ], model);
 
-    const content = response.choices[0]?.message?.content;
+    const content = response.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error('No response from OpenAI');
     }
