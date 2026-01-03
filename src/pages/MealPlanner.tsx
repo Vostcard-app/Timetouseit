@@ -6,8 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { mealPlanningService, musgravesService } from '../services';
-import type { MealSuggestion, MealType } from '../types';
+import { mealPlanningService, musgravesService, shoppingListService, shoppingListsService } from '../services';
+import type { MealSuggestion, MealType, ShoppingListItem, ShoppingList } from '../types';
 import Banner from '../components/layout/Banner';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Button from '../components/ui/Button';
@@ -40,6 +40,15 @@ const MealPlanner: React.FC = () => {
   const [isPlanning, setIsPlanning] = useState(false);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
+  
+  // Shopping list state
+  const [showShoppingList, setShowShoppingList] = useState(false);
+  const [generatedShoppingList, setGeneratedShoppingList] = useState<ShoppingList | null>(null);
+  const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [userShoppingLists, setUserShoppingLists] = useState<ShoppingList[]>([]);
+  const [targetListId, setTargetListId] = useState<string | null>(null);
+  const [addingItems, setAddingItems] = useState(false);
   
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
 
@@ -196,11 +205,24 @@ const MealPlanner: React.FC = () => {
       // Generate shopping list
       const shoppingList = await musgravesService.createShoppingListFromMealPlan(mealPlan);
       
-      alert(`Meal plan created and shopping list "${shoppingList.name}" generated successfully!`);
+      // Fetch shopping list items
+      const items = await shoppingListService.getShoppingListItems(user.uid, shoppingList.id);
       
-      // Reset planning session
+      // Fetch user's shopping lists for target selection
+      const userLists = await shoppingListsService.getShoppingLists(user.uid);
+      
+      // Set default target list (default list or first list)
+      const defaultList = userLists.find(list => list.isDefault) || userLists[0];
+      
+      // Update state to show shopping list UI
+      setGeneratedShoppingList(shoppingList);
+      setShoppingListItems(items);
+      setUserShoppingLists(userLists);
+      setTargetListId(defaultList?.id || null);
+      setShowShoppingList(true);
+      
+      // Reset planning session but keep shopping list visible
       setIsPlanning(false);
-      setDayPlans([]);
       setCurrentDayIndex(0);
     } catch (error) {
       console.error('Error finishing planning:', error);
@@ -244,6 +266,57 @@ const MealPlanner: React.FC = () => {
     return selectedTypes.every(mealType => day[mealType] !== undefined);
   };
 
+  const handleToggleItem = (itemId: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    setSelectedItems(new Set(shoppingListItems.map(item => item.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedItems(new Set());
+  };
+
+  const handleAddToShopList = async () => {
+    if (!user || !targetListId || selectedItems.size === 0) {
+      alert('Please select items and a target list.');
+      return;
+    }
+
+    setAddingItems(true);
+    try {
+      const selectedItemNames = shoppingListItems
+        .filter(item => selectedItems.has(item.id))
+        .map(item => item.name);
+
+      // Add each selected item to the target list
+      for (const itemName of selectedItemNames) {
+        await shoppingListService.addShoppingListItem(user.uid, targetListId, itemName);
+      }
+
+      alert(`Successfully added ${selectedItemNames.length} item(s) to your shop list!`);
+      
+      // Reset shopping list UI
+      setShowShoppingList(false);
+      setGeneratedShoppingList(null);
+      setShoppingListItems([]);
+      setSelectedItems(new Set());
+      setDayPlans([]);
+    } catch (error) {
+      console.error('Error adding items to shop list:', error);
+      alert('Failed to add items to shop list. Please try again.');
+    } finally {
+      setAddingItems(false);
+    }
+  };
+
   if (!user) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -264,7 +337,128 @@ const MealPlanner: React.FC = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
         <h2 style={{ marginBottom: '1rem' }}>Meal Planner</h2>
         
-        {!isPlanning ? (
+        {showShoppingList && generatedShoppingList ? (
+          <div>
+            <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#f0f8ff', border: '2px solid #002B4D', borderRadius: '8px' }}>
+              <h3 style={{ margin: '0 0 1rem 0' }}>Suggested Shopping List</h3>
+              <p style={{ margin: '0 0 1.5rem 0', color: '#666' }}>
+                Review the items below and select which ones you'd like to add to your shop list.
+              </p>
+              
+              {/* Select target list */}
+              {userShoppingLists.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+                    Add to shop list:
+                  </label>
+                  <select
+                    value={targetListId || ''}
+                    onChange={(e) => setTargetListId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      maxWidth: '400px',
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '1rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      color: '#1f2937',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {userShoppingLists.map(list => (
+                      <option key={list.id} value={list.id}>
+                        {list.name} {list.isDefault ? '(Default)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Select All / Deselect All */}
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleSelectAll}
+                >
+                  Select All
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleDeselectAll}
+                >
+                  Deselect All
+                </Button>
+                <span style={{ marginLeft: 'auto', fontSize: '0.875rem', color: '#666', alignSelf: 'center' }}>
+                  {selectedItems.size} of {shoppingListItems.length} items selected
+                </span>
+              </div>
+
+              {/* Shopping list items */}
+              {shoppingListItems.length === 0 ? (
+                <p style={{ color: '#666', fontStyle: 'italic' }}>No items in shopping list.</p>
+              ) : (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  {shoppingListItems.map(item => (
+                    <label
+                      key={item.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        marginBottom: '0.5rem',
+                        backgroundColor: selectedItems.has(item.id) ? '#f0f8ff' : '#ffffff',
+                        border: `1px solid ${selectedItems.has(item.id) ? '#002B4D' : '#e5e7eb'}`,
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(item.id)}
+                        onChange={() => handleToggleItem(item.id)}
+                        style={{
+                          width: '1.25rem',
+                          height: '1.25rem',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <span style={{ fontSize: '1rem', flex: 1 }}>{item.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <Button
+                  onClick={handleAddToShopList}
+                  disabled={selectedItems.size === 0 || !targetListId || addingItems}
+                  loading={addingItems}
+                  fullWidth
+                >
+                  {addingItems ? 'Adding Items...' : `Add ${selectedItems.size} Item(s) to Shop List`}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowShoppingList(false);
+                    setGeneratedShoppingList(null);
+                    setShoppingListItems([]);
+                    setSelectedItems(new Set());
+                    setDayPlans([]);
+                  }}
+                >
+                  Skip
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : !isPlanning ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
             <p style={{ marginBottom: '2rem', color: '#666' }}>
               Start a 7-day meal planning session. Select which meals you want suggestions for each day.
