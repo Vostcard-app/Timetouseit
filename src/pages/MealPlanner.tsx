@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { mealPlanningService, musgravesService, shoppingListService, shoppingListsService } from '../services';
+import { mealPlanningService, mealProfileService, musgravesService, shoppingListService, shoppingListsService } from '../services';
 import type { MealSuggestion, MealType, ShoppingListItem, ShoppingList } from '../types';
 import Banner from '../components/layout/Banner';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
@@ -19,6 +19,8 @@ interface DayPlan {
   lunch?: MealSuggestion;
   dinner?: MealSuggestion;
   servingSize?: number; // Number of people for this day (overrides profile default)
+  dietApproach?: string; // Diet approach for this day (overrides profile default)
+  dietStrict?: boolean; // Strict adherence for this day (overrides profile default)
   skipped: boolean;
   selectedMealTypes: Set<MealType>; // Which meal types are checked for suggestions
   suggestions: Map<MealType, MealSuggestion[]>; // Suggestions grouped by meal type
@@ -52,21 +54,45 @@ const MealPlanner: React.FC = () => {
   
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
 
-  // Initialize day plans
+  // Initialize day plans with profile defaults
   useEffect(() => {
-    if (isPlanning && dayPlans.length === 0) {
-      const plans: DayPlan[] = [];
-      for (let i = 0; i < 7; i++) {
-        plans.push({
-          date: addDays(weekStart, i),
-          skipped: false,
-          selectedMealTypes: new Set(),
-          suggestions: new Map()
-        });
+    const initializeDayPlans = async () => {
+      if (!isPlanning || dayPlans.length > 0 || !user) return;
+
+      try {
+        // Load user's meal profile to get defaults
+        const profile = await mealProfileService.getMealProfile(user.uid);
+        
+        const plans: DayPlan[] = [];
+        for (let i = 0; i < 7; i++) {
+          plans.push({
+            date: addDays(weekStart, i),
+            skipped: false,
+            selectedMealTypes: new Set(),
+            suggestions: new Map(),
+            dietApproach: profile?.dietApproach,
+            dietStrict: profile?.dietStrict
+          });
+        }
+        setDayPlans(plans);
+      } catch (error) {
+        console.error('Error loading meal profile for day plans:', error);
+        // Initialize without profile defaults if there's an error
+        const plans: DayPlan[] = [];
+        for (let i = 0; i < 7; i++) {
+          plans.push({
+            date: addDays(weekStart, i),
+            skipped: false,
+            selectedMealTypes: new Set(),
+            suggestions: new Map()
+          });
+        }
+        setDayPlans(plans);
       }
-      setDayPlans(plans);
-    }
-  }, [isPlanning, weekStart, dayPlans.length]);
+    };
+
+    initializeDayPlans();
+  }, [isPlanning, weekStart, dayPlans.length, user]);
 
   const handleStartPlanning = () => {
     setIsPlanning(true);
@@ -116,7 +142,9 @@ const MealPlanner: React.FC = () => {
             user.uid,
             currentDay.date,
             mealType,
-            currentDay.servingSize
+            currentDay.servingSize,
+            currentDay.dietApproach,
+            currentDay.dietStrict
           );
           
           // Append to existing suggestions for this meal type
@@ -154,7 +182,9 @@ const MealPlanner: React.FC = () => {
         user.uid,
         currentDay.date,
         mealType,
-        currentDay.servingSize
+        currentDay.servingSize,
+        currentDay.dietApproach,
+        currentDay.dietStrict
       );
       
       // Append to existing suggestions for this meal type
@@ -534,43 +564,114 @@ const MealPlanner: React.FC = () => {
 
             {currentDay && (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0 }}>
-                    {format(currentDay.date, 'EEEE, MMMM d')}
-                  </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <label style={{ fontSize: '0.875rem', color: '#666' }} htmlFor={`serving-size-${currentDayIndex}`}>
-                      Serving size:
-                    </label>
-                    <input
-                      id={`serving-size-${currentDayIndex}`}
-                      type="number"
-                      min="1"
-                      value={currentDay.servingSize || ''}
-                      onChange={(e) => {
-                        const newPlans = [...dayPlans];
-                        const value = e.target.value;
-                        newPlans[currentDayIndex].servingSize = value ? parseInt(value, 10) : undefined;
-                        setDayPlans(newPlans);
-                      }}
-                      placeholder="Default"
-                      style={{
-                        width: '80px',
-                        padding: '0.5rem 0.75rem',
-                        fontSize: '1rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        backgroundColor: '#ffffff',
-                        color: '#1f2937'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#002B4D';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
-                      }}
-                    />
-                    <span style={{ fontSize: '0.875rem', color: '#666' }}>people</span>
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h3 style={{ margin: 0 }}>
+                      {format(currentDay.date, 'EEEE, MMMM d')}
+                    </h3>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.875rem', color: '#666' }} htmlFor={`serving-size-${currentDayIndex}`}>
+                        Serving size:
+                      </label>
+                      <input
+                        id={`serving-size-${currentDayIndex}`}
+                        type="number"
+                        min="1"
+                        value={currentDay.servingSize || ''}
+                        onChange={(e) => {
+                          const newPlans = [...dayPlans];
+                          const value = e.target.value;
+                          newPlans[currentDayIndex].servingSize = value ? parseInt(value, 10) : undefined;
+                          setDayPlans(newPlans);
+                        }}
+                        placeholder="Default"
+                        style={{
+                          width: '80px',
+                          padding: '0.5rem 0.75rem',
+                          fontSize: '1rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          backgroundColor: '#ffffff',
+                          color: '#1f2937'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#002B4D';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#d1d5db';
+                        }}
+                      />
+                      <span style={{ fontSize: '0.875rem', color: '#666' }}>people</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.875rem', color: '#666' }} htmlFor={`diet-approach-${currentDayIndex}`}>
+                        Diet approach:
+                      </label>
+                      <select
+                        id={`diet-approach-${currentDayIndex}`}
+                        value={currentDay.dietApproach || ''}
+                        onChange={(e) => {
+                          const newPlans = [...dayPlans];
+                          newPlans[currentDayIndex].dietApproach = e.target.value || undefined;
+                          if (!e.target.value) {
+                            newPlans[currentDayIndex].dietStrict = undefined;
+                          }
+                          setDayPlans(newPlans);
+                        }}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          fontSize: '1rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          backgroundColor: '#ffffff',
+                          color: '#1f2937',
+                          cursor: 'pointer',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#002B4D';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#d1d5db';
+                        }}
+                      >
+                        <option value="">None</option>
+                        <option value="Paleo">Paleo</option>
+                        <option value="Weight Watchers">Weight Watchers</option>
+                        <option value="Mediterranean">Mediterranean</option>
+                        <option value="Keto">Keto</option>
+                        <option value="Whole30">Whole30</option>
+                        <option value="DASH">DASH</option>
+                        <option value="Flexitarian">Flexitarian</option>
+                        <option value="Low-Carb">Low-Carb</option>
+                        <option value="Plant-Based">Plant-Based</option>
+                        <option value="Vegan">Vegan</option>
+                      </select>
+                    </div>
+                    {currentDay.dietApproach && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="checkbox"
+                          id={`diet-strict-${currentDayIndex}`}
+                          checked={currentDay.dietStrict || false}
+                          onChange={(e) => {
+                            const newPlans = [...dayPlans];
+                            newPlans[currentDayIndex].dietStrict = e.target.checked;
+                            setDayPlans(newPlans);
+                          }}
+                          style={{
+                            width: '1.25rem',
+                            height: '1.25rem',
+                            cursor: 'pointer'
+                          }}
+                        />
+                        <label htmlFor={`diet-strict-${currentDayIndex}`} style={{ fontSize: '0.875rem', color: '#666', cursor: 'pointer' }}>
+                          Strict
+                        </label>
+                      </div>
+                    )}
                   </div>
                 </div>
                 

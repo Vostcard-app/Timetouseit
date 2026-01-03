@@ -50,7 +50,9 @@ export const mealPlanningService = {
     userId: string,
     date: Date,
     mealType: MealType,
-    servingSize?: number // Optional day-specific serving size
+    servingSize?: number, // Optional day-specific serving size
+    dietApproach?: string, // Optional day-specific diet approach
+    dietStrict?: boolean // Optional day-specific strict setting
   ): Promise<MealSuggestion[]> {
     logServiceOperation('generateDailySuggestions', 'mealPlans', { userId, date, mealType });
 
@@ -105,8 +107,8 @@ export const mealPlanningService = {
         userPreferences: {
           dislikedFoods: profile.dislikedFoods,
           foodPreferences: profile.foodPreferences,
-          dietApproach: profile.dietApproach,
-          dietStrict: profile.dietStrict,
+          dietApproach: dietApproach !== undefined ? dietApproach : profile.dietApproach, // Use day-specific or profile default
+          dietStrict: dietStrict !== undefined ? dietStrict : profile.dietStrict, // Use day-specific or profile default
           favoriteMeals: profile.favoriteMeals || [],
           servingSize: servingSize || profile.servingSize || 2, // Use day-specific or profile default
           mealDurationPreferences: profile.mealDurationPreferences

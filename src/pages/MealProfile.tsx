@@ -260,6 +260,7 @@ const MealProfile: React.FC = () => {
               <option value="Flexitarian">Flexitarian</option>
               <option value="Low-Carb">Low-Carb</option>
               <option value="Plant-Based">Plant-Based</option>
+              <option value="Vegan">Vegan</option>
             </select>
             {dietApproach && (
               <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
