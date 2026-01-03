@@ -285,7 +285,7 @@ const Dashboard: React.FC = () => {
         )}
 
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         {(['all', 'fresh', 'expiring_soon', 'expired'] as FilterType[]).map((filterType) => (
           <button
             key={filterType}
@@ -305,6 +305,24 @@ const Dashboard: React.FC = () => {
             {filterType.replace('_', ' ')} ({filterType === 'all' ? foodItems.length : foodItems.filter(i => i.status === filterType).length})
           </button>
         ))}
+        {filter === 'all' && (
+          <button
+            onClick={() => navigate('/add')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#002B4D',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              marginLeft: 'auto'
+            }}
+          >
+            Add
+          </button>
+        )}
       </div>
 
       {/* Today's Date */}
