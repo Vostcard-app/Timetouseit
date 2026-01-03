@@ -11,7 +11,6 @@ import type { MealSuggestion, MealType } from '../types';
 import Banner from '../components/layout/Banner';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
 import { startOfWeek, addDays, format } from 'date-fns';
 
 interface DayPlan {
@@ -309,19 +308,34 @@ const MealPlanner: React.FC = () => {
                     <label style={{ fontSize: '0.875rem', color: '#666' }} htmlFor={`serving-size-${currentDayIndex}`}>
                       Serving size:
                     </label>
-                    <div style={{ width: '80px' }}>
-                      <Input
-                        id={`serving-size-${currentDayIndex}`}
-                        type="number"
-                        value={(currentDay.servingSize || '').toString()}
-                        onChange={(val) => {
-                          const newPlans = [...dayPlans];
-                          newPlans[currentDayIndex].servingSize = val ? parseInt(val) : undefined;
-                          setDayPlans(newPlans);
-                        }}
-                        placeholder="Default"
-                      />
-                    </div>
+                    <input
+                      id={`serving-size-${currentDayIndex}`}
+                      type="number"
+                      min="1"
+                      value={currentDay.servingSize || ''}
+                      onChange={(e) => {
+                        const newPlans = [...dayPlans];
+                        const value = e.target.value;
+                        newPlans[currentDayIndex].servingSize = value ? parseInt(value, 10) : undefined;
+                        setDayPlans(newPlans);
+                      }}
+                      placeholder="Default"
+                      style={{
+                        width: '80px',
+                        padding: '0.5rem 0.75rem',
+                        fontSize: '1rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        backgroundColor: '#ffffff',
+                        color: '#1f2937'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#002B4D';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d1d5db';
+                      }}
+                    />
                     <span style={{ fontSize: '0.875rem', color: '#666' }}>people</span>
                   </div>
                 </div>
