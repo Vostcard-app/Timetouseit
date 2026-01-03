@@ -43,6 +43,7 @@ export interface MealProfile {
   userId: string;
   dislikedFoods: string[];
   foodPreferences: string[]; // e.g., 'vegetarian', 'vegan', 'gluten-free'
+  dietApproach?: string; // e.g., 'Paleo', 'Weight Watchers', 'Mediterranean', 'Keto', etc.
   favoriteMeals: string[]; // User's favorite meals
   servingSize: number; // Number of people meals should feed
   mealDurationPreferences: {
@@ -155,6 +156,7 @@ export interface MealPlanningContext {
   userPreferences: {
     dislikedFoods: string[];
     foodPreferences: string[];
+    dietApproach?: string;
     favoriteMeals: string[];
     servingSize: number;
     mealDurationPreferences: {

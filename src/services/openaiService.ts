@@ -164,6 +164,7 @@ ${leftoverMealsList || 'None'}
 USER PREFERENCES:
 - Disliked foods: ${context.userPreferences.dislikedFoods.join(', ') || 'None'}
 - Dietary preferences: ${context.userPreferences.foodPreferences.join(', ') || 'None'}
+- Diet approach: ${context.userPreferences.dietApproach || 'None'}
 - Favorite meals: ${context.userPreferences.favoriteMeals.join(', ') || 'None'}
 - Serving size: ${context.userPreferences.servingSize} people
 - Meal duration preferences: Breakfast ${context.userPreferences.mealDurationPreferences.breakfast} min, Lunch ${context.userPreferences.mealDurationPreferences.lunch} min, Dinner ${context.userPreferences.mealDurationPreferences.dinner} min

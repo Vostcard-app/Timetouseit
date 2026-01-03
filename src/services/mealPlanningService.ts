@@ -94,6 +94,7 @@ export const mealPlanningService = {
         userPreferences: {
           dislikedFoods: profile.dislikedFoods,
           foodPreferences: profile.foodPreferences,
+          dietApproach: profile.dietApproach,
           favoriteMeals: profile.favoriteMeals || [],
           servingSize: servingSize || profile.servingSize || 2, // Use day-specific or profile default
           mealDurationPreferences: profile.mealDurationPreferences
@@ -193,6 +194,7 @@ export const mealPlanningService = {
         userPreferences: {
           dislikedFoods: profile.dislikedFoods,
           foodPreferences: profile.foodPreferences,
+          dietApproach: profile.dietApproach,
           favoriteMeals: profile.favoriteMeals || [],
           servingSize: profile.servingSize || 2,
           mealDurationPreferences: profile.mealDurationPreferences
@@ -487,6 +489,7 @@ export const mealPlanningService = {
         userPreferences: {
           dislikedFoods: profile?.dislikedFoods || [],
           foodPreferences: profile?.foodPreferences || [],
+          dietApproach: profile?.dietApproach,
           favoriteMeals: profile?.favoriteMeals || [],
           servingSize: profile?.servingSize || 2,
           mealDurationPreferences: profile?.mealDurationPreferences || {

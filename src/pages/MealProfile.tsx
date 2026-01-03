@@ -39,6 +39,7 @@ const MealProfile: React.FC = () => {
   // Form state
   const [dislikedFoods, setDislikedFoods] = useState<string>('');
   const [foodPreferences, setFoodPreferences] = useState<string>('');
+  const [dietApproach, setDietApproach] = useState<string>('');
   const [favoriteMeals, setFavoriteMeals] = useState<string>('');
   const [servingSize, setServingSize] = useState<number>(2);
   const [breakfastDuration, setBreakfastDuration] = useState<number>(20);
@@ -58,6 +59,7 @@ const MealProfile: React.FC = () => {
           setProfile(userProfile);
           setDislikedFoods(userProfile.dislikedFoods.join(', '));
           setFoodPreferences(userProfile.foodPreferences.join(', '));
+          setDietApproach(userProfile.dietApproach || '');
           setFavoriteMeals((userProfile.favoriteMeals || []).join(', '));
           setServingSize(userProfile.servingSize || 2);
           setBreakfastDuration(userProfile.mealDurationPreferences.breakfast);
@@ -88,6 +90,7 @@ const MealProfile: React.FC = () => {
             createdAt: new Date(),
             updatedAt: new Date()
           });
+          setDietApproach('');
         }
       } catch (error) {
         console.error('Error loading meal profile:', error);
@@ -148,6 +151,7 @@ const MealProfile: React.FC = () => {
         ...profile,
         dislikedFoods: dislikedFoods.split(',').map(f => f.trim()).filter(f => f),
         foodPreferences: foodPreferences.split(',').map(f => f.trim()).filter(f => f),
+        dietApproach: dietApproach || undefined,
         favoriteMeals: favoriteMeals.split(',').map(f => f.trim()).filter(f => f),
         servingSize,
         mealDurationPreferences: {
@@ -212,6 +216,47 @@ const MealProfile: React.FC = () => {
             placeholder="e.g., vegetarian, vegan, gluten-free"
             helperText="Separate multiple preferences with commas"
           />
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+              Diet Approach
+            </label>
+            <select
+              value={dietApproach}
+              onChange={(e) => setDietApproach(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                fontSize: '1rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff',
+                color: '#1f2937',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#002B4D';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+              }}
+            >
+              <option value="">None</option>
+              <option value="Paleo">Paleo</option>
+              <option value="Weight Watchers">Weight Watchers</option>
+              <option value="Mediterranean">Mediterranean</option>
+              <option value="Keto">Keto</option>
+              <option value="Whole30">Whole30</option>
+              <option value="DASH">DASH</option>
+              <option value="Flexitarian">Flexitarian</option>
+              <option value="Low-Carb">Low-Carb</option>
+              <option value="Plant-Based">Plant-Based</option>
+            </select>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
+              Select your primary diet approach or eating plan
+            </p>
+          </div>
 
           <Input
             label="Favorite Meals"
