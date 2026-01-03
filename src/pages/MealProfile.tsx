@@ -40,6 +40,7 @@ const MealProfile: React.FC = () => {
   const [dislikedFoods, setDislikedFoods] = useState<string>('');
   const [foodPreferences, setFoodPreferences] = useState<string>('');
   const [dietApproach, setDietApproach] = useState<string>('');
+  const [dietStrict, setDietStrict] = useState<boolean>(false);
   const [favoriteMeals, setFavoriteMeals] = useState<string>('');
   const [servingSize, setServingSize] = useState<number>(2);
   const [breakfastDuration, setBreakfastDuration] = useState<number>(20);
@@ -60,6 +61,7 @@ const MealProfile: React.FC = () => {
           setDislikedFoods(userProfile.dislikedFoods.join(', '));
           setFoodPreferences(userProfile.foodPreferences.join(', '));
           setDietApproach(userProfile.dietApproach || '');
+          setDietStrict(userProfile.dietStrict || false);
           setFavoriteMeals((userProfile.favoriteMeals || []).join(', '));
           setServingSize(userProfile.servingSize || 2);
           setBreakfastDuration(userProfile.mealDurationPreferences.breakfast);
@@ -152,6 +154,7 @@ const MealProfile: React.FC = () => {
         dislikedFoods: dislikedFoods.split(',').map(f => f.trim()).filter(f => f),
         foodPreferences: foodPreferences.split(',').map(f => f.trim()).filter(f => f),
         dietApproach: dietApproach || undefined,
+        dietStrict: dietApproach ? dietStrict : undefined, // Only set if diet approach is selected
         favoriteMeals: favoriteMeals.split(',').map(f => f.trim()).filter(f => f),
         servingSize,
         mealDurationPreferences: {
@@ -223,7 +226,12 @@ const MealProfile: React.FC = () => {
             </label>
             <select
               value={dietApproach}
-              onChange={(e) => setDietApproach(e.target.value)}
+              onChange={(e) => {
+                setDietApproach(e.target.value);
+                if (!e.target.value) {
+                  setDietStrict(false); // Reset strict when diet is cleared
+                }
+              }}
               style={{
                 width: '100%',
                 padding: '0.5rem 0.75rem',
@@ -253,8 +261,36 @@ const MealProfile: React.FC = () => {
               <option value="Low-Carb">Low-Carb</option>
               <option value="Plant-Based">Plant-Based</option>
             </select>
+            {dietApproach && (
+              <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="diet-strict"
+                  checked={dietStrict}
+                  onChange={(e) => setDietStrict(e.target.checked)}
+                  style={{
+                    width: '1rem',
+                    height: '1rem',
+                    cursor: 'pointer'
+                  }}
+                />
+                <label
+                  htmlFor="diet-strict"
+                  style={{
+                    fontSize: '0.875rem',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  Strict
+                </label>
+              </div>
+            )}
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
-              Select your primary diet approach or eating plan
+              {dietApproach 
+                ? 'Select your primary diet approach or eating plan. Check "Strict" to strictly adhere to diet criteria.'
+                : 'Select your primary diet approach or eating plan'}
             </p>
           </div>
 

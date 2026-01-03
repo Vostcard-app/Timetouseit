@@ -156,7 +156,7 @@ ${leftoverMealsList || 'None'}
 USER PREFERENCES:
 - Disliked foods: ${context.userPreferences.dislikedFoods.join(', ') || 'None'}
 - Dietary preferences: ${context.userPreferences.foodPreferences.join(', ') || 'None'}
-- Diet approach: ${context.userPreferences.dietApproach || 'None'}
+- Diet approach: ${context.userPreferences.dietApproach || 'None'}${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? ' (STRICT - must strictly adhere to all diet criteria)' : ''}
 - Favorite meals: ${context.userPreferences.favoriteMeals.join(', ') || 'None'}
 - Serving size: ${context.userPreferences.servingSize} people
 - Meal duration preferences: Breakfast ${context.userPreferences.mealDurationPreferences.breakfast} min, Lunch ${context.userPreferences.mealDurationPreferences.lunch} min, Dinner ${context.userPreferences.mealDurationPreferences.dinner} min
@@ -170,11 +170,16 @@ ${context.currentInventory.map(item => `- ${item.name}`).join('\n') || 'None'}
 Generate meal suggestions that:
 1. Prioritize using expiring items and leftovers
 2. Match user preferences and dietary restrictions
-3. Include favorite meals when appropriate
-4. Plan for ${context.userPreferences.servingSize} servings per meal
-5. Fit the schedule (consider meal duration preferences)
-6. Use items from current inventory when possible
-7. Suggest shopping list items only when necessary
+${context.userPreferences.dietApproach && context.userPreferences.dietStrict 
+  ? `3. STRICTLY adhere to ${context.userPreferences.dietApproach} guidelines. Do not suggest any meals that violate the diet's core principles.`
+  : context.userPreferences.dietApproach 
+    ? `3. Consider ${context.userPreferences.dietApproach} preferences but allow flexibility.`
+    : '3. Include favorite meals when appropriate'}
+${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? '4' : '4'}. ${context.userPreferences.dietApproach && !context.userPreferences.dietStrict ? 'Include favorite meals when appropriate' : `Plan for ${context.userPreferences.servingSize} servings per meal`}
+${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? '5' : '5'}. ${context.userPreferences.dietApproach && !context.userPreferences.dietStrict ? `Plan for ${context.userPreferences.servingSize} servings per meal` : 'Fit the schedule (consider meal duration preferences)'}
+${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? '6' : '6'}. ${context.userPreferences.dietApproach && !context.userPreferences.dietStrict ? 'Fit the schedule (consider meal duration preferences)' : 'Use items from current inventory when possible'}
+${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? '7' : '7'}. ${context.userPreferences.dietApproach && !context.userPreferences.dietStrict ? 'Use items from current inventory when possible' : 'Suggest shopping list items only when necessary'}
+${context.userPreferences.dietApproach && context.userPreferences.dietStrict ? '8. Suggest shopping list items only when necessary' : ''}
 
 IMPORTANT: Generate exactly 3 meal suggestions for ${context.schedule[0]?.meals.find(m => m.type === 'breakfast' || m.type === 'lunch' || m.type === 'dinner')?.type || 'this meal type'}.
 
