@@ -105,27 +105,32 @@ const MealPlanner: React.FC = () => {
 
     setGenerating(true);
     try {
-      const newSuggestions = new Map<MealType, MealSuggestion[]>();
+      const newDayPlans = [...dayPlans];
+      const currentDayCopy = { ...newDayPlans[currentDayIndex] };
+      const existingSuggestions = new Map(currentDayCopy.suggestions);
       
-      // Generate suggestions for each selected meal type
+      // Generate suggestions for each selected meal type and append to existing
       for (const mealType of selectedTypes) {
         try {
-          const suggestions = await mealPlanningService.generateDailySuggestions(
+          const newSuggestions = await mealPlanningService.generateDailySuggestions(
             user.uid,
             currentDay.date,
             mealType,
             currentDay.servingSize
           );
-          newSuggestions.set(mealType, suggestions);
+          
+          // Append to existing suggestions for this meal type
+          const currentSuggestions = existingSuggestions.get(mealType) || [];
+          existingSuggestions.set(mealType, [...currentSuggestions, ...newSuggestions]);
         } catch (error) {
           console.error(`Error generating suggestions for ${mealType}:`, error);
           // Continue with other meal types even if one fails
         }
       }
       
-      // Update day plan with suggestions
-      const newDayPlans = [...dayPlans];
-      newDayPlans[currentDayIndex].suggestions = newSuggestions;
+      // Update day plan with accumulated suggestions
+      currentDayCopy.suggestions = existingSuggestions;
+      newDayPlans[currentDayIndex] = currentDayCopy;
       setDayPlans(newDayPlans);
     } catch (error) {
       console.error('Error generating suggestions:', error);
@@ -133,6 +138,41 @@ const MealPlanner: React.FC = () => {
         ? error.message 
         : 'Failed to generate meal suggestions. Please make sure you have set up your meal profile and have an OpenAI API key configured.';
       alert(`Failed to generate meal suggestions.\n\n${errorMessage}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGenerateMoreSuggestions = async (mealType: MealType) => {
+    if (!user || dayPlans.length === 0) return;
+    
+    const currentDay = dayPlans[currentDayIndex];
+    
+    setGenerating(true);
+    try {
+      const newSuggestions = await mealPlanningService.generateDailySuggestions(
+        user.uid,
+        currentDay.date,
+        mealType,
+        currentDay.servingSize
+      );
+      
+      // Append to existing suggestions for this meal type
+      const newDayPlans = [...dayPlans];
+      const currentDayCopy = { ...newDayPlans[currentDayIndex] };
+      const existingSuggestions = new Map(currentDayCopy.suggestions);
+      const currentSuggestions = existingSuggestions.get(mealType) || [];
+      existingSuggestions.set(mealType, [...currentSuggestions, ...newSuggestions]);
+      
+      currentDayCopy.suggestions = existingSuggestions;
+      newDayPlans[currentDayIndex] = currentDayCopy;
+      setDayPlans(newDayPlans);
+    } catch (error) {
+      console.error(`Error generating more suggestions for ${mealType}:`, error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to generate more meal suggestions. Please make sure you have set up your meal profile and have an OpenAI API key configured.';
+      alert(`Failed to generate more meal suggestions.\n\n${errorMessage}`);
     } finally {
       setGenerating(false);
     }
@@ -623,10 +663,12 @@ const MealPlanner: React.FC = () => {
                             </div>
                           ) : suggestions.length > 0 ? (
                             <div>
-                              <p style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: '#666' }}>
-                                Select one of the suggestions:
-                              </p>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: '#666' }}>
+                                  Select one of the {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}:
+                                </p>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                                 {suggestions.map((suggestion, index) => (
                                   <div
                                     key={index}
@@ -659,6 +701,17 @@ const MealPlanner: React.FC = () => {
                                     )}
                                   </div>
                                 ))}
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <Button
+                                  onClick={() => handleGenerateMoreSuggestions(mealType)}
+                                  disabled={generating}
+                                  loading={generating}
+                                  variant="secondary"
+                                  size="small"
+                                >
+                                  Generate 3 More Suggestions
+                                </Button>
                               </div>
                             </div>
                           ) : null}
