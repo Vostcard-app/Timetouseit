@@ -8,6 +8,9 @@ import { freezeGuidelines, freezeCategoryLabels, notRecommendedToFreeze, type Fr
 import { userItemsService } from '../../services';
 import { addMonths, addDays } from 'date-fns';
 import { analyticsService } from '../../services/analyticsService';
+import { getExpirationSuggestion } from '../../services/expirationHelperService';
+import { hasAvailableCredits } from '../../services/expirationCreditService';
+import { showToast } from '../Toast';
 
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
@@ -42,6 +45,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [hasCredits, setHasCredits] = useState(true);
   // Use external isFrozen if provided, otherwise use internal state
   const [internalIsFrozen, setInternalIsFrozen] = useState(false);
   const isFrozen = externalIsFrozen !== undefined ? externalIsFrozen : internalIsFrozen;
@@ -194,6 +199,73 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setSuggestedExpirationDate(null);
     }
   }, [formData.name, isFrozen, hasManuallyChangedDate, initialItem, userItems]);
+
+  // Check if credits are available
+  useEffect(() => {
+    const checkCredits = async () => {
+      try {
+        const available = await hasAvailableCredits();
+        setHasCredits(available);
+      } catch (error) {
+        console.error('Error checking credits:', error);
+        setHasCredits(false);
+      }
+    };
+    checkCredits();
+  }, []);
+
+  // Handle AI Expiration Helper
+  const handleExpirationHelper = async () => {
+    if (!formData.name.trim()) {
+      showToast('Please enter an item name first', 'warning');
+      return;
+    }
+
+    if (isFrozen) {
+      showToast('Expiration Helper is for non-frozen items only', 'warning');
+      return;
+    }
+
+    setIsLoadingAI(true);
+    try {
+      // Determine storage type
+      const isDryCanned = formData.isDryCanned || false;
+      const storageType = isDryCanned ? 'pantry' : 'refrigerator';
+      
+      // Check if this might be a leftover (user can indicate this in notes or we can infer)
+      const isLeftover = formData.notes?.toLowerCase().includes('leftover') || 
+                        formData.notes?.toLowerCase().includes('left over') ||
+                        false;
+
+      const result = await getExpirationSuggestion(formData.name.trim(), storageType, isLeftover);
+      
+      if (result.success && result.expirationDate) {
+        // Update the expiration date
+        setFormData(prev => ({
+          ...prev,
+          expirationDate: result.expirationDate
+        }));
+        setHasManuallyChangedDate(false); // Allow auto-updates after AI suggestion
+        
+        // Show success toast with credits and days
+        const credits = result.creditsRemaining || 0;
+        const days = result.daysLeft || 0;
+        const toastMessage = `${credits}B, ${days}D`;
+        showToast(`Expiration date updated. ${toastMessage}`, 'success', 4000);
+      } else {
+        // Show error toast
+        showToast(result.error || 'Failed to get expiration suggestion', 'error');
+        // Update credits state
+        const available = await hasAvailableCredits();
+        setHasCredits(available);
+      }
+    } catch (error: any) {
+      console.error('Error getting expiration suggestion:', error);
+      showToast(error?.message || 'Failed to get expiration suggestion', 'error');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
 
   // Calculate thaw date when freeze category is selected
   useEffect(() => {
@@ -692,6 +764,37 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           >
             Change Expiration Date
           </button>
+        </div>
+      )}
+
+      {/* 3.5. Expiration Helper button (AI-powered suggestion) */}
+      {formData.name.trim() && !isFrozen && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <button
+            type="button"
+            onClick={handleExpirationHelper}
+            disabled={isLoadingAI || !hasCredits || isSubmitting}
+            style={{
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              backgroundColor: hasCredits ? '#10b981' : '#9ca3af',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: (isLoadingAI || !hasCredits || isSubmitting) ? 'not-allowed' : 'pointer',
+              opacity: (isLoadingAI || !hasCredits || isSubmitting) ? 0.6 : 1,
+              minHeight: '44px'
+            }}
+          >
+            {isLoadingAI ? 'Getting AI suggestion...' : hasCredits ? 'Expiration Helper' : 'No Credits Available'}
+          </button>
+          {!hasCredits && (
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6b7280', textAlign: 'center' }}>
+              Purchase credits to use AI expiration helper
+            </p>
+          )}
         </div>
       )}
 

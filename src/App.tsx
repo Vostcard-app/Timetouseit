@@ -4,6 +4,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase/firebaseConfig';
 import Layout from './components/layout/Layout';
 import LoadingFallback from './components/ui/LoadingFallback';
+import ToastContainer from './components/Toast';
 import { notificationService } from './services/notificationService';
 import { useFoodItems } from './hooks/useFoodItems';
 import { analyticsService } from './services/analyticsService';
@@ -92,6 +93,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/shop" replace />} />
         <Route path="/terms" element={<Terms />} />

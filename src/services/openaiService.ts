@@ -325,6 +325,89 @@ Generate exactly 3 different meal suggestions.`;
 }
 
 /**
+ * Suggest expiration date using AI
+ */
+export async function suggestExpirationDate(
+  itemName: string,
+  storageType: 'refrigerator' | 'freezer' | 'pantry',
+  isLeftover: boolean = false
+): Promise<{ expirationDate: string; reasoning: string }> {
+  try {
+    const prompt = buildExpirationDatePrompt(itemName, storageType, isLeftover);
+    const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo';
+    
+    const response = await callOpenAI([
+      {
+        role: 'system',
+        content: 'You are a food safety expert. Provide accurate expiration date suggestions based on USDA FoodKeeper guidelines and food safety best practices. Return only valid JSON.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ], model);
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response from OpenAI');
+    }
+
+    const parsed = JSON.parse(content);
+    return {
+      expirationDate: parsed.expirationDate,
+      reasoning: parsed.reasoning || 'Based on food safety guidelines'
+    };
+  } catch (error) {
+    console.error('Error suggesting expiration date:', error);
+    throw error;
+  }
+}
+
+/**
+ * Build expiration date suggestion prompt
+ */
+function buildExpirationDatePrompt(
+  itemName: string,
+  storageType: 'refrigerator' | 'freezer' | 'pantry',
+  isLeftover: boolean
+): string {
+  const leftoverContext = isLeftover 
+    ? 'This is a leftover food item that has been cooked/prepared and stored.'
+    : 'This is a fresh food item.';
+  
+  const storageContext = storageType === 'freezer'
+    ? 'The item is stored in the freezer.'
+    : storageType === 'pantry'
+    ? 'The item is stored in the pantry (room temperature, dry storage).'
+    : 'The item is stored in the refrigerator.';
+
+  return `Suggest a safe expiration date for the following food item:
+
+Item Name: ${itemName}
+${storageContext}
+${leftoverContext}
+
+Please provide:
+1. A recommended expiration date (in YYYY-MM-DD format, calculated from today)
+2. A brief explanation of why this date is recommended
+
+Consider:
+- USDA FoodKeeper guidelines
+- Food safety best practices
+- Storage conditions (${storageType})
+- Whether it's a leftover (shorter shelf life) or fresh item
+- Typical spoilage patterns for this type of food
+
+Return a JSON object with this structure:
+{
+  "expirationDate": "YYYY-MM-DD",
+  "reasoning": "Brief explanation of the recommendation"
+}
+
+Today's date is ${new Date().toISOString().split('T')[0]}.`;
+}
+
+/**
  * Build replanning prompt
  */
 function buildReplanningPrompt(context: ReplanningContext): string {
