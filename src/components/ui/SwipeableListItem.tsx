@@ -230,8 +230,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', position: 'relative', zIndex: 10 }}>
-            {/* Only show Freeze button for non-dry/canned items */}
-            {onFreeze && !item.isDryCanned && (
+            {/* Only show Freeze button for non-dry/canned items that aren't already frozen */}
+            {onFreeze && !item.isDryCanned && !item.thawDate && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
