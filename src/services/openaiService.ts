@@ -409,26 +409,62 @@ ${leftoverContext}
 
 Please provide:
 1. A recommended expiration date (in YYYY-MM-DD format, calculated from today)
-2. A brief explanation of why this date is recommended
+2. A brief explanation of why this date is recommended, including which authoritative source(s) influenced the recommendation
 
-Consider:
+AUTHORITATIVE SOURCES TO REFERENCE:
+
+1. **USDA/FSIS (United States Department of Agriculture/Food Safety and Inspection Service)**:
+   - Shelf-stable foods (dried pasta, rice, flour): Safe to eat indefinitely if stored correctly, though typically at peak quality for about 2 years
+   - Distinguishes between safety (food remains safe) and quality (peak freshness)
+
+2. **Food Standards Agency (FSA)**:
+   - "Best before" dates indicate quality/peak freshness (food may still be safe after this date)
+   - "Use by" dates indicate safety (food should not be consumed after this date)
+   - Dried foods like pasta are safe to eat past their best-before date if stored properly
+
+3. **Scientific Research (Frontiers in Microbiology)**:
+   - Fresh pasta: Homemade versions last 2-3 days; industrially produced fresh pasta (heat-treated and specially packaged) can last 30-90 days in refrigerator
+   - Important distinction between homemade and commercially produced fresh pasta
+
+4. **KitchenAid Guidelines**:
+   - Homemade fresh pasta: 1 day in refrigerator, up to 8 months in freezer
+   - Supports scientific research on homemade fresh pasta shelf life
+
+5. **StillTasty**:
+   - Detailed pantry storage timelines
+   - Opened dry pasta: Use within 1 year for best quality
+   - Unopened dry pasta: 2-3 years for best quality
+
+CONSIDERATIONS:
 - USDA FoodKeeper guidelines
 - Food safety best practices
 - Storage conditions (${storageType})
 - Whether it's a leftover (shorter shelf life) or fresh/uncooked item
+- Distinction between fresh vs dried products (e.g., fresh pasta vs dried pasta)
+- Distinction between homemade vs commercially produced items
 - Typical spoilage patterns for this type of food
 ${pantryGuidance}${leftoverGuidance}
 
 CRITICAL RULES:
 - Pantry items (dry goods): Suggest 1-3 YEARS in the future (e.g., uncooked pasta, rice, flour, canned goods)
+  - Reference USDA/FSIS for safety (indefinite if stored correctly) and quality (peak ~2 years)
+  - Reference StillTasty for opened vs unopened guidance (1 year opened, 2-3 years unopened)
 - Refrigerator items (perishable): Suggest DAYS to WEEKS in the future (e.g., fresh produce, dairy, meat)
+  - For fresh pasta: Reference scientific research (homemade 2-3 days vs industrial 30-90 days)
+  - Reference KitchenAid for homemade fresh pasta (1 day fridge)
 - Leftovers: Suggest 3-7 DAYS in the future
 - Frozen items: Not applicable (this is for non-frozen items only)
+
+IMPORTANT - SOURCE CITATION:
+When providing your reasoning, cite which authoritative source(s) you used. For example:
+- "Based on USDA/FSIS guidelines, dried pasta is safe indefinitely but at peak quality for ~2 years..."
+- "According to StillTasty, opened dry pasta should be used within 1 year for best quality..."
+- "Scientific research indicates homemade fresh pasta lasts 2-3 days, while industrial fresh pasta can last 30-90 days..."
 
 Return a JSON object with this structure:
 {
   "expirationDate": "YYYY-MM-DD",
-  "reasoning": "Brief explanation of the recommendation"
+  "reasoning": "Brief explanation citing which authoritative source(s) influenced the recommendation"
 }
 
 Today's date is ${new Date().toISOString().split('T')[0]}.`;
