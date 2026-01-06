@@ -195,11 +195,17 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           cursor: isDragging ? 'grabbing' : (onClick ? 'pointer' : 'grab')
         }}
       >
-        {/* First line: Title and Purchased date */}
+        {/* First line: Title, Quantity (if dry/canned), and Purchased date */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
             {item.name}
           </span>
+          {/* Show quantity with unit for dry/canned goods */}
+          {item.isDryCanned && item.quantity && (
+            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>
+              {item.quantity} {item.quantityUnit || 'units'}
+            </span>
+          )}
           <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
             Purchased
           </span>
@@ -224,7 +230,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', position: 'relative', zIndex: 10 }}>
-            {onFreeze && (
+            {/* Only show Freeze button for non-dry/canned items */}
+            {onFreeze && !item.isDryCanned && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

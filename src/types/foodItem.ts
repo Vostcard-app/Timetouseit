@@ -12,6 +12,7 @@ export interface FoodItem {
   addedDate: Date;
   photoUrl?: string;
   quantity?: number;
+  quantityUnit?: string; // Unit for quantity (cans, packages, cups, boxes, bags, bottles, jars, units)
   category?: string;
   status: 'fresh' | 'expiring_soon' | 'expired';
   reminderSent?: boolean;
@@ -28,6 +29,7 @@ export interface FoodItemData {
   thawDate?: Date; // For frozen items
   photoUrl?: string;
   quantity?: number;
+  quantityUnit?: string; // Unit for quantity (cans, packages, cups, boxes, bags, bottles, jars, units)
   category?: string;
   notes?: string;
   isFrozen?: boolean;

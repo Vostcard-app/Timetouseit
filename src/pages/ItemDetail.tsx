@@ -160,7 +160,7 @@ const ItemDetail: React.FC = () => {
               Quantity
             </h3>
             <p style={{ margin: 0, fontSize: '1.125rem', color: '#1f2937' }}>
-              {item.quantity}
+              {item.quantity} {item.isDryCanned && item.quantityUnit ? item.quantityUnit : ''}
             </p>
           </div>
         )}

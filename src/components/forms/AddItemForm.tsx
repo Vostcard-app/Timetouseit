@@ -12,6 +12,18 @@ import { getExpirationSuggestion } from '../../services/expirationHelperService'
 import { hasAvailableCredits } from '../../services/expirationCreditService';
 import { showToast } from '../Toast';
 
+// Quantity unit options for dry/canned goods
+const QUANTITY_UNITS = [
+  { value: 'cans', label: 'Cans' },
+  { value: 'packages', label: 'Packages' },
+  { value: 'cups', label: 'Cups' },
+  { value: 'boxes', label: 'Boxes' },
+  { value: 'bags', label: 'Bags' },
+  { value: 'bottles', label: 'Bottles' },
+  { value: 'jars', label: 'Jars' },
+  { value: 'units', label: 'Units' }
+] as const;
+
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
   onCancel?: () => void;
@@ -35,6 +47,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     expirationDate: initialItem?.isFrozen ? undefined : (initialItem?.expirationDate ? new Date(initialItem.expirationDate) : new Date()),
     thawDate: initialItem?.isFrozen && initialItem?.thawDate ? new Date(initialItem.thawDate) : undefined,
     quantity: initialItem?.quantity || 1,
+    quantityUnit: initialItem?.quantityUnit || 'units',
     category: initialItem?.category || '',
     notes: initialItem?.notes || '',
     isFrozen: initialItem?.isFrozen || false,
@@ -106,6 +119,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         expirationDate: shouldFreeze ? undefined : (initialItem.expirationDate ? new Date(initialItem.expirationDate) : new Date()),
         thawDate: shouldFreeze && initialItem.thawDate ? new Date(initialItem.thawDate) : undefined,
         quantity: initialItem.quantity || 1,
+        quantityUnit: initialItem.quantityUnit || 'units',
         category: initialItem.category || '',
         notes: initialItem.notes || '',
         isFrozen: shouldFreeze,
@@ -373,6 +387,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         name: formData.name,
         barcode: formData.barcode,
         quantity: formData.quantity,
+        quantityUnit: finalIsDryCanned ? (formData.quantityUnit || 'units') : undefined, // Only include unit for dry/canned goods
         category: formData.category,
         notes: formData.notes,
         isFrozen: isFrozen,
@@ -398,6 +413,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           expirationDate: new Date(),
           thawDate: undefined,
           quantity: 1,
+          quantityUnit: 'units',
           category: '',
           notes: '',
           isFrozen: false
@@ -626,6 +642,54 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               fontSize: '1rem'
             }}
           />
+        </div>
+      )}
+
+      {/* 2.5. Quantity Field (for dry/canned goods) */}
+      {/* Show quantity field if item is marked as dry/canned or if user navigated from dry/canned tab */}
+      {(formData.isDryCanned || initialIsDryCanned) && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label htmlFor="quantity" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
+            Quantity
+          </label>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+            <input
+              type="number"
+              id="quantity"
+              name="quantity"
+              min="1"
+              value={formData.quantity || 1}
+              onChange={handleInputChange}
+              style={{
+                flex: '1',
+                padding: '0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '1rem'
+              }}
+            />
+            <select
+              id="quantityUnit"
+              name="quantityUnit"
+              value={formData.quantityUnit || 'units'}
+              onChange={handleInputChange}
+              style={{
+                flex: '1',
+                padding: '0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer'
+              }}
+            >
+              {QUANTITY_UNITS.map(unit => (
+                <option key={unit.value} value={unit.value}>
+                  {unit.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
       

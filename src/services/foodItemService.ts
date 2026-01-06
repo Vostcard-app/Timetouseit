@@ -143,6 +143,7 @@ export const foodItemService = {
     if (data.barcode) cleanData.barcode = data.barcode;
     if (data.photoUrl) cleanData.photoUrl = data.photoUrl;
     if (data.quantity) cleanData.quantity = data.quantity;
+    if (data.quantityUnit) cleanData.quantityUnit = data.quantityUnit;
     if (data.category) cleanData.category = data.category;
     if (data.notes) cleanData.notes = data.notes;
     if (data.isFrozen !== undefined) cleanData.isFrozen = data.isFrozen;
