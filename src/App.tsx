@@ -37,6 +37,22 @@ function App() {
   // Track sessions and retention
   useSessionTracking();
 
+  // Force service worker update check on app load to prevent stale cache
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(reg => {
+          // Force update check on app load
+          reg.update().catch(err => {
+            console.warn('Service worker update check failed:', err);
+          });
+        });
+      }).catch(err => {
+        console.warn('Service worker registration check failed:', err);
+      });
+    }
+  }, []);
+
   // Track funnel visit (app load)
   useEffect(() => {
     if (user) {
