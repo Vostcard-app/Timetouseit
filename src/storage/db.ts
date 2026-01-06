@@ -6,7 +6,6 @@ export interface ExpirationCredits {
   freeCreditsRemaining: number;
   paidCredits: number;
   totalUses: number;
-  trialEndDate?: number; // ms timestamp, 30 days from first use
   updatedAt: number;
 }
 

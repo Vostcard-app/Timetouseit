@@ -247,11 +247,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         }));
         setHasManuallyChangedDate(false); // Allow auto-updates after AI suggestion
         
-        // Show success toast with credits and days
+        // Show success toast with credits
         const credits = result.creditsRemaining || 0;
-        const days = result.daysLeft || 0;
-        const toastMessage = `${credits}B, ${days}D`;
-        showToast(`Expiration date updated. ${toastMessage}`, 'success', 4000);
+        showToast(`Expiration date updated. ${credits} credits remaining`, 'success', 4000);
       } else {
         // Show error toast
         showToast(result.error || 'Failed to get expiration suggestion', 'error');

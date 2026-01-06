@@ -14,7 +14,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { adminService } from '../../services/adminService';
@@ -72,17 +71,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
   const handleLinkClick = (path: string) => {
     navigate(path);
     onClose();
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/login');
-      onClose();
-    } catch (error) {
-      console.error('Error signing out:', error);
-      alert('Failed to sign out. Please try again.');
-    }
   };
 
   if (!isOpen) return null;
@@ -192,7 +180,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               }, 200);
             }}
           >
-            Settings
+            Account
           </Link>
           <Link
             to="/meal-planner"
@@ -574,46 +562,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               Admin
             </Link>
           )}
-          <button
-            onClick={handleLogout}
-            style={{
-              display: 'flex',
-              padding: '1rem 1.5rem',
-              color: '#1f2937',
-              textDecoration: 'none',
-              fontSize: '22px',
-              fontWeight: '500',
-              transition: 'background-color 0.2s',
-              borderLeft: '3px solid transparent',
-              minHeight: '44px', // Touch target size for mobile
-              alignItems: 'center',
-              background: 'none',
-              border: 'none',
-              width: '100%',
-              textAlign: 'left',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderLeftColor = '#002B4D';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderLeftColor = 'transparent';
-            }}
-            onTouchStart={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderLeftColor = '#002B4D';
-            }}
-            onTouchEnd={(e) => {
-              setTimeout(() => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderLeftColor = 'transparent';
-              }, 200);
-            }}
-          >
-            Logout
-          </button>
         </nav>
       </div>
 

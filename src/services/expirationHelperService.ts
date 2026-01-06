@@ -12,7 +12,6 @@ export interface ExpirationSuggestionResult {
   expirationDate?: Date;
   reasoning?: string;
   creditsRemaining?: number;
-  daysLeft?: number;
   error?: string;
 }
 
@@ -57,8 +56,7 @@ export async function getExpirationSuggestion(
       success: true,
       expirationDate,
       reasoning: aiResult.reasoning,
-      creditsRemaining: creditResult.remaining.freeCreditsRemaining + creditResult.remaining.paidCredits,
-      daysLeft: creditResult.daysLeft
+      creditsRemaining: creditResult.remaining.freeCreditsRemaining + creditResult.remaining.paidCredits
     };
   } catch (error: any) {
     console.error('[ExpirationHelper] Error getting suggestion:', error);
