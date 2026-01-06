@@ -386,7 +386,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       const dataToSubmit: FoodItemData = {
         name: formData.name,
         barcode: formData.barcode,
-        quantity: formData.quantity,
+        quantity: formData.quantity || 1, // Always include quantity
         quantityUnit: finalIsDryCanned ? (formData.quantityUnit || 'units') : undefined, // Only include unit for dry/canned goods
         category: formData.category,
         notes: formData.notes,
@@ -645,29 +645,29 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         </div>
       )}
 
-      {/* 2.5. Quantity Field (for dry/canned goods) */}
-      {/* Show quantity field if item is marked as dry/canned or if user navigated from dry/canned tab */}
-      {(formData.isDryCanned || initialIsDryCanned) && (
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label htmlFor="quantity" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
-            Quantity
-          </label>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
-            <input
-              type="number"
-              id="quantity"
-              name="quantity"
-              min="1"
-              value={formData.quantity || 1}
-              onChange={handleInputChange}
-              style={{
-                flex: '1',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '1rem'
-              }}
-            />
+      {/* 2.5. Quantity Field - Show for all items */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label htmlFor="quantity" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
+          Quantity
+        </label>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+          <input
+            type="number"
+            id="quantity"
+            name="quantity"
+            min="1"
+            value={formData.quantity || 1}
+            onChange={handleInputChange}
+            style={{
+              flex: formData.isDryCanned ? '1' : '1',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem'
+            }}
+          />
+          {/* Show unit dropdown only for dry/canned goods */}
+          {formData.isDryCanned && (
             <select
               id="quantityUnit"
               name="quantityUnit"
@@ -689,9 +689,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
                 </option>
               ))}
             </select>
-          </div>
+          )}
         </div>
-      )}
+      </div>
       
       {/* 2a. Thaw Date Field (for frozen items) */}
       {isFrozen && formData.thawDate && (
