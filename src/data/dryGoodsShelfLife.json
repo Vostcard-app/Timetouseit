@@ -1,0 +1,255 @@
+[
+  {
+    "name": "Canned vegetables",
+    "category": "Canned",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 1825,
+    "pantryDays": 1095,
+    "notes": "Safe indefinitely if can is undamaged; quality declines over time",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Canned fruits",
+    "category": "Canned",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 730,
+    "pantryDays": 548,
+    "notes": "Higher acidity shortens quality window",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Canned soups & stews",
+    "category": "Canned",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 1825,
+    "pantryDays": 1095,
+    "notes": "Broth-based last longer than dairy-based",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Canned meat",
+    "category": "Canned",
+    "pantryDaysMin": 1095,
+    "pantryDaysMax": 1825,
+    "pantryDays": 1460,
+    "notes": "Low-acid, very stable when unopened. Includes tuna, chicken, etc.",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Canned beans",
+    "category": "Canned",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 1825,
+    "pantryDays": 1095,
+    "notes": "Texture may soften with age",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Canned tomatoes",
+    "category": "Canned",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 548,
+    "pantryDays": 456,
+    "notes": "High acid; shorter shelf life",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Dry white rice",
+    "category": "Grains",
+    "pantryDaysMin": 1460,
+    "pantryDaysMax": 1825,
+    "pantryDays": 1643,
+    "notes": "Longer if airtight and cool",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Dry brown rice",
+    "category": "Grains",
+    "pantryDaysMin": 180,
+    "pantryDaysMax": 365,
+    "pantryDays": 273,
+    "notes": "Oils cause faster spoilage",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Dry pasta",
+    "category": "Grains",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 730,
+    "pantryDays": 548,
+    "notes": "Can last longer if sealed tightly",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Dry beans & lentils",
+    "category": "Legumes",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 730,
+    "pantryDays": 548,
+    "notes": "Safe longer; cooking time increases",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "All-purpose flour",
+    "category": "Baking",
+    "pantryDaysMin": 240,
+    "pantryDaysMax": 365,
+    "pantryDays": 303,
+    "notes": "Refrigeration extends shelf life",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Whole wheat flour",
+    "category": "Baking",
+    "pantryDaysMin": 180,
+    "pantryDaysMax": 240,
+    "pantryDays": 210,
+    "notes": "Higher oil content",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Sugar",
+    "category": "Baking",
+    "pantryDaysMin": null,
+    "pantryDaysMax": null,
+    "pantryDays": 1095,
+    "notes": "Quality may harden; safe indefinitely. Includes white and brown sugar",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Honey",
+    "category": "Condiments",
+    "pantryDaysMin": null,
+    "pantryDaysMax": null,
+    "pantryDays": 1095,
+    "notes": "May crystallize; warm gently",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Salt",
+    "category": "Condiments",
+    "pantryDaysMin": null,
+    "pantryDaysMax": null,
+    "pantryDays": 1095,
+    "notes": "Keep dry",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Baking powder",
+    "category": "Baking",
+    "pantryDaysMin": 180,
+    "pantryDaysMax": 365,
+    "pantryDays": 273,
+    "notes": "Loses effectiveness over time",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Baking soda",
+    "category": "Baking",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 1095,
+    "pantryDays": 913,
+    "notes": "Replace sooner for baking quality",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Cooking oil",
+    "category": "Oils",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 548,
+    "pantryDays": 456,
+    "notes": "Heat and light accelerate rancidity. Includes vegetable, canola",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Olive oil",
+    "category": "Oils",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 548,
+    "pantryDays": 456,
+    "notes": "Store away from heat and light",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Peanut butter",
+    "category": "Condiments",
+    "pantryDaysMin": 180,
+    "pantryDaysMax": 365,
+    "pantryDays": 273,
+    "notes": "Natural versions spoil faster",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Breakfast cereal",
+    "category": "Breakfast",
+    "pantryDaysMin": 180,
+    "pantryDaysMax": 365,
+    "pantryDays": 273,
+    "notes": "Stales after opening",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Crackers",
+    "category": "Snacks",
+    "pantryDaysMin": 180,
+    "pantryDaysMax": 273,
+    "pantryDays": 227,
+    "notes": "Moisture causes staleness",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Dried herbs & spices",
+    "category": "Spices",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 1460,
+    "pantryDays": 1095,
+    "notes": "Whole spices last longer (2-4 years). Ground spices (1-3 years). Flavor fades, not unsafe",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Powdered milk",
+    "category": "Dairy",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 548,
+    "pantryDays": 456,
+    "notes": "Keep tightly sealed",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Instant coffee",
+    "category": "Beverages",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 7300,
+    "pantryDays": 1825,
+    "notes": "Freeze-dried lasts longest",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Tea bags",
+    "category": "Beverages",
+    "pantryDaysMin": 365,
+    "pantryDaysMax": 1095,
+    "pantryDays": 730,
+    "notes": "Flavor loss over time",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Vinegar",
+    "category": "Condiments",
+    "pantryDaysMin": null,
+    "pantryDaysMax": null,
+    "pantryDays": 1095,
+    "notes": "Flavor stable; may cloud",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  },
+  {
+    "name": "Soy sauce",
+    "category": "Condiments",
+    "pantryDaysMin": 730,
+    "pantryDaysMax": 1095,
+    "pantryDays": 913,
+    "notes": "Refrigeration extends quality",
+    "qualityMessage": "Best quality by {date}; often safe beyond if stored properly"
+  }
+]
+

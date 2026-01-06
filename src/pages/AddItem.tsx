@@ -326,12 +326,18 @@ const AddItem: React.FC = () => {
       if (suggestedDate) {
         calculatedExpirationDate = suggestedDate;
       } else {
-        // Fall back to userItems expirationLength if available
-        // Note: We'd need to look up userItems here, but for now use FoodKeeper
-        // If no FoodKeeper data, use a default (7 days for perishable, 30 for dry/canned)
-        const defaultDays = isDryCanned ? 30 : 7;
-        calculatedExpirationDate = new Date();
-        calculatedExpirationDate.setDate(calculatedExpirationDate.getDate() + defaultDays);
+        // Fall back: For dry/canned goods, getSuggestedExpirationDate now uses USDA/NCHFP-based shelf life
+        // For perishable items, use a default of 7 days
+        if (isDryCanned) {
+          // getSuggestedExpirationDate will handle dry/canned fallback via shelfLifeService
+          const fallbackDate = getSuggestedExpirationDate(item.name, calcStorageType);
+          calculatedExpirationDate = fallbackDate || undefined;
+        } else {
+          // Default for perishable items
+          const defaultDays = 7;
+          calculatedExpirationDate = new Date();
+          calculatedExpirationDate.setDate(calculatedExpirationDate.getDate() + defaultDays);
+        }
       }
     }
     

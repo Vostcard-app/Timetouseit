@@ -1,6 +1,7 @@
 import { addDays } from 'date-fns';
 import type { FoodKeeperItem } from '../types';
 import foodkeeperData from '../data/foodkeeper.json';
+import { getDryGoodsShelfLife } from './shelfLifeService';
 
 // Load FoodKeeper data
 const foodKeeperItems: FoodKeeperItem[] = foodkeeperData as FoodKeeperItem[];
@@ -87,6 +88,7 @@ export const findFoodItems = (query: string, limit: number = 10): FoodKeeperItem
 
 /**
  * Get suggested expiration date based on FoodKeeper data
+ * For pantry/dry goods, falls back to USDA/NCHFP-based shelf life service
  * Defaults to refrigerator storage time
  */
 export const getSuggestedExpirationDate = (
@@ -95,22 +97,28 @@ export const getSuggestedExpirationDate = (
 ): Date | null => {
   const item = findFoodItem(foodName);
   
-  if (!item) {
-    return null;
-  }
-
   let storageDays: number | null | undefined;
 
-  switch (storageType) {
-    case 'refrigerator':
-      storageDays = item.refrigeratorDays;
-      break;
-    case 'freezer':
-      storageDays = item.freezerDays;
-      break;
-    case 'pantry':
-      storageDays = item.pantryDays;
-      break;
+  if (item) {
+    switch (storageType) {
+      case 'refrigerator':
+        storageDays = item.refrigeratorDays;
+        break;
+      case 'freezer':
+        storageDays = item.freezerDays;
+        break;
+      case 'pantry':
+        storageDays = item.pantryDays;
+        break;
+    }
+  }
+
+  // For pantry/dry goods: if FoodKeeper has no data, use USDA/NCHFP-based shelf life service
+  if (storageType === 'pantry' && (!storageDays || storageDays <= 0)) {
+    const shelfLifeResult = getDryGoodsShelfLife(foodName, item || null);
+    if (shelfLifeResult) {
+      return shelfLifeResult.expirationDate;
+    }
   }
 
   // If no storage time available, invalid, or zero/negative, return null

@@ -382,16 +382,55 @@ function buildExpirationDatePrompt(
     : 'The item is stored in the refrigerator.';
 
   // Add specific guidance for pantry items (dry goods) which have much longer shelf lives
+  // Based on USDA/NCHFP guidelines and comprehensive dry goods shelf life table
   const pantryGuidance = storageType === 'pantry' 
-    ? `\nIMPORTANT - PANTRY/DRY GOODS SHELF LIFE:
-- Dry goods stored in pantry have MUCH longer shelf lives than perishable items
-- Uncooked pasta, rice, flour, grains: Typically 1-3 years from purchase date
-- Canned goods: Typically 2-5 years from purchase date
-- Dried beans, lentils: Typically 1-2 years
-- Spices: Typically 2-4 years
-- Sugar, salt: Indefinite (but suggest 2-3 years for best quality)
-- Boxed/canned items: Check for "best by" dates, but typically 1-3 years
-- For items like "uncooked spaghetti", "pasta", "rice", "flour" - suggest dates 1-3 years in the future, NOT days or weeks`
+    ? `\nIMPORTANT - PANTRY/DRY GOODS SHELF LIFE (USDA/NCHFP Guidelines):
+Use the following authoritative shelf life ranges for dry/canned goods:
+
+CANNED GOODS:
+- Canned vegetables: 2-5 years (safe indefinitely if can is undamaged; quality declines over time)
+- Canned fruits: 1-2 years (higher acidity shortens quality window)
+- Canned soups & stews: 2-5 years (broth-based last longer than dairy-based)
+- Canned meat (tuna, chicken): 3-5 years (low-acid, very stable when unopened)
+- Canned beans: 2-5 years (texture may soften with age)
+- Canned tomatoes: 12-18 months (high acid; shorter shelf life)
+
+DRY GRAINS & LEGUMES:
+- Dry white rice: 4-5 years (longer if airtight and cool)
+- Dry brown rice: 6-12 months (oils cause faster spoilage)
+- Dry pasta: 1-2 years (can last longer if sealed tightly)
+- Dry beans & lentils: 1-2 years (safe longer; cooking time increases)
+
+BAKING INGREDIENTS:
+- All-purpose flour: 8-12 months (refrigeration extends shelf life)
+- Whole wheat flour: 6-8 months (higher oil content)
+- Sugar (white, brown): Indefinite (but suggest 2-3 years for best quality; quality may harden)
+- Honey: Indefinite (may crystallize; warm gently)
+- Salt: Indefinite (keep dry)
+- Baking powder: 6-12 months (loses effectiveness over time)
+- Baking soda: 2-3 years (replace sooner for baking quality)
+
+OILS & CONDIMENTS:
+- Cooking oil (vegetable, canola): 12-18 months (heat and light accelerate rancidity)
+- Olive oil: 12-18 months (store away from heat and light)
+- Peanut butter: 6-12 months (natural versions spoil faster)
+- Vinegar: Indefinite (flavor stable; may cloud)
+- Soy sauce: 2-3 years (refrigeration extends quality)
+
+OTHER DRY GOODS:
+- Breakfast cereal: 6-12 months (stales after opening)
+- Crackers: 6-9 months (moisture causes staleness)
+- Dried herbs & spices (whole): 2-4 years (flavor fades, not unsafe)
+- Dried herbs & spices (ground): 1-3 years (potency declines faster)
+- Powdered milk: 12-18 months (keep tightly sealed)
+- Instant coffee: 2-20 years (freeze-dried lasts longest)
+- Tea bags: 12-36 months (flavor loss over time)
+
+CRITICAL RULES FOR PANTRY ITEMS:
+- For items like "uncooked spaghetti", "pasta", "rice", "flour" - suggest dates 1-5 YEARS in the future, NOT days or weeks
+- Use the ranges above to select an appropriate date within the min-max range
+- Always include the message: "Best quality by [date]; often safe beyond if stored properly"
+- Reference USDA/FSIS for safety (many items safe indefinitely if stored correctly) and quality (peak freshness windows)`
     : '';
 
   const leftoverGuidance = isLeftover

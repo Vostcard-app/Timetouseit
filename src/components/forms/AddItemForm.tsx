@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import type { FoodItemData, FoodItem, UserItem } from '../../types';
-import { getSuggestedExpirationDate, findFoodItems } from '../../services/foodkeeperService';
+import { getSuggestedExpirationDate, findFoodItems, findFoodItem } from '../../services/foodkeeperService';
+import { getDryGoodsShelfLife } from '../../services/shelfLifeService';
 import { freezeGuidelines, freezeCategoryLabels, notRecommendedToFreeze, type FreezeCategory } from '../../data/freezeGuidelines';
 import { userItemsService } from '../../services';
 import { addMonths, addDays } from 'date-fns';
@@ -59,6 +60,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
+  const [qualityMessage, setQualityMessage] = useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [hasCredits, setHasCredits] = useState(true);
   // Use external isFrozen if provided, otherwise use internal state
@@ -643,6 +645,17 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               fontSize: '1rem'
             }}
           />
+          {/* Show quality message for dry/canned goods */}
+          {formData.isDryCanned && qualityMessage && (
+            <p style={{ 
+              margin: '0.5rem 0 0 0', 
+              fontSize: '0.875rem', 
+              color: '#6b7280', 
+              fontStyle: 'italic' 
+            }}>
+              {qualityMessage}
+            </p>
+          )}
         </div>
       )}
 

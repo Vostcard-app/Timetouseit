@@ -6,6 +6,8 @@ import { auth, db } from '../firebase/firebaseConfig';
 import type { FoodItem } from '../types';
 import { foodItemService } from '../services';
 import { formatDate, formatRelativeDate } from '../utils/dateUtils';
+import { getDryGoodsShelfLife } from '../services/shelfLifeService';
+import { findFoodItem } from '../services/foodkeeperService';
 import StatusBadge from '../components/ui/StatusBadge';
 
 const ItemDetail: React.FC = () => {
@@ -14,6 +16,7 @@ const ItemDetail: React.FC = () => {
   const navigate = useNavigate();
   const [item, setItem] = useState<FoodItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [qualityMessage, setQualityMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadItem = async () => {
@@ -39,6 +42,15 @@ const ItemDetail: React.FC = () => {
           }
 
           setItem(foodItem);
+          
+          // Get quality message for dry/canned goods
+          if (foodItem.isDryCanned && foodItem.expirationDate) {
+            const foodKeeperItem = findFoodItem(foodItem.name);
+            const shelfLifeResult = getDryGoodsShelfLife(foodItem.name, foodKeeperItem || null);
+            if (shelfLifeResult && shelfLifeResult.qualityMessage) {
+              setQualityMessage(shelfLifeResult.qualityMessage);
+            }
+          }
         } else {
           alert('Food item not found');
           navigate('/');
@@ -152,6 +164,17 @@ const ItemDetail: React.FC = () => {
                 : ''
             }
           </p>
+          {/* Show quality message for dry/canned goods */}
+          {item.isDryCanned && qualityMessage && (
+            <p style={{ 
+              margin: '0.5rem 0 0 0', 
+              fontSize: '0.875rem', 
+              color: '#6b7280', 
+              fontStyle: 'italic' 
+            }}>
+              {qualityMessage}
+            </p>
+          )}
         </div>
 
         {item.quantity && (
