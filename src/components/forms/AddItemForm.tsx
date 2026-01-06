@@ -172,7 +172,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   // Watch formData.name and isFrozen to calculate suggested expiration date and auto-apply it
   useEffect(() => {
     if (formData.name.trim()) {
-      const storageType = isFrozen ? 'freezer' : 'refrigerator';
+      const storageType = isFrozen ? 'freezer' : (formData.isDryCanned ? 'pantry' : 'refrigerator');
       
       // First check userItems for a matching item
       const normalizedName = formData.name.trim().toLowerCase();
@@ -181,6 +181,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       );
       
       let suggestion: Date | null = null;
+      let qualityMsg: string | null = null;
       
       if (userItem && !isFrozen) {
         // Use user's custom expirationLength
@@ -188,11 +189,21 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         today.setHours(0, 0, 0, 0);
         suggestion = addDays(today, userItem.expirationLength);
       } else {
-        // Fall back to foodkeeper.json
+        // Fall back to foodkeeper.json or shelfLifeService
+        const foodKeeperItem = findFoodItem(formData.name.trim());
         suggestion = getSuggestedExpirationDate(formData.name.trim(), storageType);
+        
+        // For dry/canned goods, get quality message from shelfLifeService
+        if (formData.isDryCanned && storageType === 'pantry') {
+          const shelfLifeResult = getDryGoodsShelfLife(formData.name.trim(), foodKeeperItem || null);
+          if (shelfLifeResult && shelfLifeResult.qualityMessage) {
+            qualityMsg = shelfLifeResult.qualityMessage;
+          }
+        }
       }
       
       setSuggestedExpirationDate(suggestion);
+      setQualityMessage(qualityMsg);
       
       // Auto-apply suggestion if available and user hasn't manually changed the date
       // BUT: Don't auto-apply if freeze is checked (we'll use category-based calculation instead)
@@ -214,8 +225,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       }
     } else {
       setSuggestedExpirationDate(null);
+      setQualityMessage(null);
     }
-  }, [formData.name, isFrozen, hasManuallyChangedDate, initialItem, userItems]);
+  }, [formData.name, formData.isDryCanned, isFrozen, hasManuallyChangedDate, initialItem, userItems]);
 
   // Check if credits are available
   useEffect(() => {
