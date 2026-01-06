@@ -200,12 +200,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           <span style={{ fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
             {item.name}
           </span>
-          {/* Show quantity for all items - with unit for dry/canned, without unit for perishable */}
-          {item.quantity && item.quantity > 1 && (
-            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>
-              {item.quantity} {item.isDryCanned && item.quantityUnit ? item.quantityUnit : ''}
-            </span>
-          )}
+          {/* Always show quantity for all items - with unit for dry/canned, without unit for perishable */}
+          <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>
+            {item.quantity || 1} {item.isDryCanned && item.quantityUnit ? item.quantityUnit : ''}
+          </span>
           <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
             Purchased
           </span>
