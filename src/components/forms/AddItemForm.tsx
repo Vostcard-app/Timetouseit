@@ -937,13 +937,13 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               minHeight: '44px'
             }}
           >
-            Change Expiration Date
+            {fromShop ? 'Change Expiration' : 'Change Expiration Date'}
           </button>
         </div>
       )}
 
-      {/* 3.5. Expiration Helper button (AI-powered suggestion) */}
-      {formData.name.trim() && !isFrozen && (
+      {/* 3.5. Expiration Helper button (AI-powered suggestion) - Hidden when fromShop */}
+      {formData.name.trim() && !isFrozen && !fromShop && (
         <div style={{ marginBottom: '1.5rem' }}>
           <button
             type="button"
@@ -973,56 +973,145 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         </div>
       )}
 
-      {/* 4. Save Buttons */}
+      {/* 4. Save Buttons - Conditional based on source */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleSubmit(e, false);
-          }}
-          disabled={isSubmitting}
-          style={{
-            width: '100%',
-            padding: '0.875rem 1.5rem',
-            backgroundColor: '#002B4D',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-            opacity: isSubmitting ? 0.6 : 1,
-            minHeight: '44px' // Touch target size for mobile
-          }}
-        >
-          {isSubmitting ? 'Saving...' : 'Save Perishable'}
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleSubmit(e, true);
-          }}
-          disabled={isSubmitting}
-          style={{
-            width: '100%',
-            padding: '0.875rem 1.5rem',
-            backgroundColor: '#002B4D',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-            opacity: isSubmitting ? 0.6 : 1,
-            minHeight: '44px' // Touch target size for mobile
-          }}
-        >
-          {isSubmitting ? 'Saving...' : 'Save Dry/Canned Goods'}
-        </button>
+        {/* From Shop: Show both "Add as" buttons */}
+        {fromShop && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(e, false);
+              }}
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: '0.875rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.6 : 1,
+                minHeight: '44px'
+              }}
+            >
+              {isSubmitting ? 'Adding...' : 'Add as Perishable'}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(e, true);
+              }}
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: '0.875rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.6 : 1,
+                minHeight: '44px'
+              }}
+            >
+              {isSubmitting ? 'Adding...' : 'Add as Dry/Canned Goods'}
+            </button>
+          </>
+        )}
+        
+        {/* From Storage Tab: Show single "Save" button */}
+        {fromStorageTab && !fromShop && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Auto-set isDryCanned based on storage tab
+              const isDryCanned = fromStorageTab === 'dryCanned';
+              handleSubmit(e, isDryCanned);
+            }}
+            disabled={isSubmitting}
+            style={{
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              backgroundColor: '#002B4D',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              opacity: isSubmitting ? 0.6 : 1,
+              minHeight: '44px'
+            }}
+          >
+            {isSubmitting ? 'Saving...' : 'Save'}
+          </button>
+        )}
+        
+        {/* Default (editing or no source): Show both save buttons */}
+        {!fromShop && !fromStorageTab && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(e, false);
+              }}
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: '0.875rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.6 : 1,
+                minHeight: '44px'
+              }}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Perishable'}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(e, true);
+              }}
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: '0.875rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.6 : 1,
+                minHeight: '44px'
+              }}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Dry/Canned Goods'}
+            </button>
+          </>
+        )}
       </div>
 
 
