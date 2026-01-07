@@ -107,7 +107,12 @@ export const mealPlanningService = {
         userPreferences: {
           dislikedFoods: profile.dislikedFoods,
           foodPreferences: profile.foodPreferences,
-          dietApproach: dietApproach !== undefined ? dietApproach : profile.dietApproach, // Use day-specific or profile default
+          // If dietApproach is undefined, use profile default
+          // If dietApproach is empty string (explicitly "None"), use undefined (no diet approach)
+          // Otherwise use the specified diet approach
+          dietApproach: dietApproach === undefined 
+            ? profile.dietApproach 
+            : (dietApproach === '' ? undefined : dietApproach),
           dietStrict: dietStrict !== undefined ? dietStrict : profile.dietStrict, // Use day-specific or profile default
           favoriteMeals: profile.favoriteMeals || [],
           servingSize: servingSize || profile.servingSize || 2, // Use day-specific or profile default

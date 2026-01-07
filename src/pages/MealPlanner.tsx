@@ -634,10 +634,12 @@ const MealPlanner: React.FC = () => {
                       </label>
                       <select
                         id={`diet-approach-${currentDayIndex}`}
-                        value={currentDay.dietApproach || ''}
+                        value={currentDay.dietApproach ?? ''}
                         onChange={(e) => {
                           const newPlans = [...dayPlans];
-                          newPlans[currentDayIndex].dietApproach = e.target.value || undefined;
+                          // Use empty string to represent "None" (explicitly no diet approach)
+                          // This distinguishes from undefined which means "use profile default"
+                          newPlans[currentDayIndex].dietApproach = e.target.value || '';
                           if (!e.target.value) {
                             newPlans[currentDayIndex].dietStrict = undefined;
                           }
