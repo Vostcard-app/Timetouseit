@@ -34,7 +34,6 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
-  const justDeletedRef = useRef(false);
   const itemRef = useRef<HTMLDivElement>(null);
   const SWIPE_THRESHOLD = 100; // Minimum swipe distance to trigger delete
 
