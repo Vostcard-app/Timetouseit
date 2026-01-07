@@ -347,17 +347,17 @@ const Dashboard: React.FC = () => {
           onClick={() => setStorageTab('perishable')}
           style={{
             padding: '0.75rem 1.5rem',
-            backgroundColor: storageTab === 'perishable' ? '#002B4D' : '#ffffff',
+            backgroundColor: storageTab === 'perishable' ? '#002B4D' : '#f9fafb',
             color: storageTab === 'perishable' ? 'white' : '#1f2937',
-            border: storageTab === 'perishable' ? '2px solid #002B4D' : '1px solid #d1d5db',
-            borderBottom: storageTab === 'perishable' ? '3px solid #002B4D' : '1px solid #d1d5db',
+            border: storageTab === 'perishable' ? '3px solid #002B4D' : '2px solid #d1d5db',
+            borderBottom: storageTab === 'perishable' ? '4px solid #002B4D' : '2px solid #d1d5db',
             borderRadius: '6px',
             fontSize: '1rem',
             fontWeight: storageTab === 'perishable' ? '600' : '500',
             cursor: 'pointer',
             flex: 1,
             minWidth: '150px',
-            boxShadow: storageTab === 'perishable' ? '0 2px 4px rgba(0, 43, 77, 0.2)' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+            boxShadow: storageTab === 'perishable' ? '0 3px 6px rgba(0, 43, 77, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease'
           }}
         >
@@ -367,17 +367,17 @@ const Dashboard: React.FC = () => {
           onClick={() => setStorageTab('dryCanned')}
           style={{
             padding: '0.75rem 1.5rem',
-            backgroundColor: storageTab === 'dryCanned' ? '#002B4D' : '#ffffff',
+            backgroundColor: storageTab === 'dryCanned' ? '#002B4D' : '#f9fafb',
             color: storageTab === 'dryCanned' ? 'white' : '#1f2937',
-            border: storageTab === 'dryCanned' ? '2px solid #002B4D' : '1px solid #d1d5db',
-            borderBottom: storageTab === 'dryCanned' ? '3px solid #002B4D' : '1px solid #d1d5db',
+            border: storageTab === 'dryCanned' ? '3px solid #002B4D' : '2px solid #d1d5db',
+            borderBottom: storageTab === 'dryCanned' ? '4px solid #002B4D' : '2px solid #d1d5db',
             borderRadius: '6px',
             fontSize: '1rem',
             fontWeight: storageTab === 'dryCanned' ? '600' : '500',
             cursor: 'pointer',
             flex: 1,
             minWidth: '150px',
-            boxShadow: storageTab === 'dryCanned' ? '0 2px 4px rgba(0, 43, 77, 0.2)' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+            boxShadow: storageTab === 'dryCanned' ? '0 3px 6px rgba(0, 43, 77, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease'
           }}
         >
