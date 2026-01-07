@@ -381,7 +381,7 @@ const Dashboard: React.FC = () => {
             transition: 'all 0.2s ease'
           }}
         >
-          Dry/Canned Goods ({itemsByStorageType.dryCannedItems.length})
+          Dry/Canned ({itemsByStorageType.dryCannedItems.length})
         </button>
         <span style={{ 
           fontSize: '1.25rem', 
