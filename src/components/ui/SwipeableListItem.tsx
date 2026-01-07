@@ -46,15 +46,19 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     if (!isDragging) return;
     const currentX = e.touches[0].clientX;
     const diff = currentX - startX;
-    // Only allow swiping right (positive diff)
-    if (diff > 0) {
-      setTranslateX(Math.min(diff, SWIPE_THRESHOLD * 2));
+    // Allow swiping both left and right
+    const maxSwipe = SWIPE_THRESHOLD * 2;
+    if (Math.abs(diff) <= maxSwipe) {
+      setTranslateX(diff);
+    } else {
+      setTranslateX(diff > 0 ? maxSwipe : -maxSwipe);
     }
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
-    if (translateX >= SWIPE_THRESHOLD) {
+    // Check if swipe distance exceeds threshold in either direction
+    if (Math.abs(translateX) >= SWIPE_THRESHOLD) {
       // Show confirmation before removing
       const confirmed = window.confirm('Are you sure you want to remove this item?');
       if (confirmed) {
@@ -79,14 +83,19 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     if (isDragging) {
       const handleGlobalMouseMove = (e: MouseEvent) => {
         const diff = e.clientX - startX;
-        if (diff > 0) {
-          setTranslateX(Math.min(diff, SWIPE_THRESHOLD * 2));
+        // Allow swiping both left and right
+        const maxSwipe = SWIPE_THRESHOLD * 2;
+        if (Math.abs(diff) <= maxSwipe) {
+          setTranslateX(diff);
+        } else {
+          setTranslateX(diff > 0 ? maxSwipe : -maxSwipe);
         }
       };
 
       const handleGlobalMouseUp = () => {
         setIsDragging(false);
-        if (translateX >= SWIPE_THRESHOLD) {
+        // Check if swipe distance exceeds threshold in either direction
+        if (Math.abs(translateX) >= SWIPE_THRESHOLD) {
           // Show confirmation before removing
           const confirmed = window.confirm('Are you sure you want to remove this item?');
           if (confirmed) {
@@ -110,7 +119,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     }
   }, [isDragging, startX, translateX, onDelete]);
 
-  const deleteOpacity = Math.min(translateX / SWIPE_THRESHOLD, 1);
+  const deleteOpacity = Math.min(Math.abs(translateX) / SWIPE_THRESHOLD, 1);
 
   return (
     <div
@@ -120,14 +129,14 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         width: '100%',
         marginBottom: '0.5rem',
         overflow: 'hidden',
-        touchAction: 'pan-y'
+        touchAction: 'pan-x'
       }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
     >
-      {/* Toss background indicator */}
+      {/* Remove background indicator - shows on both sides */}
       <div
         style={{
           position: 'absolute',
@@ -138,8 +147,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           backgroundColor: '#ef4444',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingRight: '1rem',
+          justifyContent: 'center',
           opacity: deleteOpacity,
           zIndex: 1
         }}

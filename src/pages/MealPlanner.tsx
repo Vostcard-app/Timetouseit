@@ -11,7 +11,7 @@ import type { MealSuggestion, MealType, ShoppingListItem, ShoppingList } from '.
 import Banner from '../components/layout/Banner';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Button from '../components/ui/Button';
-import { startOfWeek, addDays, format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 
 interface DayPlan {
   date: Date;
@@ -40,6 +40,7 @@ const MealPlanner: React.FC = () => {
   
   // Planning session state
   const [isPlanning, setIsPlanning] = useState(false);
+  const [planningMode, setPlanningMode] = useState<'today' | 'week' | null>(null);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
   
@@ -51,22 +52,26 @@ const MealPlanner: React.FC = () => {
   const [userShoppingLists, setUserShoppingLists] = useState<ShoppingList[]>([]);
   const [targetListId, setTargetListId] = useState<string | null>(null);
   const [addingItems, setAddingItems] = useState(false);
-  
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
 
   // Initialize day plans with profile defaults
   useEffect(() => {
     const initializeDayPlans = async () => {
-      if (!isPlanning || dayPlans.length > 0 || !user) return;
+      if (!isPlanning || dayPlans.length > 0 || !user || !planningMode) return;
 
       try {
         // Load user's meal profile to get defaults
         const profile = await mealProfileService.getMealProfile(user.uid);
         
         const plans: DayPlan[] = [];
-        for (let i = 0; i < 7; i++) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to start of day
+        
+        // Determine number of days based on planning mode
+        const numDays = planningMode === 'today' ? 1 : 7;
+        
+        for (let i = 0; i < numDays; i++) {
           plans.push({
-            date: addDays(weekStart, i),
+            date: addDays(today, i),
             skipped: false,
             selectedMealTypes: new Set(),
             suggestions: new Map(),
@@ -79,9 +84,15 @@ const MealPlanner: React.FC = () => {
         console.error('Error loading meal profile for day plans:', error);
         // Initialize without profile defaults if there's an error
         const plans: DayPlan[] = [];
-        for (let i = 0; i < 7; i++) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to start of day
+        
+        // Determine number of days based on planning mode
+        const numDays = planningMode === 'today' ? 1 : 7;
+        
+        for (let i = 0; i < numDays; i++) {
           plans.push({
-            date: addDays(weekStart, i),
+            date: addDays(today, i),
             skipped: false,
             selectedMealTypes: new Set(),
             suggestions: new Map()
@@ -92,9 +103,10 @@ const MealPlanner: React.FC = () => {
     };
 
     initializeDayPlans();
-  }, [isPlanning, weekStart, dayPlans.length, user]);
+  }, [isPlanning, planningMode, dayPlans.length, user]);
 
-  const handleStartPlanning = () => {
+  const handleStartPlanning = (mode: 'today' | 'week') => {
+    setPlanningMode(mode);
     setIsPlanning(true);
     setCurrentDayIndex(0);
   };
@@ -269,8 +281,9 @@ const MealPlanner: React.FC = () => {
         return;
       }
 
-      // Create meal plan
-      const mealPlan = await mealPlanningService.createMealPlan(user.uid, weekStart, selectedSuggestions);
+      // Create meal plan - use the first day's date as the start date
+      const startDate = dayPlans.length > 0 ? dayPlans[0].date : new Date();
+      const mealPlan = await mealPlanningService.createMealPlan(user.uid, startDate, selectedSuggestions);
       
       // Generate shopping list
       const shoppingList = await musgravesService.createShoppingListFromMealPlan(mealPlan);
@@ -531,14 +544,24 @@ const MealPlanner: React.FC = () => {
         ) : !isPlanning ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
             <p style={{ marginBottom: '2rem', color: '#666' }}>
-              Start a 7-day meal planning session. Select which meals you want suggestions for each day.
+              Choose how many days you'd like to plan meals for.
             </p>
-            <Button
-              onClick={handleStartPlanning}
-              size="large"
-            >
-              Start Planning Session
-            </Button>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                onClick={() => handleStartPlanning('today')}
+                size="large"
+                style={{ minWidth: '200px' }}
+              >
+                Plan Today
+              </Button>
+              <Button
+                onClick={() => handleStartPlanning('week')}
+                size="large"
+                style={{ minWidth: '200px' }}
+              >
+                Plan for the Next 7 Days
+              </Button>
+            </div>
           </div>
         ) : (
           <div>
@@ -547,7 +570,7 @@ const MealPlanner: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ fontWeight: '600' }}>Progress: {progress.planned} of {progress.total} days</span>
                 <span style={{ fontSize: '0.875rem', color: '#666' }}>
-                  Day {currentDayIndex + 1} of 7
+                  Day {currentDayIndex + 1} of {dayPlans.length}
                 </span>
               </div>
               <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
