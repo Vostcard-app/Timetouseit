@@ -39,6 +39,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
   const [gestureLock, setGestureLock] = useState<'horizontal' | 'vertical' | null>(null); // Direction-locking state
   const itemRef = useRef<HTMLDivElement>(null);
   const translateXRef = useRef(0); // Track current translateX value to avoid stale state
+  const gestureLockRef = useRef<'horizontal' | 'vertical' | null>(null); // Track current gestureLock value to avoid stale state
   const SWIPE_THRESHOLD = 100; // Minimum swipe distance to trigger delete
   const DIRECTION_THRESHOLD = 12; // Minimum movement to determine gesture direction
 
@@ -52,6 +53,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     setIsDragging(true);
     setIsHorizontalSwipe(false);
     setGestureLock(null); // Reset gesture lock on new touch
+    gestureLockRef.current = null; // Reset ref as well
     translateXRef.current = 0;
   };
 
@@ -75,13 +77,16 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         const dy = Math.abs(diffY);
         
         // Direction-locking: detect gesture intent early
-        if (gestureLock === null) {
+        // Use ref to get current value (state might be stale in closure)
+        if (gestureLockRef.current === null) {
           // Determine direction based on first 12px of movement
           if (dx > dy && dx > DIRECTION_THRESHOLD) {
             setGestureLock('horizontal');
+            gestureLockRef.current = 'horizontal';
             setIsHorizontalSwipe(true);
           } else if (dy > dx && dy > DIRECTION_THRESHOLD) {
             setGestureLock('vertical');
+            gestureLockRef.current = 'vertical';
             // Reset any horizontal swipe state
             setTranslateX(0);
             translateXRef.current = 0;
@@ -92,7 +97,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         }
         
         // If locked to horizontal, handle swipe
-        if (gestureLock === 'horizontal') {
+        if (gestureLockRef.current === 'horizontal') {
           e.preventDefault(); // Prevent scrolling
           e.stopPropagation();
           
@@ -110,7 +115,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         setIsDragging(false);
         
         // Only handle swipe if gesture was locked to horizontal
-        if (gestureLock === 'horizontal') {
+        // Use ref to get current value (state might be stale in closure)
+        if (gestureLockRef.current === 'horizontal') {
           if (Math.abs(finalTranslateX) >= SWIPE_THRESHOLD) {
             e.preventDefault();
             e.stopPropagation();
@@ -123,6 +129,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             translateXRef.current = 0;
             setIsHorizontalSwipe(false);
             setGestureLock(null);
+            gestureLockRef.current = null;
             return;
           } else {
             // Snap back - didn't swipe far enough
@@ -130,6 +137,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             translateXRef.current = 0;
             setIsHorizontalSwipe(false);
             setGestureLock(null);
+            gestureLockRef.current = null;
           }
         } else {
           // Vertical scroll or no gesture - just reset
@@ -137,6 +145,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           translateXRef.current = 0;
           setIsHorizontalSwipe(false);
           setGestureLock(null);
+          gestureLockRef.current = null;
         }
       };
 
@@ -155,9 +164,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         translateXRef.current = 0;
         setIsHorizontalSwipe(false);
         setGestureLock(null);
+        gestureLockRef.current = null;
       };
     }
-  }, [isDragging, startX, startY, isHorizontalSwipe, gestureLock, onDelete]);
+  }, [isDragging, startX, startY, isHorizontalSwipe, onDelete]);
 
   const handleTouchEnd = () => {
     // This is handled by global listener, but we keep it for compatibility
@@ -171,6 +181,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     setIsDragging(true);
     setIsHorizontalSwipe(false);
     setGestureLock(null); // Reset gesture lock on new mouse down
+    gestureLockRef.current = null; // Reset ref as well
   };
 
   // Add global mouse move/up listeners when dragging
@@ -185,13 +196,16 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         const dy = Math.abs(diffY);
         
         // Direction-locking: detect gesture intent early
-        if (gestureLock === null) {
+        // Use ref to get current value (state might be stale in closure)
+        if (gestureLockRef.current === null) {
           // Determine direction based on first 12px of movement
           if (dx > dy && dx > DIRECTION_THRESHOLD) {
             setGestureLock('horizontal');
+            gestureLockRef.current = 'horizontal';
             setIsHorizontalSwipe(true);
           } else if (dy > dx && dy > DIRECTION_THRESHOLD) {
             setGestureLock('vertical');
+            gestureLockRef.current = 'vertical';
             // Reset any horizontal swipe state
             setTranslateX(0);
             translateXRef.current = 0;
@@ -202,7 +216,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         }
         
         // If locked to horizontal, handle swipe
-        if (gestureLock === 'horizontal') {
+        if (gestureLockRef.current === 'horizontal') {
           // Allow swiping both left and right
           const maxSwipe = SWIPE_THRESHOLD * 2;
           const newTranslateX = Math.abs(diffX) <= maxSwipe ? diffX : (diffX > 0 ? maxSwipe : -maxSwipe);
@@ -217,7 +231,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         const finalTranslateX = translateXRef.current;
         
         // Only handle swipe if gesture was locked to horizontal
-        if (gestureLock === 'horizontal') {
+        // Use ref to get current value (state might be stale in closure)
+        if (gestureLockRef.current === 'horizontal') {
           if (Math.abs(finalTranslateX) >= SWIPE_THRESHOLD) {
             // Show confirmation before removing
             const confirmed = window.confirm('Are you sure you want to remove this item?');
@@ -228,6 +243,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             translateXRef.current = 0;
             setIsHorizontalSwipe(false);
             setGestureLock(null);
+            gestureLockRef.current = null;
             return;
           } else {
             // Snap back - didn't swipe far enough
@@ -235,6 +251,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             translateXRef.current = 0;
             setIsHorizontalSwipe(false);
             setGestureLock(null);
+            gestureLockRef.current = null;
           }
         } else {
           // Vertical scroll or no gesture - just reset
@@ -242,6 +259,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           translateXRef.current = 0;
           setIsHorizontalSwipe(false);
           setGestureLock(null);
+          gestureLockRef.current = null;
         }
       };
 
@@ -257,9 +275,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         translateXRef.current = 0;
         setIsHorizontalSwipe(false);
         setGestureLock(null);
+        gestureLockRef.current = null;
       };
     }
-  }, [isDragging, startX, startY, translateX, isHorizontalSwipe, gestureLock, onDelete]);
+  }, [isDragging, startX, startY, translateX, isHorizontalSwipe, onDelete]);
 
   const deleteOpacity = Math.min(Math.abs(translateX) / SWIPE_THRESHOLD, 1);
 
