@@ -32,7 +32,7 @@ const Banner: React.FC<BannerProps> = ({
     <div style={{
       backgroundColor: '#002B4D',
       color: '#ffffff',
-      padding: '1rem',
+      padding: '0.5rem',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
     }}>
       <div style={{ maxWidth, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -46,8 +46,8 @@ const Banner: React.FC<BannerProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '64px',
-                height: '64px',
+            width: '48px',
+            height: '48px',
                 borderRadius: '50%',
                 backgroundColor: '#002B4D',
                 transition: 'background-color 0.2s'
@@ -61,8 +61,8 @@ const Banner: React.FC<BannerProps> = ({
               aria-label="Go to shop"
             >
               <svg
-                width="40"
-                height="40"
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -76,7 +76,7 @@ const Banner: React.FC<BannerProps> = ({
               </svg>
             </Link>
           )}
-          <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '700', color: '#ffffff' }}>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
             TossItTime
           </h1>
         </div>
@@ -90,13 +90,13 @@ const Banner: React.FC<BannerProps> = ({
             padding: '0.5rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '4px',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '88px',
-            height: '88px',
-            minWidth: '88px',
-            minHeight: '88px',
+            width: '64px',
+            height: '64px',
+            minWidth: '64px',
+            minHeight: '64px',
             borderRadius: '4px',
             transition: 'background-color 0.2s'
           }}
@@ -108,9 +108,9 @@ const Banner: React.FC<BannerProps> = ({
           }}
           aria-label="Open menu"
         >
-          <span style={{ width: '48px', height: '4px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
-          <span style={{ width: '48px', height: '4px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
-          <span style={{ width: '48px', height: '4px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
+          <span style={{ width: '36px', height: '3px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
+          <span style={{ width: '36px', height: '3px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
+          <span style={{ width: '36px', height: '3px', backgroundColor: '#ffffff', display: 'block', borderRadius: '1px' }} />
         </button>
       </div>
     </div>

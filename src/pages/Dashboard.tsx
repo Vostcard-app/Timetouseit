@@ -264,13 +264,14 @@ const Dashboard: React.FC = () => {
 
       {/* Scrollable Content Container */}
       <div style={{
-        marginTop: '220px', // Approximate height of fixed header (Banner ~120px + Navigation ~80px + padding)
-        height: 'calc(100vh - 220px)',
+        marginTop: '160px', // Approximate height of fixed header (Banner ~80px + Navigation ~76px + padding)
+        height: 'calc(100vh - 160px)',
         overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch'
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y' // Allow vertical scrolling but let children handle horizontal swipes
       }}>
         {/* Main Content */}
-        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}>
+        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', paddingTop: '5px', paddingBottom: '2rem' }}>
         {/* Firestore Index Warning */}
         {showIndexWarning && (
           <div style={{
