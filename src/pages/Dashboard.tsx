@@ -410,7 +410,7 @@ const Dashboard: React.FC = () => {
           fontWeight: '700',
           fontStyle: 'italic'
         }}>
-          Swipe to remove items
+          Tap + hold to remove items
         </span>
         <button
           onClick={() => navigate('/add', { 

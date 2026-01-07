@@ -40,8 +40,11 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
   const itemRef = useRef<HTMLDivElement>(null);
   const translateXRef = useRef(0); // Track current translateX value to avoid stale state
   const gestureLockRef = useRef<'horizontal' | 'vertical' | null>(null); // Track current gestureLock value to avoid stale state
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Timer for long press detection
   const SWIPE_THRESHOLD = 100; // Minimum swipe distance to trigger delete
   const DIRECTION_THRESHOLD = 12; // Minimum movement to determine gesture direction
+  const LONG_PRESS_DURATION = 600; // milliseconds for long press
+  const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel if moved more than this
 
   const handleTouchStart = (e: React.TouchEvent) => {
     // Only handle if touch starts on this item
@@ -55,6 +58,23 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     setGestureLock(null); // Reset gesture lock on new touch
     gestureLockRef.current = null; // Reset ref as well
     translateXRef.current = 0;
+    
+    // Start long press timer
+    longPressTimerRef.current = setTimeout(() => {
+      // Long press detected - trigger delete
+      const confirmed = window.confirm('Are you sure you want to remove this item?');
+      if (confirmed) {
+        onDelete();
+      }
+      // Reset states
+      setIsDragging(false);
+      setTranslateX(0);
+      translateXRef.current = 0;
+      setIsHorizontalSwipe(false);
+      setGestureLock(null);
+      gestureLockRef.current = null;
+      longPressTimerRef.current = null;
+    }, LONG_PRESS_DURATION);
   };
 
   // Use global touch listeners to capture events even from scrollable containers
@@ -71,6 +91,14 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         const currentY = touch.clientY;
         const diffX = currentX - startX;
         const diffY = currentY - startY;
+        
+        // Cancel long press if user moved too much
+        if (Math.abs(diffX) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(diffY) > LONG_PRESS_MOVE_THRESHOLD) {
+          if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
+        }
         
         // Calculate absolute distances
         const dx = Math.abs(diffX);
@@ -111,6 +139,12 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
       };
 
       const handleGlobalTouchEnd = (e: TouchEvent) => {
+        // Always clear long press timer
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        
         const finalTranslateX = translateXRef.current;
         setIsDragging(false);
         
@@ -159,6 +193,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         document.removeEventListener('touchend', handleGlobalTouchEnd, { capture: true });
         document.removeEventListener('touchcancel', handleGlobalTouchEnd, { capture: true });
         // Cleanup
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
         setIsDragging(false);
         setTranslateX(0);
         translateXRef.current = 0;
@@ -170,6 +208,11 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
   }, [isDragging, startX, startY, isHorizontalSwipe, onDelete]);
 
   const handleTouchEnd = () => {
+    // Clear long press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     // This is handled by global listener, but we keep it for compatibility
     setIsDragging(false);
   };
@@ -182,6 +225,23 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
     setIsHorizontalSwipe(false);
     setGestureLock(null); // Reset gesture lock on new mouse down
     gestureLockRef.current = null; // Reset ref as well
+    
+    // Start long press timer for desktop testing
+    longPressTimerRef.current = setTimeout(() => {
+      // Long press detected - trigger delete
+      const confirmed = window.confirm('Are you sure you want to remove this item?');
+      if (confirmed) {
+        onDelete();
+      }
+      // Reset states
+      setIsDragging(false);
+      setTranslateX(0);
+      translateXRef.current = 0;
+      setIsHorizontalSwipe(false);
+      setGestureLock(null);
+      gestureLockRef.current = null;
+      longPressTimerRef.current = null;
+    }, LONG_PRESS_DURATION);
   };
 
   // Add global mouse move/up listeners when dragging
@@ -190,6 +250,14 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
       const handleGlobalMouseMove = (e: MouseEvent) => {
         const diffX = e.clientX - startX;
         const diffY = e.clientY - startY;
+        
+        // Cancel long press if user moved too much
+        if (Math.abs(diffX) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(diffY) > LONG_PRESS_MOVE_THRESHOLD) {
+          if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
+        }
         
         // Calculate absolute distances
         const dx = Math.abs(diffX);
@@ -227,6 +295,12 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
       };
 
       const handleGlobalMouseUp = () => {
+        // Always clear long press timer
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        
         setIsDragging(false);
         const finalTranslateX = translateXRef.current;
         
@@ -270,6 +344,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         document.removeEventListener('mousemove', handleGlobalMouseMove);
         document.removeEventListener('mouseup', handleGlobalMouseUp);
         // Cleanup: ensure dragging state is reset
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
         setIsDragging(false);
         setTranslateX(0);
         translateXRef.current = 0;
