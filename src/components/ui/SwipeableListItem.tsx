@@ -159,27 +159,6 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
 
       {/* Item content */}
       <div
-        onClick={(e) => {
-          // Only trigger onClick if not dragging/swiping and buttons weren't clicked
-          // Also prevent if we just deleted (to avoid navigation after toss)
-          const target = e.target as HTMLElement;
-          const isEditButton = target.closest('button[aria-label="Edit item"]');
-          const isFreezeButton = target.closest('button[aria-label="Freeze item"]');
-          const isAnyButton = target.closest('button');
-          
-          // Prevent navigation if:
-          // 1. We're dragging/swiping
-          // 2. Any button was clicked (Edit, Freeze, or any other button)
-          // 3. We just deleted an item
-          // 4. The click originated from within a button
-          if (isDragging || translateX >= 10 || isEditButton || isFreezeButton || isAnyButton || justDeletedRef.current || !onClick) {
-            e.stopPropagation();
-            e.preventDefault();
-            return;
-          }
-          
-          onClick();
-        }}
         style={{
           position: 'relative',
           backgroundColor: '#ffffff',
@@ -192,7 +171,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           display: 'flex',
           flexDirection: 'column',
           gap: '0.5rem',
-          cursor: isDragging ? 'grabbing' : (onClick ? 'pointer' : 'grab')
+          cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
         {/* First line: Quantity, Title, and Purchased date */}
