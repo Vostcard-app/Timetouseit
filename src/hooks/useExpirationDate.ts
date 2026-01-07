@@ -120,12 +120,15 @@ export function useExpirationDate({
       
       if (result.success && result.expirationDate) {
         onExpirationDateChange(result.expirationDate);
-        showToast(result.message || 'Expiration date updated', 'success');
+        const creditsMsg = result.creditsRemaining !== undefined 
+          ? `${result.creditsRemaining} credits remaining`
+          : '';
+        showToast(creditsMsg || 'Expiration date updated', 'success');
       } else {
-        showToast(result.message || 'Failed to get expiration suggestion', 'error');
+        showToast(result.error || 'Failed to get expiration suggestion', 'error');
       }
     } catch (error) {
-      console.error('Error getting expiration suggestion:', error);
+      // Error already logged by expirationHelperService
       showToast('Failed to get expiration suggestion', 'error');
     } finally {
       setIsLoadingAI(false);

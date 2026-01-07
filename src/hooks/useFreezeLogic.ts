@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import { addMonths } from 'date-fns';
 import { freezeGuidelines, notRecommendedToFreeze, type FreezeCategory } from '../data/freezeGuidelines';
-import type { FoodItem } from '../types';
 
 interface UseFreezeLogicProps {
   itemName: string;

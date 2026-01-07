@@ -9,7 +9,7 @@ import { db } from '../firebase/firebaseConfig';
 import type { ShoppingListItem } from '../types';
 import { handleSubscriptionError, transformSnapshot, cleanFirestoreData, logServiceOperation, logServiceError } from './baseService';
 import { toServiceError } from './errors';
-import { buildQueryWithFilters, buildUserQuery } from './firestoreQueryBuilder';
+import { buildQueryWithFilters } from './firestoreQueryBuilder';
 
 /**
  * Shopping List Service
@@ -56,7 +56,7 @@ export const shoppingListService = {
           'shoppingList',
           userId,
           () => {
-            // Fallback query without orderBy
+            // Fallback query without orderBy (synchronous return of promise)
             return getDocs(buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]]));
           },
           (snapshot) => {

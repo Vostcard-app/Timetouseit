@@ -193,7 +193,7 @@ export const userItemsService = {
           'userItems',
           userId,
           () => {
-            // Fallback query without orderBy
+            // Fallback query without orderBy (synchronous return of promise)
             return getDocs(buildUserQuery('userItems', userId));
           },
           (snapshot) => {

@@ -6,7 +6,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Banner from '../layout/Banner';
-import type { FoodItemStatus } from '../../types';
 
 type FilterType = 'all' | 'expiring_soon' | 'expired';
 

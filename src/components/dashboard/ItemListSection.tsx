@@ -52,7 +52,7 @@ export const ItemListSection: React.FC<ItemListSectionProps> = ({
           item={item}
           onDelete={() => onItemDelete(item.id)}
           onClick={() => onItemClick(item)}
-          onFreeze={onItemFreeze}
+          onFreeze={onItemFreeze ? () => onItemFreeze(item) : undefined}
         />
       ))}
     </div>

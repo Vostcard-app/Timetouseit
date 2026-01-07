@@ -23,7 +23,7 @@ export function handleSubscriptionError(
   error: unknown,
   collectionName: string,
   userId?: string,
-  fallbackQuery?: () => QuerySnapshot<DocumentData>,
+  fallbackQuery?: () => QuerySnapshot<DocumentData> | Promise<QuerySnapshot<DocumentData>>,
   fallbackCallback?: (snapshot: QuerySnapshot<DocumentData>) => void
 ): void {
   const serviceError = toServiceError(error, collectionName) as FirestoreError;
@@ -51,8 +51,22 @@ export function handleSubscriptionError(
         userId 
       });
       try {
-        const fallbackSnapshot = fallbackQuery();
-        fallbackCallback(fallbackSnapshot);
+        const fallbackResult = fallbackQuery();
+        // Handle both sync and async fallback queries
+        if (fallbackResult instanceof Promise) {
+          fallbackResult
+            .then((snapshot) => {
+              if (fallbackCallback) fallbackCallback(snapshot);
+            })
+            .catch((fallbackErr) => {
+              logServiceError('subscription', collectionName, fallbackErr, { 
+                note: 'Fallback query also failed',
+                userId 
+              });
+            });
+        } else {
+          if (fallbackCallback) fallbackCallback(fallbackResult);
+        }
       } catch (fallbackErr) {
         logServiceError('subscription', collectionName, fallbackErr, { 
           note: 'Fallback query also failed',

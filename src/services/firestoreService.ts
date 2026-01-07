@@ -29,7 +29,7 @@ import {
   logServiceOperation,
   logServiceError
 } from './baseService';
-import { toServiceError, FirestoreError } from './errors';
+import { toServiceError } from './errors';
 
 /**
  * Collection-specific date field mappings
@@ -47,10 +47,16 @@ export const COLLECTION_DATE_FIELDS: Record<string, string[]> = {
  * Standardized CRUD operations for Firestore collections
  */
 export class FirestoreService<T extends { id: string }> {
+  private collectionName: string;
+  private dateFields: string[];
+
   constructor(
-    private collectionName: string,
-    private dateFields: string[] = COLLECTION_DATE_FIELDS[collectionName] || ['createdAt', 'updatedAt']
-  ) {}
+    collectionName: string,
+    dateFields: string[] = COLLECTION_DATE_FIELDS[collectionName] || ['createdAt', 'updatedAt']
+  ) {
+    this.collectionName = collectionName;
+    this.dateFields = dateFields;
+  }
 
   /**
    * Get collection reference

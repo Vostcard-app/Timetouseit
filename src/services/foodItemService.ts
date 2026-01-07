@@ -2,18 +2,24 @@ import {
   Timestamp,
   onSnapshot,
   type QuerySnapshot,
-  type DocumentData
+  type DocumentData,
+  collection,
+  doc,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase/firebaseConfig';
+import { db, storage } from '../firebase/firebaseConfig';
 import type { FoodItem, FoodItemData } from '../types';
 import { analyticsService } from './analyticsService';
 import { transformSnapshot, cleanFirestoreData, logServiceOperation, logServiceError, handleSubscriptionError } from './baseService';
 import { toServiceError } from './errors';
 import { buildUserQueryWithOrder, buildUserQuery } from './firestoreQueryBuilder';
 import { getDateFieldsForCollection } from '../utils/firestoreDateUtils';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
 
 /**
  * Food Items Service
@@ -63,7 +69,7 @@ export const foodItemService = {
           'foodItems',
           userId,
           () => {
-            // Fallback query without orderBy
+            // Fallback query without orderBy (synchronous return of promise)
             const fallbackQ = buildUserQuery('foodItems', userId);
             return getDocs(fallbackQ);
           },

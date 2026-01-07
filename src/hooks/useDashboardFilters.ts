@@ -5,7 +5,7 @@
 
 import { useState, useMemo } from 'react';
 import { isDryCannedItem } from '../utils/storageUtils';
-import type { FoodItem, FoodItemStatus } from '../types';
+import type { FoodItem } from '../types';
 
 type FilterType = 'all' | 'expiring_soon' | 'expired';
 

@@ -1,5 +1,6 @@
 import type { FoodItem } from '../types';
 import { calculateDaysUntilExpiration } from '../utils/dateUtils';
+import { logServiceOperation } from './baseService';
 
 export const notificationService = {
   // Request notification permission
