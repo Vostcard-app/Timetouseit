@@ -85,6 +85,12 @@ export interface PlannedMeal {
   shoppingListItems: string[]; // Items needed from store
   skipped: boolean;
   isLeftover: boolean;
+  // Recipe import fields
+  recipeTitle?: string | null;
+  recipeIngredients?: string[] | null;
+  recipeSourceUrl?: string | null;
+  recipeSourceDomain?: string | null;
+  recipeImageUrl?: string | null;
 }
 
 /**

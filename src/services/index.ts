@@ -26,6 +26,10 @@ export { cookingReminderService } from './cookingReminderService';
 export { musgravesService } from './musgravesService';
 export { generateMealSuggestions, replanMeals } from './openaiService';
 
+// Recipe import services
+export { recipeImportService } from './recipeImportService';
+export { recipeSiteService } from './recipeSiteService';
+
 // Base utilities and error classes
 export * from './baseService';
 export * from './errors';

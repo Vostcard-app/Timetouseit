@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { adminService } from '../services/adminService';
+import { recipeSiteService } from '../services/recipeSiteService';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Banner from '../components/layout/Banner';
 import { analyticsAggregationService } from '../services/analyticsAggregationService';
 import type { DashboardOverview, RetentionMetrics, FunnelMetrics, EngagementMetrics } from '../types/analytics';
+import type { RecipeSite, RecipeSiteData } from '../types/recipeImport';
 import { getErrorInfo } from '../types';
 
 interface UserInfo {
@@ -49,6 +51,19 @@ const Admin: React.FC = () => {
     funnel: false,
     quality: false,
   });
+  
+  // Recipe sites state
+  const [recipeSites, setRecipeSites] = useState<RecipeSite[]>([]);
+  const [loadingRecipeSites, setLoadingRecipeSites] = useState(false);
+  const [showRecipeSiteForm, setShowRecipeSiteForm] = useState(false);
+  const [editingRecipeSite, setEditingRecipeSite] = useState<RecipeSite | null>(null);
+  const [recipeSiteForm, setRecipeSiteForm] = useState<RecipeSiteData>({
+    label: '',
+    baseUrl: '',
+    searchTemplateUrl: '',
+    enabled: true
+  });
+  const [savingRecipeSite, setSavingRecipeSite] = useState(false);
 
   // Check admin status
   useEffect(() => {
@@ -69,6 +84,20 @@ const Admin: React.FC = () => {
 
     checkAdmin();
   }, [user, navigate]);
+
+  // Load recipe sites
+  const loadRecipeSites = async () => {
+    if (!isAdmin) return;
+    setLoadingRecipeSites(true);
+    try {
+      const sites = await recipeSiteService.getRecipeSites();
+      setRecipeSites(sites);
+    } catch (error) {
+      console.error('Error loading recipe sites:', error);
+    } finally {
+      setLoadingRecipeSites(false);
+    }
+  };
 
   // Load users and stats
   const loadData = async () => {
@@ -201,6 +230,7 @@ const Admin: React.FC = () => {
     if (!isAdmin) return;
     loadData();
     loadAnalytics();
+    loadRecipeSites();
   }, [isAdmin]);
 
   // Load analytics data
@@ -264,6 +294,78 @@ const Admin: React.FC = () => {
       setError(`Failed to delete user data: ${errorInfo.message || 'Unknown error'}`);
     } finally {
       setDeletingUserId(null);
+    }
+  };
+
+  // Recipe site handlers
+  const handleCreateRecipeSite = () => {
+    setEditingRecipeSite(null);
+    setRecipeSiteForm({
+      label: '',
+      baseUrl: '',
+      searchTemplateUrl: '',
+      enabled: true
+    });
+    setShowRecipeSiteForm(true);
+  };
+
+  const handleEditRecipeSite = (site: RecipeSite) => {
+    setEditingRecipeSite(site);
+    setRecipeSiteForm({
+      label: site.label,
+      baseUrl: site.baseUrl,
+      searchTemplateUrl: site.searchTemplateUrl,
+      enabled: site.enabled
+    });
+    setShowRecipeSiteForm(true);
+  };
+
+  const handleSaveRecipeSite = async () => {
+    if (!recipeSiteForm.label || !recipeSiteForm.baseUrl || !recipeSiteForm.searchTemplateUrl) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (!recipeSiteForm.searchTemplateUrl.includes('{query}')) {
+      alert('Search Template URL must contain {query} placeholder');
+      return;
+    }
+
+    setSavingRecipeSite(true);
+    try {
+      if (editingRecipeSite) {
+        await recipeSiteService.updateRecipeSite(editingRecipeSite.id, recipeSiteForm);
+      } else {
+        await recipeSiteService.createRecipeSite(recipeSiteForm);
+      }
+      await loadRecipeSites();
+      setShowRecipeSiteForm(false);
+      setEditingRecipeSite(null);
+      setRecipeSiteForm({
+        label: '',
+        baseUrl: '',
+        searchTemplateUrl: '',
+        enabled: true
+      });
+    } catch (error) {
+      console.error('Error saving recipe site:', error);
+      alert('Failed to save recipe site. Please try again.');
+    } finally {
+      setSavingRecipeSite(false);
+    }
+  };
+
+  const handleDeleteRecipeSite = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this recipe site?')) {
+      return;
+    }
+
+    try {
+      await recipeSiteService.deleteRecipeSite(id);
+      await loadRecipeSites();
+    } catch (error) {
+      console.error('Error deleting recipe site:', error);
+      alert('Failed to delete recipe site. Please try again.');
     }
   };
 
@@ -999,6 +1101,258 @@ const Admin: React.FC = () => {
               </div>
 
             </>
+          )}
+        </div>
+
+        {/* Recipe Sites Section */}
+        <div style={{ marginBottom: '3rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ margin: '0', fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+              Recipe Sites Management
+            </h2>
+            <button
+              onClick={handleCreateRecipeSite}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Add Recipe Site
+            </button>
+          </div>
+
+          {showRecipeSiteForm && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1.5rem',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem', fontWeight: '600' }}>
+                {editingRecipeSite ? 'Edit Recipe Site' : 'Add New Recipe Site'}
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                    Label *
+                  </label>
+                  <input
+                    type="text"
+                    value={recipeSiteForm.label}
+                    onChange={(e) => setRecipeSiteForm({ ...recipeSiteForm, label: e.target.value })}
+                    placeholder="e.g., AllRecipes"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                    Base URL *
+                  </label>
+                  <input
+                    type="url"
+                    value={recipeSiteForm.baseUrl}
+                    onChange={(e) => setRecipeSiteForm({ ...recipeSiteForm, baseUrl: e.target.value })}
+                    placeholder="https://www.allrecipes.com"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                    Search Template URL * (must contain {`{query}`})
+                  </label>
+                  <input
+                    type="url"
+                    value={recipeSiteForm.searchTemplateUrl}
+                    onChange={(e) => setRecipeSiteForm({ ...recipeSiteForm, searchTemplateUrl: e.target.value })}
+                    placeholder="https://www.allrecipes.com/search/results/?search={query}"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    id="recipe-site-enabled"
+                    checked={recipeSiteForm.enabled}
+                    onChange={(e) => setRecipeSiteForm({ ...recipeSiteForm, enabled: e.target.checked })}
+                    style={{
+                      width: '1.25rem',
+                      height: '1.25rem',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <label htmlFor="recipe-site-enabled" style={{ fontSize: '0.875rem', cursor: 'pointer' }}>
+                    Enabled
+                  </label>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => {
+                      setShowRecipeSiteForm(false);
+                      setEditingRecipeSite(null);
+                      setRecipeSiteForm({
+                        label: '',
+                        baseUrl: '',
+                        searchTemplateUrl: '',
+                        enabled: true
+                      });
+                    }}
+                    disabled={savingRecipeSite}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: '#f3f4f6',
+                      color: '#1f2937',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                      cursor: savingRecipeSite ? 'not-allowed' : 'pointer',
+                      opacity: savingRecipeSite ? 0.5 : 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveRecipeSite}
+                    disabled={savingRecipeSite}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: savingRecipeSite ? '#9ca3af' : '#002B4D',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                      cursor: savingRecipeSite ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {savingRecipeSite ? 'Saving...' : (editingRecipeSite ? 'Update' : 'Create')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loadingRecipeSites ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+              <p>Loading recipe sites...</p>
+            </div>
+          ) : recipeSites.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+              <p>No recipe sites configured. Add one to get started.</p>
+            </div>
+          ) : (
+            <div style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 3fr 3fr 1fr 1fr',
+                gap: '1rem',
+                padding: '1rem',
+                backgroundColor: '#f9fafb',
+                borderBottom: '1px solid #e5e7eb',
+                fontWeight: '600',
+                color: '#374151',
+                fontSize: '0.875rem'
+              }}>
+                <div>Label</div>
+                <div>Base URL</div>
+                <div>Search Template</div>
+                <div style={{ textAlign: 'center' }}>Enabled</div>
+                <div style={{ textAlign: 'center' }}>Actions</div>
+              </div>
+              {recipeSites.map((site) => (
+                <div
+                  key={site.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 3fr 3fr 1fr 1fr',
+                    gap: '1rem',
+                    padding: '1rem',
+                    borderBottom: '1px solid #e5e7eb',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ fontWeight: '500', color: '#1f2937' }}>{site.label}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', wordBreak: 'break-all' }}>{site.baseUrl}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', wordBreak: 'break-all' }}>{site.searchTemplateUrl}</div>
+                  <div style={{ textAlign: 'center' }}>
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      backgroundColor: site.enabled ? '#d1fae5' : '#fee2e2',
+                      color: site.enabled ? '#065f46' : '#991b1b'
+                    }}>
+                      {site.enabled ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => handleEditRecipeSite(site)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#002B4D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRecipeSite(site.id)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 

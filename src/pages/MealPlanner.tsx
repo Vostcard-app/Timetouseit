@@ -6,12 +6,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { mealPlanningService, mealProfileService, musgravesService, shoppingListService, shoppingListsService } from '../services';
-import type { MealSuggestion, MealType, ShoppingListItem, ShoppingList } from '../types';
+import { mealPlanningService, mealProfileService, musgravesService, shoppingListService, shoppingListsService, foodItemService } from '../services';
+import type { MealSuggestion, MealType, ShoppingListItem, ShoppingList, FoodItem, PlannedMeal } from '../types';
+import type { RecipeImportResult } from '../types/recipeImport';
 import Banner from '../components/layout/Banner';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Button from '../components/ui/Button';
+import { AddMealFromRecipeModal } from '../components/MealPlanner/AddMealFromRecipeModal';
+import { RecipeIngredientChecklist } from '../components/MealPlanner/RecipeIngredientChecklist';
 import { addDays, format } from 'date-fns';
+import { showToast } from '../components/Toast';
 
 interface DayPlan {
   date: Date;
@@ -52,6 +56,12 @@ const MealPlanner: React.FC = () => {
   const [userShoppingLists, setUserShoppingLists] = useState<ShoppingList[]>([]);
   const [targetListId, setTargetListId] = useState<string | null>(null);
   const [addingItems, setAddingItems] = useState(false);
+  
+  // Recipe import state
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [expiringItems, setExpiringItems] = useState<FoodItem[]>([]);
+  const [showIngredientChecklist, setShowIngredientChecklist] = useState(false);
+  const [selectedMealForIngredients, setSelectedMealForIngredients] = useState<PlannedMeal | null>(null);
 
   // Initialize day plans with profile defaults
   useEffect(() => {
@@ -104,6 +114,31 @@ const MealPlanner: React.FC = () => {
 
     initializeDayPlans();
   }, [isPlanning, planningMode, dayPlans.length, user]);
+
+  // Load expiring items for recipe import
+  useEffect(() => {
+    if (!user || !showRecipeModal) return;
+
+    const loadExpiringItems = async () => {
+      try {
+        const allItems = await foodItemService.getFoodItems(user.uid);
+        const now = new Date();
+        const twoWeeksFromNow = addDays(now, 14);
+        
+        const expiring = allItems.filter(item => {
+          const expDate = item.expirationDate || item.thawDate;
+          if (!expDate) return false;
+          return expDate >= now && expDate <= twoWeeksFromNow;
+        });
+        
+        setExpiringItems(expiring);
+      } catch (error) {
+        console.error('Error loading expiring items:', error);
+      }
+    };
+
+    loadExpiringItems();
+  }, [user, showRecipeModal]);
 
   const handleStartPlanning = (mode: 'today' | 'week') => {
     setPlanningMode(mode);
@@ -400,6 +435,66 @@ const MealPlanner: React.FC = () => {
     }
   };
 
+  // Handle saving recipe to meal plan
+  const handleSaveRecipe = async (recipe: RecipeImportResult, date: Date, mealType: MealType, finishBy: string) => {
+    if (!user) return;
+
+    try {
+      // Create a planned meal from the recipe
+      const plannedMeal: PlannedMeal = {
+        id: `recipe-${Date.now()}`,
+        date,
+        mealType,
+        mealName: recipe.title,
+        finishBy,
+        suggestedIngredients: recipe.ingredients,
+        usesExpiringItems: [],
+        confirmed: false,
+        shoppingListItems: [],
+        skipped: false,
+        isLeftover: false,
+        recipeTitle: recipe.title,
+        recipeIngredients: recipe.ingredients,
+        recipeSourceUrl: recipe.sourceUrl,
+        recipeSourceDomain: recipe.sourceDomain,
+        recipeImageUrl: recipe.imageUrl
+      };
+
+      // Get or create meal plan for this week
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay()); // Start of week (Sunday)
+      weekStart.setHours(0, 0, 0, 0);
+
+      let mealPlan = await mealPlanningService.getMealPlan(user.uid, weekStart);
+      
+      if (!mealPlan) {
+        // Create new meal plan with just this recipe meal
+        mealPlan = await mealPlanningService.createMealPlan(user.uid, weekStart, []);
+      }
+
+      // Add the recipe meal to the plan
+      const updatedMeals = [...mealPlan.meals, plannedMeal];
+      await mealPlanningService.updateMealPlan(mealPlan.id, { meals: updatedMeals });
+
+      showToast('Recipe saved to meal planner successfully!', 'success');
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      showToast('Failed to save recipe to meal planner. Please try again.', 'error');
+    }
+  };
+
+  // Handle adding ingredients to shopping list from a meal
+  // Note: This will be used when viewing saved meal plans (e.g., in Calendar view)
+  // @ts-ignore - Reserved for future use when displaying saved meal plans
+  const handleAddIngredientsToShoppingList = (meal: PlannedMeal) => {
+    if (!meal.recipeIngredients || meal.recipeIngredients.length === 0) {
+      showToast('This meal has no recipe ingredients', 'error');
+      return;
+    }
+    setSelectedMealForIngredients(meal);
+    setShowIngredientChecklist(true);
+  };
+
   if (!user) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -560,6 +655,19 @@ const MealPlanner: React.FC = () => {
                 style={{ minWidth: '200px' }}
               >
                 Plan for the Next 7 Days
+              </Button>
+            </div>
+            <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+              <p style={{ marginBottom: '1rem', color: '#666' }}>
+                Or import a recipe and add it to your meal plan
+              </p>
+              <Button
+                onClick={() => setShowRecipeModal(true)}
+                variant="secondary"
+                size="large"
+                style={{ minWidth: '200px' }}
+              >
+                Add Meal from Recipe
               </Button>
             </div>
           </div>
@@ -883,6 +991,59 @@ const MealPlanner: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Recipe Import Modal */}
+      <AddMealFromRecipeModal
+        isOpen={showRecipeModal}
+        onClose={() => setShowRecipeModal(false)}
+        onSave={handleSaveRecipe}
+        expiringItems={expiringItems}
+      />
+
+      {/* Ingredient Checklist Modal */}
+      {showIngredientChecklist && selectedMealForIngredients && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={() => {
+            setShowIngredientChecklist(false);
+            setSelectedMealForIngredients(null);
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '8px',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <RecipeIngredientChecklist
+              ingredients={selectedMealForIngredients.recipeIngredients || []}
+              mealId={selectedMealForIngredients.id}
+              onClose={() => {
+                setShowIngredientChecklist(false);
+                setSelectedMealForIngredients(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -337,6 +337,42 @@ export const mealPlanningService = {
   },
 
   /**
+   * Update an existing meal plan
+   */
+  async updateMealPlan(mealPlanId: string, updates: Partial<MealPlan>): Promise<void> {
+    logServiceOperation('updateMealPlan', 'mealPlans', { mealPlanId, updates });
+
+    try {
+      const docRef = doc(db, 'mealPlans', mealPlanId);
+      const updateData: any = {};
+
+      if (updates.meals) {
+        updateData.meals = updates.meals.map(meal => ({
+          ...meal,
+          date: Timestamp.fromDate(meal.date)
+        }));
+      }
+
+      if (updates.status) {
+        updateData.status = updates.status;
+      }
+
+      if (updates.weekStartDate) {
+        updateData.weekStartDate = Timestamp.fromDate(updates.weekStartDate);
+      }
+
+      if (updates.confirmedAt) {
+        updateData.confirmedAt = Timestamp.fromDate(updates.confirmedAt);
+      }
+
+      await updateDoc(docRef, cleanFirestoreData(updateData));
+    } catch (error) {
+      logServiceError('updateMealPlan', 'mealPlans', error, { mealPlanId });
+      throw toServiceError(error, 'mealPlans');
+    }
+  },
+
+  /**
    * Get meal plan for a week
    */
   async getMealPlan(userId: string, weekStartDate: Date): Promise<MealPlan | null> {

@@ -17,5 +17,8 @@ export interface ShoppingListItem {
   name: string;
   createdAt: Date;
   crossedOff?: boolean;
+  // Recipe import tracking
+  source?: string; // e.g., "recipe_import"
+  mealId?: string; // Link to planned meal
 }
 
