@@ -41,78 +41,106 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
   const SWIPE_THRESHOLD = 100; // Minimum swipe distance to trigger delete
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Capture touch start immediately
+    // Only handle if touch starts on this item
+    if (!itemRef.current?.contains(e.target as Node)) return;
+    
     const touch = e.touches[0];
     setStartX(touch.clientX);
     setStartY(touch.clientY);
     setIsDragging(true);
     setIsHorizontalSwipe(false);
-    translateXRef.current = 0; // Reset ref
-    // Don't stop propagation yet - wait to see if it's horizontal or vertical
+    translateXRef.current = 0;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    const touch = e.touches[0];
-    const currentX = touch.clientX;
-    const currentY = touch.clientY;
-    const diffX = currentX - startX;
-    const diffY = currentY - startY;
-    
-    // Check if this is a horizontal swipe (horizontal movement > vertical movement)
-    // Use a lower threshold to make it more responsive
-    const isHorizontal = Math.abs(diffX) > Math.abs(diffY);
-    const hasMinimumHorizontalMovement = Math.abs(diffX) > 15; // Minimum 15px to start swipe
-    
-    if (isHorizontal && hasMinimumHorizontalMovement) {
-      // This is a horizontal swipe - handle it
-      if (!isHorizontalSwipe) {
-        setIsHorizontalSwipe(true);
-        // Stop propagation to prevent parent from scrolling
-        e.stopPropagation();
-      }
-      e.preventDefault(); // Prevent default touch behavior (scrolling)
-      
-      // Allow swiping both left and right
-      const maxSwipe = SWIPE_THRESHOLD * 2;
-      const newTranslateX = Math.abs(diffX) <= maxSwipe ? diffX : (diffX > 0 ? maxSwipe : -maxSwipe);
-      setTranslateX(newTranslateX);
-      translateXRef.current = newTranslateX; // Update ref with current value
-    } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
-      // This is vertical scrolling - cancel any horizontal swipe
-      if (isHorizontalSwipe) {
+  // Use global touch listeners to capture events even from scrollable containers
+  useEffect(() => {
+    if (isDragging) {
+      const handleGlobalTouchMove = (e: TouchEvent) => {
+        // Only handle if we're dragging and the touch is related to our item
+        if (!itemRef.current) return;
+        
+        const touch = e.touches[0];
+        if (!touch) return;
+        
+        const currentX = touch.clientX;
+        const currentY = touch.clientY;
+        const diffX = currentX - startX;
+        const diffY = currentY - startY;
+        
+        // Check if this is a horizontal swipe
+        const isHorizontal = Math.abs(diffX) > Math.abs(diffY);
+        const hasMinimumHorizontalMovement = Math.abs(diffX) > 15;
+        
+        if (isHorizontal && hasMinimumHorizontalMovement) {
+          // This is a horizontal swipe - handle it
+          if (!isHorizontalSwipe) {
+            setIsHorizontalSwipe(true);
+          }
+          e.preventDefault(); // Prevent scrolling
+          e.stopPropagation();
+          
+          // Allow swiping both left and right
+          const maxSwipe = SWIPE_THRESHOLD * 2;
+          const newTranslateX = Math.abs(diffX) <= maxSwipe ? diffX : (diffX > 0 ? maxSwipe : -maxSwipe);
+          setTranslateX(newTranslateX);
+          translateXRef.current = newTranslateX;
+        } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
+          // This is vertical scrolling - cancel any horizontal swipe
+          if (isHorizontalSwipe) {
+            setTranslateX(0);
+            translateXRef.current = 0;
+            setIsHorizontalSwipe(false);
+            setIsDragging(false);
+          }
+        }
+      };
+
+      const handleGlobalTouchEnd = (e: TouchEvent) => {
+        const finalTranslateX = translateXRef.current;
+        setIsDragging(false);
+        
+        // Only handle swipe if it was a horizontal swipe
+        if (isHorizontalSwipe && Math.abs(finalTranslateX) >= SWIPE_THRESHOLD) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Show confirmation before removing
+          const confirmed = window.confirm('Are you sure you want to remove this item?');
+          if (confirmed) {
+            onDelete();
+          }
+          setTranslateX(0);
+          translateXRef.current = 0;
+          setIsHorizontalSwipe(false);
+          return;
+        } else {
+          // Snap back
+          setTranslateX(0);
+          translateXRef.current = 0;
+          setIsHorizontalSwipe(false);
+        }
+      };
+
+      // Use capture phase to catch events before scrollable container
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false, capture: true });
+      document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false, capture: true });
+      document.addEventListener('touchcancel', handleGlobalTouchEnd, { passive: false, capture: true });
+
+      return () => {
+        document.removeEventListener('touchmove', handleGlobalTouchMove, { capture: true });
+        document.removeEventListener('touchend', handleGlobalTouchEnd, { capture: true });
+        document.removeEventListener('touchcancel', handleGlobalTouchEnd, { capture: true });
+        // Cleanup
+        setIsDragging(false);
         setTranslateX(0);
         translateXRef.current = 0;
         setIsHorizontalSwipe(false);
-        setIsDragging(false);
-      }
-      // Don't prevent default - allow normal vertical scrolling
+      };
     }
-  };
+  }, [isDragging, startX, startY, isHorizontalSwipe, onDelete]);
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const finalTranslateX = translateXRef.current; // Use ref to get current value
+  const handleTouchEnd = () => {
+    // This is handled by global listener, but we keep it for compatibility
     setIsDragging(false);
-    // Only handle swipe if it was a horizontal swipe
-    if (isHorizontalSwipe && Math.abs(finalTranslateX) >= SWIPE_THRESHOLD) {
-      // Only stop propagation if it was a confirmed horizontal swipe
-      e.stopPropagation();
-      // Show confirmation before removing
-      const confirmed = window.confirm('Are you sure you want to remove this item?');
-      if (confirmed) {
-        onDelete();
-      }
-      setTranslateX(0);
-      translateXRef.current = 0;
-      setIsHorizontalSwipe(false);
-      return;
-    } else {
-      // Snap back - do not trigger onClick, only Edit button should edit
-      setTranslateX(0);
-      translateXRef.current = 0;
-      setIsHorizontalSwipe(false);
-    }
   };
 
   // Handle mouse events for desktop testing
@@ -208,7 +236,6 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
         touchAction: 'manipulation'
       }}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
     >
