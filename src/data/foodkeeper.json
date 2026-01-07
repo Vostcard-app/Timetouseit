@@ -677,6 +677,496 @@
     "refrigeratorDays": 3,
     "freezerDays": 3,
     "pantryDays": null
+  },
+  {
+    "name": "Canned vegetables",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned corn",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned peas",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned green beans",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned carrots",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned fruits",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Canned peaches",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Canned pears",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Canned pineapple",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Canned soups & stews",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned soup",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned stew",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned meat",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1460
+  },
+  {
+    "name": "Canned tuna",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1460
+  },
+  {
+    "name": "Canned chicken",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1460
+  },
+  {
+    "name": "Canned beans",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned black beans",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned kidney beans",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned pinto beans",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Canned tomatoes",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Canned tomato sauce",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Canned diced tomatoes",
+    "category": "Canned",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Dry white rice",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1643
+  },
+  {
+    "name": "White rice",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1643
+  },
+  {
+    "name": "Jasmine rice",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1643
+  },
+  {
+    "name": "Basmati rice",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1643
+  },
+  {
+    "name": "Dry brown rice",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 273
+  },
+  {
+    "name": "Brown rice",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 273
+  },
+  {
+    "name": "Dry pasta",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Spaghetti",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Penne",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Fettuccine",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Linguine",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Macaroni",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Rigatoni",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Fusilli",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Rotini",
+    "category": "Grains",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Dry beans & lentils",
+    "category": "Legumes",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Dry beans",
+    "category": "Legumes",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Black beans",
+    "category": "Legumes",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Kidney beans",
+    "category": "Legumes",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Pinto beans",
+    "category": "Legumes",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "Lentils",
+    "category": "Legumes",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 548
+  },
+  {
+    "name": "All-purpose flour",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 303
+  },
+  {
+    "name": "Flour",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 303
+  },
+  {
+    "name": "Whole wheat flour",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 210
+  },
+  {
+    "name": "Sugar",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "White sugar",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Brown sugar",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Honey",
+    "category": "Condiments",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Salt",
+    "category": "Condiments",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Baking powder",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 273
+  },
+  {
+    "name": "Baking soda",
+    "category": "Baking",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 913
+  },
+  {
+    "name": "Cooking oil",
+    "category": "Oils",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Vegetable oil",
+    "category": "Oils",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Canola oil",
+    "category": "Oils",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Olive oil",
+    "category": "Oils",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Peanut butter",
+    "category": "Condiments",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 273
+  },
+  {
+    "name": "Breakfast cereal",
+    "category": "Breakfast",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 273
+  },
+  {
+    "name": "Cereal",
+    "category": "Breakfast",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 273
+  },
+  {
+    "name": "Crackers",
+    "category": "Snacks",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 227
+  },
+  {
+    "name": "Dried herbs & spices",
+    "category": "Spices",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Spices",
+    "category": "Spices",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Herbs",
+    "category": "Spices",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Powdered milk",
+    "category": "Dairy",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 456
+  },
+  {
+    "name": "Instant coffee",
+    "category": "Beverages",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1825
+  },
+  {
+    "name": "Tea bags",
+    "category": "Beverages",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 730
+  },
+  {
+    "name": "Tea",
+    "category": "Beverages",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 730
+  },
+  {
+    "name": "Vinegar",
+    "category": "Condiments",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 1095
+  },
+  {
+    "name": "Soy sauce",
+    "category": "Condiments",
+    "refrigeratorDays": null,
+    "freezerDays": null,
+    "pantryDays": 913
   }
 ]
 

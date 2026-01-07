@@ -163,16 +163,16 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           // Only trigger onClick if not dragging/swiping and buttons weren't clicked
           // Also prevent if we just deleted (to avoid navigation after toss)
           const target = e.target as HTMLElement;
-          const isTossButton = target.closest('button[aria-label="Remove item"]');
+          const isEditButton = target.closest('button[aria-label="Edit item"]');
           const isFreezeButton = target.closest('button[aria-label="Freeze item"]');
           const isAnyButton = target.closest('button');
           
           // Prevent navigation if:
           // 1. We're dragging/swiping
-          // 2. Any button was clicked (Toss, Freeze, or any other button)
+          // 2. Any button was clicked (Edit, Freeze, or any other button)
           // 3. We just deleted an item
           // 4. The click originated from within a button
-          if (isDragging || translateX >= 10 || isTossButton || isFreezeButton || isAnyButton || justDeletedRef.current || !onClick) {
+          if (isDragging || translateX >= 10 || isEditButton || isFreezeButton || isAnyButton || justDeletedRef.current || !onClick) {
             e.stopPropagation();
             e.preventDefault();
             return;
@@ -255,61 +255,16 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
             )}
             <button
               onClick={(e) => {
-                // Aggressively prevent all event propagation
                 e.stopPropagation();
                 e.preventDefault();
-                e.nativeEvent.stopImmediatePropagation();
-                
-                // Set flag immediately to prevent any onClick from firing
-                justDeletedRef.current = true;
-                
-                // Use setTimeout to ensure flag is set before any other handlers run
-                setTimeout(() => {
-                  // Show confirmation before deleting
-                  const confirmed = window.confirm('Are you sure you want to remove this item?');
-                  if (confirmed) {
-                    // Reset any state that might trigger navigation
-                    setTranslateX(0);
-                    // Call delete handler
-                    onDelete();
-                    // Keep flag set for longer to prevent any delayed events
-                    setTimeout(() => {
-                      justDeletedRef.current = false;
-                    }, 1000);
-                  } else {
-                    // User cancelled - clear the flag after a short delay
-                    setTimeout(() => {
-                      justDeletedRef.current = false;
-                    }, 100);
-                  }
-                }, 0);
-                
-                // Explicitly prevent any navigation
-                return false;
-              }}
-              onMouseDown={(e) => {
-                // Prevent event from bubbling up
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onTouchStart={(e) => {
-                // Prevent event from bubbling up
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onMouseUp={(e) => {
-                // Prevent event from bubbling up
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onTouchEnd={(e) => {
-                // Prevent event from bubbling up
-                e.stopPropagation();
-                e.preventDefault();
+                // Edit button should trigger onClick to navigate to edit page
+                if (onClick) {
+                  onClick();
+                }
               }}
               style={{
                 padding: '0.5rem 1rem',
-                backgroundColor: '#ef4444',
+                backgroundColor: '#002B4D',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -319,10 +274,10 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                 minWidth: '60px',
                 minHeight: '36px'
               }}
-              aria-label="Remove item"
+              aria-label="Edit item"
               type="button"
             >
-              Remove
+              Edit
             </button>
           </div>
         </div>
