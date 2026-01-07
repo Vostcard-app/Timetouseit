@@ -9,6 +9,7 @@ import type {
   ReplanningContext,
   MealType
 } from '../types/mealPlan';
+import { logServiceError } from './baseService';
 
 /**
  * Call OpenAI API via Netlify Function
@@ -93,7 +94,7 @@ export async function generateMealSuggestions(
     const parsed = JSON.parse(content);
     return parsed.meals || [];
   } catch (error) {
-    console.error('Error generating meal suggestions:', error);
+    logServiceError('generateMealSuggestions', 'openai', error);
     throw error;
   }
 }
@@ -127,7 +128,7 @@ export async function replanMeals(
     const parsed = JSON.parse(content);
     return parsed.meals || [];
   } catch (error) {
-    console.error('Error replanning meals:', error);
+    logServiceError('replanMeals', 'openai', error);
     throw error;
   }
 }
@@ -358,7 +359,7 @@ export async function suggestExpirationDate(
       reasoning: parsed.reasoning || 'Based on food safety guidelines'
     };
   } catch (error) {
-    console.error('Error suggesting expiration date:', error);
+    logServiceError('suggestExpirationDate', 'openai', error);
     throw error;
   }
 }

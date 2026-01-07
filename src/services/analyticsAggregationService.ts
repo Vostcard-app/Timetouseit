@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, orderBy, Timestamp, limit as firestoreLimit } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { logServiceError } from './baseService';
 import type {
   RetentionMetrics,
   FunnelMetrics,
@@ -49,7 +50,7 @@ export const calculateActivationRate = async (startDate?: Date, endDate?: Date):
     const totalNewUsers = newUserIds.size;
     return totalNewUsers > 0 ? (activatedCount / totalNewUsers) * 100 : 0;
   } catch (error) {
-    console.error('Error calculating activation rate:', error);
+    logServiceError('calculateActivationRate', 'analyticsAggregation', error);
     return 0;
   }
 };
@@ -143,7 +144,7 @@ export const calculateRetentionRates = async (): Promise<RetentionMetrics> => {
       day30Retention,
     };
   } catch (error) {
-    console.error('Error calculating retention rates:', error);
+    logServiceError('calculateRetentionRates', 'analyticsAggregation', error);
     return {
       dau: 0,
       wau: 0,
@@ -231,7 +232,7 @@ export const calculateEngagementMetrics = async (): Promise<EngagementMetrics> =
       mostUsedFeatures,
     };
   } catch (error) {
-    console.error('Error calculating engagement metrics:', error);
+    logServiceError('calculateEngagementMetrics', 'analyticsAggregation', error);
     return {
       averageActionsPerSession: 0,
       averageSessionsPerUser: 0,
@@ -292,7 +293,7 @@ export const calculateFunnelConversion = async (): Promise<FunnelMetrics> => {
       overallConversionRate,
     };
   } catch (error) {
-    console.error('Error calculating funnel conversion:', error);
+    logServiceError('calculateFunnelConversion', 'analyticsAggregation', error);
     return {
       visitCount: 0,
       signupCount: 0,
@@ -373,7 +374,7 @@ export const calculateDashboardOverview = async (): Promise<DashboardOverview> =
       errorRate,
     };
   } catch (error) {
-    console.error('Error calculating dashboard overview:', error);
+    logServiceError('calculateDashboardOverview', 'analyticsAggregation', error);
     return {
       newUsersToday: 0,
       newUsersThisWeek: 0,

@@ -1,5 +1,6 @@
 import { collection, addDoc, Timestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { logServiceError } from './baseService';
 import type {
   AnalyticsEvent,
   EventCategory,
@@ -79,7 +80,7 @@ export const trackEvent = async (
     await addDoc(collection(db, 'analyticsEvents'), event);
   } catch (error) {
     // Don't throw errors - analytics should never break the app
-    console.error('Failed to track analytics event:', error);
+    logServiceError('trackEvent', 'analyticsEvents', error, { userId, eventType, eventCategory });
   }
 };
 
@@ -158,7 +159,7 @@ export const checkUserActivation = async (userId: string): Promise<boolean> => {
     const snapshot = await getDocs(foodItemsQuery);
     return !snapshot.empty;
   } catch (error) {
-    console.error('Error checking user activation:', error);
+    logServiceError('checkUserActivation', 'analyticsEvents', error, { userId });
     return false;
   }
 };
@@ -184,7 +185,7 @@ export const getUserSignupTime = async (userId: string): Promise<Date | null> =>
     
     return null;
   } catch (error) {
-    console.error('Error getting user signup time:', error);
+    logServiceError('getUserSignupTime', 'analyticsEvents', error, { userId });
     return null;
   }
 };
@@ -213,7 +214,7 @@ export const calculateTimeToActivation = async (userId: string): Promise<number 
     
     return null;
   } catch (error) {
-    console.error('Error calculating time to activation:', error);
+    logServiceError('calculateTimeToActivation', 'analyticsEvents', error, { userId });
     return null;
   }
 };

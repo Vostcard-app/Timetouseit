@@ -28,10 +28,8 @@ export function handleSubscriptionError(
 ): void {
   const serviceError = toServiceError(error, collectionName) as FirestoreError;
   
-  // Log error
-  console.error(`❌ Error in ${collectionName} subscription:`, serviceError);
-  console.error('❌ Error code:', serviceError.code);
-  console.error('❌ Error message:', serviceError.message);
+  // Log error using standardized logging
+  logServiceError('subscription', collectionName, serviceError, { userId });
 
   // Track sync failure
   if (userId) {
@@ -48,12 +46,18 @@ export function handleSubscriptionError(
     
     // Try fallback query if provided
     if (fallbackQuery && fallbackCallback) {
-      console.warn(`💡 Falling back to query without orderBy for ${collectionName}...`);
+      logServiceOperation('subscription', collectionName, { 
+        note: 'Falling back to query without orderBy',
+        userId 
+      });
       try {
         const fallbackSnapshot = fallbackQuery();
         fallbackCallback(fallbackSnapshot);
       } catch (fallbackErr) {
-        console.error(`❌ Fallback query for ${collectionName} also failed:`, fallbackErr);
+        logServiceError('subscription', collectionName, fallbackErr, { 
+          note: 'Fallback query also failed',
+          userId 
+        });
       }
     }
   }
@@ -67,16 +71,12 @@ function handleIndexError(error: FirestoreError, collectionName: string): void {
   
   if (!(window as any)[warningKey]) {
     const indexUrl = error.getIndexUrl();
-    console.warn(`⚠️ Firestore index required for ${collectionName} query.`);
-    
-    if (indexUrl) {
-      console.warn('📋 Create the index here:', indexUrl);
-    } else {
-      console.warn('📋 Go to Firebase Console → Firestore → Indexes to create the index.');
-    }
-    
-    console.warn(`💡 The app will work, but ${collectionName} won't load until the index is created and enabled.`);
-    console.warn('💡 If you just created the index, wait 2-5 minutes for it to build, then refresh.');
+    // Use logServiceOperation for index warnings (these are informational, not errors)
+    logServiceOperation('subscription', collectionName, {
+      note: 'Firestore index required',
+      indexUrl: indexUrl || 'Firebase Console → Firestore → Indexes',
+      message: `The app will work, but ${collectionName} won't load until the index is created and enabled. If you just created the index, wait 2-5 minutes for it to build, then refresh.`
+    });
     
     (window as any)[warningKey] = true;
   }
@@ -151,7 +151,11 @@ export async function retryWithBackoff<T>(
       
       if (attempt < maxRetries - 1) {
         const delay = initialDelay * Math.pow(2, attempt);
-        console.warn(`⚠️ Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        logServiceOperation('retryWithBackoff', 'retry', {
+          attempt: attempt + 1,
+          maxRetries,
+          delay
+        });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

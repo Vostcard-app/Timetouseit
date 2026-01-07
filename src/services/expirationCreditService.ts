@@ -4,6 +4,7 @@
  */
 
 import { getExpirationCredits, updateExpirationCredits, initializeExpirationCredits } from '../storage/db';
+import { logServiceError } from './baseService';
 import type { ExpirationCredits, UseCreditResult } from '../types/credits';
 
 /**
@@ -18,7 +19,7 @@ export async function getCredits(): Promise<ExpirationCredits> {
       totalUses: credits.totalUses
     };
   } catch (error) {
-    console.error('[ExpirationCredits] Error getting credits:', error);
+    logServiceError('getCredits', 'expirationCredits', error);
     // Initialize if doesn't exist
     const credits = await initializeExpirationCredits();
     return {
@@ -75,7 +76,7 @@ export async function useCredit(): Promise<UseCreditResult> {
       remaining
     };
   } catch (error: any) {
-    console.error('[ExpirationCredits] Error using credit:', error);
+    logServiceError('useCredit', 'expirationCredits', error);
     const currentCredits = await getCredits().catch(() => ({ 
       freeCreditsRemaining: 0, 
       paidCredits: 0, 
@@ -100,7 +101,7 @@ export async function addPaidCredits(amount: number): Promise<void> {
       paidCredits: (currentCredits.paidCredits || 0) + amount
     });
   } catch (error) {
-    console.error('[ExpirationCredits] Error adding paid credits:', error);
+    logServiceError('addPaidCredits', 'expirationCredits', error, { amount });
     throw error;
   }
 }
@@ -112,7 +113,7 @@ export async function initializeCredits(): Promise<void> {
   try {
     await initializeExpirationCredits();
   } catch (error) {
-    console.error('[ExpirationCredits] Error initializing credits:', error);
+    logServiceError('initializeCredits', 'expirationCredits', error);
     // Don't throw - this is called during registration and shouldn't fail signup
   }
 }

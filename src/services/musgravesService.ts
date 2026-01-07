@@ -85,7 +85,10 @@ export const musgravesService = {
       // 3. Authentication flow
       // 4. Shopping list format conversion
 
-      console.log('Musgraves sync not yet implemented. Shopping list ID:', shoppingListId);
+      logServiceOperation('syncShoppingList', 'musgraves', { 
+        note: 'Musgraves sync not yet implemented', 
+        shoppingListId 
+      });
       
       // Placeholder: In a real implementation, this would:
       // 1. Get shopping list items

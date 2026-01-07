@@ -5,7 +5,9 @@ export const notificationService = {
   // Request notification permission
   async requestPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
+      logServiceOperation('requestPermission', 'notifications', { 
+        note: 'Browser does not support notifications' 
+      });
       return false;
     }
 

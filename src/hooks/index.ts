@@ -11,4 +11,10 @@ export { useDebounce } from './useDebounce';
 export { useModal } from './useModal';
 export { useShoppingList } from './useShoppingList';
 export { useUserSettings } from './useUserSettings';
+export { useExpirationDate } from './useExpirationDate';
+export { useFreezeLogic } from './useFreezeLogic';
+export { usePhotoUpload } from './usePhotoUpload';
+export { useDashboardFilters } from './useDashboardFilters';
+export { useStorageTabs } from './useStorageTabs';
+export { useFoodItemActions } from './useFoodItemActions';
 

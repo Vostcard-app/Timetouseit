@@ -1,22 +1,15 @@
 import {
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
   Timestamp,
   onSnapshot,
-  QuerySnapshot
+  type QuerySnapshot,
+  type DocumentData
 } from 'firebase/firestore';
-import type { DocumentData } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import type { ShoppingListItem } from '../types';
 import { handleSubscriptionError, transformSnapshot, cleanFirestoreData, logServiceOperation, logServiceError } from './baseService';
 import { toServiceError } from './errors';
+import { buildQueryWithFilters, buildUserQuery } from './firestoreQueryBuilder';
 
 /**
  * Shopping List Service
@@ -27,19 +20,16 @@ export const shoppingListService = {
    * Get all shopping list items for a specific list
    */
   async getShoppingListItems(userId: string, listId: string): Promise<ShoppingListItem[]> {
-    const q = query(
-      collection(db, 'shoppingList'),
-      where('userId', '==', userId),
-      where('listId', '==', listId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt.toDate()
-    })) as ShoppingListItem[];
+    logServiceOperation('getShoppingListItems', 'shoppingList', { userId, listId });
+
+    try {
+      const q = buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]], 'createdAt', 'desc');
+      const querySnapshot = await getDocs(q);
+      return transformSnapshot<ShoppingListItem>(querySnapshot, ['createdAt']);
+    } catch (error) {
+      logServiceError('getShoppingListItems', 'shoppingList', error, { userId, listId });
+      throw toServiceError(error, 'shoppingList');
+    }
   },
 
   /**
@@ -50,12 +40,9 @@ export const shoppingListService = {
     listId: string,
     callback: (items: ShoppingListItem[]) => void
   ): () => void {
-    const q = query(
-      collection(db, 'shoppingList'),
-      where('userId', '==', userId),
-      where('listId', '==', listId),
-      orderBy('createdAt', 'desc')
-    );
+    logServiceOperation('subscribeToShoppingList', 'shoppingList', { userId, listId });
+
+    const q = buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]], 'createdAt', 'desc');
 
     const unsubscribe = onSnapshot(
       q,
@@ -68,8 +55,14 @@ export const shoppingListService = {
           error,
           'shoppingList',
           userId,
-          undefined,
-          undefined
+          () => {
+            // Fallback query without orderBy
+            return getDocs(buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]]));
+          },
+          (snapshot) => {
+            const items = transformSnapshot<ShoppingListItem>(snapshot, ['createdAt']);
+            callback(items);
+          }
         );
         callback([]); // Return empty array so app doesn't break
       }

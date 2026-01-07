@@ -84,7 +84,7 @@ export const cookingReminderService = {
       const reminderTime = reminderDate.getTime() - 15 * 60 * 1000;
       return reminderTime;
     } catch (error) {
-      console.error('Error calculating reminder time:', error);
+      logServiceError('calculateReminderTime', 'cookingReminders', error, { mealId: meal.id });
       return null;
     }
   },
@@ -107,7 +107,7 @@ export const cookingReminderService = {
 
       return timeoutId;
     } catch (error) {
-      console.error('Error scheduling reminder:', error);
+      logServiceError('scheduleReminder', 'cookingReminders', error, { mealId: meal.id });
       return null;
     }
   },
@@ -126,7 +126,7 @@ export const cookingReminderService = {
 
       await notificationService.sendNotification(title, body);
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      logServiceError('sendReminder', 'cookingReminders', error, { mealId: meal.id });
     }
   }
 };

@@ -1,24 +1,19 @@
 import {
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
   Timestamp,
   onSnapshot,
-  QuerySnapshot
+  type QuerySnapshot,
+  type DocumentData
 } from 'firebase/firestore';
-import type { DocumentData } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase/firebaseConfig';
+import { storage } from '../firebase/firebaseConfig';
 import type { FoodItem, FoodItemData } from '../types';
 import { analyticsService } from './analyticsService';
-import { handleSubscriptionError, cleanFirestoreData, logServiceOperation, logServiceError } from './baseService';
+import { transformSnapshot, cleanFirestoreData, logServiceOperation, logServiceError, handleSubscriptionError } from './baseService';
 import { toServiceError } from './errors';
+import { buildUserQueryWithOrder, buildUserQuery } from './firestoreQueryBuilder';
+import { getDateFieldsForCollection } from '../utils/firestoreDateUtils';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 
 /**
  * Food Items Service
@@ -29,19 +24,17 @@ export const foodItemService = {
    * Get all food items for a user
    */
   async getFoodItems(userId: string): Promise<FoodItem[]> {
-    const q = query(
-      collection(db, 'foodItems'),
-      where('userId', '==', userId),
-      orderBy('expirationDate', 'asc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      expirationDate: doc.data().expirationDate.toDate(),
-      addedDate: doc.data().addedDate.toDate()
-    })) as FoodItem[];
+    logServiceOperation('getFoodItems', 'foodItems', { userId });
+
+    try {
+      const q = buildUserQueryWithOrder('foodItems', userId, 'expirationDate', 'asc');
+      const querySnapshot = await getDocs(q);
+      const dateFields = getDateFieldsForCollection('foodItems');
+      return transformSnapshot<FoodItem>(querySnapshot, dateFields);
+    } catch (error) {
+      logServiceError('getFoodItems', 'foodItems', error, { userId });
+      throw toServiceError(error, 'foodItems');
+    }
   },
 
   /**
@@ -51,26 +44,17 @@ export const foodItemService = {
     userId: string,
     callback: (items: FoodItem[]) => void
   ): () => void {
-    const q = query(
-      collection(db, 'foodItems'),
-      where('userId', '==', userId)
-      // Note: Can't orderBy expirationDate since frozen items don't have it
-      // Will need to sort in memory instead
-    );
+    logServiceOperation('subscribeToFoodItems', 'foodItems', { userId });
+
+    // Note: Can't orderBy expirationDate since frozen items don't have it
+    // Will need to sort in memory instead
+    const q = buildUserQuery('foodItems', userId);
+    const dateFields = getDateFieldsForCollection('foodItems');
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const items = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            expirationDate: data.expirationDate ? data.expirationDate.toDate() : undefined,
-            thawDate: data.thawDate ? data.thawDate.toDate() : undefined,
-            addedDate: data.addedDate.toDate()
-          } as FoodItem;
-        });
+        const items = transformSnapshot<FoodItem>(snapshot, dateFields);
         callback(items);
       },
       (error) => {
@@ -78,8 +62,15 @@ export const foodItemService = {
           error,
           'foodItems',
           userId,
-          undefined,
-          undefined
+          () => {
+            // Fallback query without orderBy
+            const fallbackQ = buildUserQuery('foodItems', userId);
+            return getDocs(fallbackQ);
+          },
+          (snapshot) => {
+            const items = transformSnapshot<FoodItem>(snapshot, dateFields);
+            callback(items);
+          }
         );
         callback([]); // Return empty array so app doesn't break
       }
@@ -123,32 +114,47 @@ export const foodItemService = {
       }
     }
     
-    // Remove undefined fields (Firestore doesn't allow undefined)
-    const cleanData: Record<string, unknown> = {
+    // Prepare data for Firestore
+    const itemData: Record<string, unknown> = {
       userId,
       name: data.name,
-      addedDate: Timestamp.now(),
+      addedDate: new Date(), // Will be converted to Timestamp
       status,
       reminderSent: false
     };
     
     // For frozen items: save thawDate, for non-frozen: save expirationDate
     if (data.isFrozen && data.thawDate) {
-      cleanData.thawDate = Timestamp.fromDate(data.thawDate);
+      itemData.thawDate = data.thawDate; // Will be converted to Timestamp
       // Don't include expirationDate for frozen items
     } else if (data.expirationDate) {
-      cleanData.expirationDate = Timestamp.fromDate(data.expirationDate);
+      itemData.expirationDate = data.expirationDate; // Will be converted to Timestamp
     }
     
-    if (data.barcode) cleanData.barcode = data.barcode;
-    if (data.photoUrl) cleanData.photoUrl = data.photoUrl;
-    if (data.quantity) cleanData.quantity = data.quantity;
-    if (data.quantityUnit) cleanData.quantityUnit = data.quantityUnit;
-    if (data.category) cleanData.category = data.category;
-    if (data.notes) cleanData.notes = data.notes;
-    if (data.isFrozen !== undefined) cleanData.isFrozen = data.isFrozen;
-    if (data.freezeCategory) cleanData.freezeCategory = data.freezeCategory;
-    if (data.isDryCanned !== undefined) cleanData.isDryCanned = data.isDryCanned;
+    // Add optional fields
+    if (data.barcode !== undefined) itemData.barcode = data.barcode;
+    if (data.photoUrl !== undefined) itemData.photoUrl = data.photoUrl;
+    if (data.quantity !== undefined) itemData.quantity = data.quantity;
+    if (data.quantityUnit !== undefined) itemData.quantityUnit = data.quantityUnit;
+    if (data.category !== undefined) itemData.category = data.category;
+    if (data.notes !== undefined) itemData.notes = data.notes;
+    if (data.isFrozen !== undefined) itemData.isFrozen = data.isFrozen;
+    if (data.freezeCategory !== undefined) itemData.freezeCategory = data.freezeCategory;
+    if (data.isDryCanned !== undefined) itemData.isDryCanned = data.isDryCanned;
+    
+    // Clean and convert dates to Timestamps
+    const cleanData = cleanFirestoreData(itemData);
+    
+    // Convert Date objects to Timestamps
+    if (cleanData.addedDate instanceof Date) {
+      cleanData.addedDate = Timestamp.fromDate(cleanData.addedDate);
+    }
+    if (cleanData.expirationDate instanceof Date) {
+      cleanData.expirationDate = Timestamp.fromDate(cleanData.expirationDate);
+    }
+    if (cleanData.thawDate instanceof Date) {
+      cleanData.thawDate = Timestamp.fromDate(cleanData.thawDate);
+    }
     
     const docRef = await addDoc(collection(db, 'foodItems'), cleanData);
     

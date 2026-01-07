@@ -5,6 +5,7 @@
 
 import { suggestExpirationDate } from './openaiService';
 import { useCredit, hasAvailableCredits } from './expirationCreditService';
+import { logServiceError } from './baseService';
 import type { UseCreditResult } from '../types/credits';
 
 export interface ExpirationSuggestionResult {
@@ -59,7 +60,7 @@ export async function getExpirationSuggestion(
       creditsRemaining: creditResult.remaining.freeCreditsRemaining + creditResult.remaining.paidCredits
     };
   } catch (error: any) {
-    console.error('[ExpirationHelper] Error getting suggestion:', error);
+    logServiceError('getExpirationSuggestion', 'expirationHelper', error, { itemName, storageType });
     return {
       success: false,
       error: error?.message || 'Failed to get expiration suggestion. Please try again.'

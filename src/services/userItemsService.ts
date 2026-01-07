@@ -1,20 +1,16 @@
 import {
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  query,
-  where,
-  orderBy,
   Timestamp,
   onSnapshot,
-  QuerySnapshot
+  type QuerySnapshot,
+  type DocumentData
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
-import type { UserItem, UserItemData, ErrorWithCode } from '../types';
-import { cleanFirestoreData, logServiceOperation, logServiceError } from './baseService';
+import type { UserItem, UserItemData } from '../types';
+import { transformSnapshot, transformDocument, cleanFirestoreData, logServiceOperation, logServiceError, handleSubscriptionError } from './baseService';
 import { toServiceError } from './errors';
+import { buildUserQueryWithOrder, buildQueryWithFilters, buildUserQuery } from './firestoreQueryBuilder';
+import { getDateFieldsForCollection } from '../utils/firestoreDateUtils';
+import { collection, doc, addDoc, updateDoc, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 
 /**
  * User Items Service
@@ -25,83 +21,102 @@ export const userItemsService = {
    * Get all user items
    */
   async getUserItems(userId: string): Promise<UserItem[]> {
-    const q = query(
-      collection(db, 'userItems'),
-      where('userId', '==', userId),
-      orderBy('lastUsed', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt.toDate(),
-      lastUsed: doc.data().lastUsed ? doc.data().lastUsed.toDate() : undefined
-    })) as UserItem[];
+    logServiceOperation('getUserItems', 'userItems', { userId });
+
+    try {
+      const q = buildUserQueryWithOrder('userItems', userId, 'lastUsed', 'desc');
+      const querySnapshot = await getDocs(q);
+      const dateFields = getDateFieldsForCollection('userItems');
+      return transformSnapshot<UserItem>(querySnapshot, dateFields);
+    } catch (error) {
+      logServiceError('getUserItems', 'userItems', error, { userId });
+      throw toServiceError(error, 'userItems');
+    }
   },
 
   /**
    * Get user item by name
    */
   async getUserItemByName(userId: string, name: string): Promise<UserItem | null> {
-    const q = query(
-      collection(db, 'userItems'),
-      where('userId', '==', userId),
-      where('name', '==', name)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return null;
+    logServiceOperation('getUserItemByName', 'userItems', { userId, name });
+
+    try {
+      const q = buildQueryWithFilters('userItems', userId, [['name', '==', name]]);
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        return null;
+      }
+      
+      const dateFields = getDateFieldsForCollection('userItems');
+      return transformDocument<UserItem>(querySnapshot.docs[0], dateFields);
+    } catch (error) {
+      logServiceError('getUserItemByName', 'userItems', error, { userId, name });
+      throw toServiceError(error, 'userItems');
     }
-    
-    const doc = querySnapshot.docs[0];
-    return {
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt.toDate(),
-      lastUsed: doc.data().lastUsed ? doc.data().lastUsed.toDate() : undefined
-    } as UserItem;
   },
 
   /**
    * Create or update user item by name
    */
   async createOrUpdateUserItem(userId: string, data: UserItemData): Promise<string> {
-    const existing = await this.getUserItemByName(userId, data.name);
-    
-    if (existing) {
-      // Update existing item
-      const docRef = doc(db, 'userItems', existing.id);
-      const updateData: Record<string, unknown> = {
-        expirationLength: data.expirationLength,
-        category: data.category || null,
-        lastUsed: Timestamp.now()
-      };
-      if (data.isDryCanned !== undefined) {
-        updateData.isDryCanned = data.isDryCanned;
-      }
-      await updateDoc(docRef, updateData);
-      return existing.id;
-    } else {
-      // Create new item
-      const cleanData: Record<string, unknown> = {
-        userId,
-        name: data.name,
-        expirationLength: data.expirationLength,
-        createdAt: Timestamp.now(),
-        lastUsed: Timestamp.now()
-      };
+    logServiceOperation('createOrUpdateUserItem', 'userItems', { userId, name: data.name });
+
+    try {
+      const existing = await this.getUserItemByName(userId, data.name);
       
-      if (data.category) {
-        cleanData.category = data.category;
+      if (existing) {
+        // Update existing item
+        const docRef = doc(db, 'userItems', existing.id);
+        const updateData: Record<string, unknown> = {
+          expirationLength: data.expirationLength,
+          category: data.category || null,
+          lastUsed: new Date() // Will be converted to Timestamp
+        };
+        if (data.isDryCanned !== undefined) {
+          updateData.isDryCanned = data.isDryCanned;
+        }
+        
+        const cleanUpdateData = cleanFirestoreData(updateData);
+        // Convert Date to Timestamp
+        if (cleanUpdateData.lastUsed instanceof Date) {
+          cleanUpdateData.lastUsed = Timestamp.fromDate(cleanUpdateData.lastUsed);
+        }
+        
+        await updateDoc(docRef, cleanUpdateData);
+        return existing.id;
+      } else {
+        // Create new item
+        const itemData: Record<string, unknown> = {
+          userId,
+          name: data.name,
+          expirationLength: data.expirationLength,
+          createdAt: new Date(), // Will be converted to Timestamp
+          lastUsed: new Date() // Will be converted to Timestamp
+        };
+        
+        if (data.category !== undefined) {
+          itemData.category = data.category;
+        }
+        if (data.isDryCanned !== undefined) {
+          itemData.isDryCanned = data.isDryCanned;
+        }
+        
+        const cleanData = cleanFirestoreData(itemData);
+        // Convert Dates to Timestamps
+        if (cleanData.createdAt instanceof Date) {
+          cleanData.createdAt = Timestamp.fromDate(cleanData.createdAt);
+        }
+        if (cleanData.lastUsed instanceof Date) {
+          cleanData.lastUsed = Timestamp.fromDate(cleanData.lastUsed);
+        }
+        
+        const docRef = await addDoc(collection(db, 'userItems'), cleanData);
+        return docRef.id;
       }
-      if (data.isDryCanned !== undefined) {
-        cleanData.isDryCanned = data.isDryCanned;
-      }
-      
-      const docRef = await addDoc(collection(db, 'userItems'), cleanData);
-      return docRef.id;
+    } catch (error) {
+      logServiceError('createOrUpdateUserItem', 'userItems', error, { userId, name: data.name });
+      throw toServiceError(error, 'userItems');
     }
   },
 
@@ -130,23 +145,26 @@ export const userItemsService = {
    * Update all user items with the same name
    */
   async updateAllUserItemsByName(userId: string, name: string, data: Partial<UserItemData>): Promise<void> {
-    const q = query(
-      collection(db, 'userItems'),
-      where('userId', '==', userId),
-      where('name', '==', name)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const updatePromises = querySnapshot.docs.map(doc => {
-      const updateData = cleanFirestoreData({
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.expirationLength !== undefined && { expirationLength: data.expirationLength }),
-        ...(data.category !== undefined && { category: data.category || null })
+    logServiceOperation('updateAllUserItemsByName', 'userItems', { userId, name });
+
+    try {
+      const q = buildQueryWithFilters('userItems', userId, [['name', '==', name]]);
+      const querySnapshot = await getDocs(q);
+      
+      const updatePromises = querySnapshot.docs.map(doc => {
+        const updateData = cleanFirestoreData({
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.expirationLength !== undefined && { expirationLength: data.expirationLength }),
+          ...(data.category !== undefined && { category: data.category || null })
+        });
+        return updateDoc(doc.ref, updateData);
       });
-      return updateDoc(doc.ref, updateData);
-    });
-    
-    await Promise.all(updatePromises);
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      logServiceError('updateAllUserItemsByName', 'userItems', error, { userId, name });
+      throw toServiceError(error, 'userItems');
+    }
   },
 
   /**
@@ -156,88 +174,45 @@ export const userItemsService = {
     userId: string,
     callback: (items: UserItem[]) => void
   ): () => void {
-    console.log('🔍 userItemsService.subscribeToUserItems: Starting subscription for userId:', userId);
+    logServiceOperation('subscribeToUserItems', 'userItems', { userId });
+    
+    const dateFields = getDateFieldsForCollection('userItems');
     
     // Try the query with orderBy first
-    const q = query(
-      collection(db, 'userItems'),
-      where('userId', '==', userId),
-      orderBy('lastUsed', 'desc')
-    );
+    const q = buildUserQueryWithOrder('userItems', userId, 'lastUsed', 'desc');
     
-    let unsubscribe: () => void;
-    
-    unsubscribe = onSnapshot(
+    const unsubscribe = onSnapshot(
       q,
-      (snapshot: QuerySnapshot) => {
-        console.log('📦 userItemsService: Snapshot received, docs:', snapshot.docs.length);
-        const items = snapshot.docs.map(doc => {
-          const data = doc.data();
-          console.log('📦 userItemsService: Processing doc:', doc.id, {
-            name: data.name,
-            expirationLength: data.expirationLength,
-            category: data.category,
-            lastUsed: data.lastUsed ? data.lastUsed.toDate() : null
-          });
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt.toDate(),
-            lastUsed: data.lastUsed ? data.lastUsed.toDate() : undefined
-          };
-        }) as UserItem[];
-        console.log('📦 userItemsService: Mapped items count:', items.length);
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const items = transformSnapshot<UserItem>(snapshot, dateFields);
         callback(items);
       },
-      (error: Error) => {
-        console.error('❌ Error in user items subscription:', error);
-        const errWithCode = error as ErrorWithCode;
-        console.error('❌ Error code:', errWithCode.code);
-        console.error('❌ Error message:', error.message);
-        // Check if it's an index error
-        if (errWithCode.code === 'failed-precondition' || error.message?.includes('index')) {
-          console.warn('⚠️ Firestore index required for userItems query.');
-          console.warn('📋 Create the index here: https://console.firebase.google.com/v1/r/project/tossittime/firestore/indexes');
-          console.warn('💡 Falling back to query without orderBy...');
-          // Try a simpler query without orderBy as fallback
-          const fallbackQ = query(
-            collection(db, 'userItems'),
-            where('userId', '==', userId)
-          );
-          unsubscribe = onSnapshot(
-            fallbackQ,
-            (snapshot: QuerySnapshot) => {
-              console.log('📦 userItemsService (fallback): Snapshot received, docs:', snapshot.docs.length);
-              const items = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                  id: doc.id,
-                  ...data,
-                  createdAt: data.createdAt.toDate(),
-                  lastUsed: data.lastUsed ? data.lastUsed.toDate() : undefined
-                };
-              }) as UserItem[];
-              // Sort by lastUsed descending manually
-              items.sort((a, b) => {
-                if (!a.lastUsed && !b.lastUsed) return 0;
-                if (!a.lastUsed) return 1;
-                if (!b.lastUsed) return -1;
-                return b.lastUsed.getTime() - a.lastUsed.getTime();
-              });
-              callback(items);
-            },
-            (fallbackError: Error) => {
-              console.error('❌ Error in fallback user items subscription:', fallbackError);
-              callback([]);
-            }
-          );
-        } else {
-          callback([]);
-        }
+      (error) => {
+        handleSubscriptionError(
+          error,
+          'userItems',
+          userId,
+          () => {
+            // Fallback query without orderBy
+            return getDocs(buildUserQuery('userItems', userId));
+          },
+          (snapshot) => {
+            const items = transformSnapshot<UserItem>(snapshot, dateFields);
+            // Sort by lastUsed descending manually since we can't orderBy in query
+            items.sort((a, b) => {
+              if (!a.lastUsed && !b.lastUsed) return 0;
+              if (!a.lastUsed) return 1;
+              if (!b.lastUsed) return -1;
+              return b.lastUsed.getTime() - a.lastUsed.getTime();
+            });
+            callback(items);
+          }
+        );
+        callback([]); // Return empty array so app doesn't break
       }
     );
     
-    return () => unsubscribe();
+    return unsubscribe;
   }
 };
 

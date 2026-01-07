@@ -85,7 +85,9 @@ export const mealPlanningService = {
       } catch (error: any) {
         // If index error, continue without leftover meals
         if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
-          console.warn('Leftover meals index not created yet. Continuing without leftover meals.');
+          logServiceOperation('getLeftoverMeals', 'leftoverMeals', { 
+            note: 'Index not created yet, continuing without leftover meals' 
+          });
         } else {
           throw error; // Re-throw other errors
         }
@@ -196,7 +198,9 @@ export const mealPlanningService = {
       } catch (error: any) {
         // If index error, continue without leftover meals
         if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
-          console.warn('Leftover meals index not created yet. Continuing without leftover meals.');
+          logServiceOperation('getLeftoverMeals', 'leftoverMeals', { 
+            note: 'Index not created yet, continuing without leftover meals' 
+          });
         } else {
           throw error; // Re-throw other errors
         }
@@ -498,7 +502,9 @@ export const mealPlanningService = {
       } catch (error: any) {
         // If index error, continue without leftover meals
         if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
-          console.warn('Leftover meals index not created yet. Continuing without leftover meals.');
+          logServiceOperation('getLeftoverMeals', 'leftoverMeals', { 
+            note: 'Index not created yet, continuing without leftover meals' 
+          });
         } else {
           throw error; // Re-throw other errors
         }

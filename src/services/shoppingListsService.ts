@@ -163,7 +163,7 @@ export const shoppingListsService = {
       // Create default "Shop list"
       return await this.createShoppingList(userId, 'Shop list', true);
     } catch (error) {
-      console.error('Error getting default shopping list:', error);
+      logServiceError('getDefaultShoppingList', 'shoppingLists', error, { userId });
       throw error;
     }
   }

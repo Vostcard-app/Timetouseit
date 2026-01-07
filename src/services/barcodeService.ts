@@ -1,4 +1,5 @@
 import QrScanner from 'qr-scanner';
+import { logServiceError } from './baseService';
 
 export interface BarcodeScanResult {
   data: string;
@@ -37,7 +38,7 @@ export const barcodeService = {
       if (onError) {
         onError(error as Error);
       } else {
-        console.error('Error starting scanner:', error);
+        logServiceError('scanBarcode', 'barcode', error);
       }
     }
 

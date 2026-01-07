@@ -152,11 +152,14 @@ export const userCategoriesService = {
         callback(categories);
       },
       (error: Error) => {
-        console.error('❌ Error in user categories subscription:', error);
+        logServiceError('subscribeToUserCategories', 'userCategories', error, { userId });
         // Fallback: try without orderBy if index is missing
         const errWithCode = error as ErrorWithCode;
         if (errWithCode.code === 'failed-precondition' && error.message?.includes('index')) {
-          console.warn('⚠️ Firestore index for userCategories (userId, name) is missing. Attempting fallback query without orderBy.');
+          logServiceOperation('subscribeToUserCategories', 'userCategories', { 
+            note: 'Index missing, attempting fallback query without orderBy',
+            userId 
+          });
           const fallbackQ = query(
             collection(db, 'userCategories'),
             where('userId', '==', userId)
@@ -171,7 +174,10 @@ export const userCategoriesService = {
             categories.sort((a, b) => a.name.localeCompare(b.name));
             callback(categories);
           }, (fallbackError: Error) => {
-            console.error('❌ Fallback query for user categories also failed:', fallbackError);
+            logServiceError('subscribeToUserCategories', 'userCategories', fallbackError, { 
+              note: 'Fallback query also failed',
+              userId 
+            });
             callback([]);
           });
         } else {
