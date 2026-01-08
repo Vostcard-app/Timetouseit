@@ -10,14 +10,12 @@ interface IngredientChecklistProps {
   ingredientStatuses: IngredientStatus[];
   selectedIngredientIndices: Set<number>;
   onToggleIngredient: (index: number) => void;
-  showMatchingItems?: boolean; // Optional: show matching pantry items on hover/click
 }
 
 export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
   ingredientStatuses,
   selectedIngredientIndices,
-  onToggleIngredient,
-  showMatchingItems = false
+  onToggleIngredient
 }) => {
   if (ingredientStatuses.length === 0) {
     return (

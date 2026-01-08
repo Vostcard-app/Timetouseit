@@ -13,7 +13,7 @@ import {
   mealPlanningService,
   recipeImportService 
 } from '../services';
-import type { FoodItem, ShoppingListItem, PlannedMeal } from '../types';
+import type { FoodItem, ShoppingListItem } from '../types';
 
 export interface IngredientStatus {
   ingredient: string;
@@ -22,7 +22,7 @@ export interface IngredientStatus {
   matchingItems: FoodItem[];
   count: number;
   availableQuantity: number;
-  neededQuantity: number;
+  neededQuantity: number | null;
 }
 
 interface UseIngredientAvailabilityOptions {
