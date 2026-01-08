@@ -1,15 +1,15 @@
 /**
  * Recipe Import Screen
  * Allows users to paste recipe URL and import it
+ * Shows ingredients with checkboxes for selection before saving
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
-import { recipeImportService, mealPlanningService } from '../../services';
+import { recipeImportService, mealPlanningService, foodItemService, shoppingListService, shoppingListsService } from '../../services';
 import type { RecipeImportResult } from '../../types/recipeImport';
-import type { MealType, PlannedMeal } from '../../types';
-import { RecipeIngredientChecklist } from './RecipeIngredientChecklist';
+import type { MealType, PlannedMeal, FoodItem } from '../../types';
 import { showToast } from '../Toast';
 
 interface RecipeImportScreenProps {
@@ -32,8 +32,74 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
   const [importing, setImporting] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showIngredientChecklist, setShowIngredientChecklist] = useState(false);
-  const [savedMealId, setSavedMealId] = useState<string | undefined>(undefined);
+  const [pantryItems, setPantryItems] = useState<FoodItem[]>([]);
+  const [selectedIngredientIndices, setSelectedIngredientIndices] = useState<Set<number>>(new Set());
+  const [targetListId, setTargetListId] = useState<string | null>(null);
+  const [userShoppingLists, setUserShoppingLists] = useState<any[]>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+
+  // Load pantry items (dashboard items) for cross-reference
+  useEffect(() => {
+    if (!user || !isOpen) return;
+
+    const unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
+      setPantryItems(items);
+    });
+
+    return () => unsubscribe();
+  }, [user, isOpen]);
+
+  // Load shopping lists
+  useEffect(() => {
+    if (!user || !isOpen) return;
+
+    const loadShoppingLists = async () => {
+      try {
+        setLoadingLists(true);
+        const lists = await shoppingListsService.getShoppingLists(user.uid);
+        setUserShoppingLists(lists);
+        
+        // Set default list
+        const defaultList = lists.find(list => list.isDefault) || lists[0];
+        if (defaultList) {
+          setTargetListId(defaultList.id);
+        }
+      } catch (error) {
+        console.error('Error loading shopping lists:', error);
+      } finally {
+        setLoadingLists(false);
+      }
+    };
+
+    loadShoppingLists();
+  }, [user, isOpen]);
+
+  // Check ingredient availability against pantry items
+  const ingredientStatuses = useMemo(() => {
+    if (!importedRecipe) return [];
+    
+    return importedRecipe.ingredients.map((ingredient, index) => {
+      const matchResult = recipeImportService.checkIngredientAvailabilityDetailed(ingredient, pantryItems);
+      return {
+        ingredient,
+        index,
+        status: matchResult.status,
+        matchingItems: matchResult.matchingItems,
+        count: matchResult.count
+      };
+    });
+  }, [importedRecipe, pantryItems]);
+
+  // Set default selections (only missing items selected by default)
+  useEffect(() => {
+    if (!importedRecipe || selectedIngredientIndices.size > 0) return;
+
+    const missingIndices = ingredientStatuses
+      .filter(item => item.status === 'missing')
+      .map(item => item.index);
+    
+    setSelectedIngredientIndices(new Set(missingIndices));
+  }, [ingredientStatuses, importedRecipe]);
 
   const handleImportFromUrl = async () => {
     if (!urlInput.trim()) {
@@ -50,6 +116,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     try {
       const recipe = await recipeImportService.importRecipe(urlInput.trim());
       setImportedRecipe(recipe);
+      setSelectedIngredientIndices(new Set()); // Reset selections
       showToast('Recipe imported successfully', 'success');
     } catch (error: any) {
       console.error('Error importing recipe:', error);
@@ -59,9 +126,24 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     }
   };
 
+  const toggleIngredient = (index: number) => {
+    const newSelected = new Set(selectedIngredientIndices);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedIngredientIndices(newSelected);
+  };
+
   const handleSaveRecipe = async () => {
     if (!user || !importedRecipe) {
       showToast('Please import a recipe first', 'error');
+      return;
+    }
+
+    if (!targetListId) {
+      showToast('Please select a shopping list', 'error');
       return;
     }
 
@@ -74,7 +156,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         mealType: selectedMealType,
         mealName: importedRecipe.title,
         finishBy: '18:00', // Default, can be updated later
-        suggestedIngredients: selectedIngredients.length > 0 ? selectedIngredients : importedRecipe.ingredients, // Use originally selected ingredients, fallback to recipe ingredients
+        suggestedIngredients: selectedIngredients.length > 0 ? selectedIngredients : importedRecipe.ingredients,
         usesExpiringItems: [],
         confirmed: false,
         shoppingListItems: [],
@@ -103,13 +185,29 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
       const updatedMeals = [...mealPlan.meals, plannedMeal];
       await mealPlanningService.updateMealPlan(mealPlan.id, { meals: updatedMeals });
 
-      showToast('Recipe saved to meal planner successfully!', 'success');
-      
-      // Store the meal ID for passing to ingredient checklist
-      setSavedMealId(plannedMeal.id);
-      
-      // Show ingredient checklist
-      setShowIngredientChecklist(true);
+      // Add selected ingredients to shopping list
+      const selectedItems = Array.from(selectedIngredientIndices)
+        .map(index => importedRecipe.ingredients[index])
+        .filter(Boolean);
+
+      if (selectedItems.length > 0) {
+        for (const ingredient of selectedItems) {
+          await shoppingListService.addShoppingListItem(
+            user.uid,
+            targetListId,
+            ingredient,
+            false,
+            'recipe_import',
+            plannedMeal.id
+          );
+        }
+        showToast(`Recipe saved and ${selectedItems.length} ingredient(s) added to shopping list!`, 'success');
+      } else {
+        showToast('Recipe saved to meal planner successfully!', 'success');
+      }
+
+      // Close the modal
+      onClose();
     } catch (error) {
       console.error('Error saving recipe:', error);
       showToast('Failed to save recipe to meal planner. Please try again.', 'error');
@@ -117,58 +215,10 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     }
   };
 
-  const handleIngredientChecklistClose = () => {
-    setShowIngredientChecklist(false);
-    setSaving(false);
-    onClose();
-  };
-
   if (!isOpen) return null;
 
-  // If showing ingredient checklist, render that instead
-  if (showIngredientChecklist && importedRecipe) {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1002,
-          padding: '1rem'
-        }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            handleIngredientChecklistClose();
-          }
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '8px',
-            maxWidth: '600px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <RecipeIngredientChecklist
-            ingredients={importedRecipe.ingredients}
-            mealId={savedMealId}
-            onClose={handleIngredientChecklistClose}
-          />
-        </div>
-      </div>
-    );
-  }
+  const availableCount = ingredientStatuses.filter(item => item.status === 'available' || item.status === 'partial').length;
+  const missingCount = ingredientStatuses.filter(item => item.status === 'missing').length;
 
   return (
     <div
@@ -318,16 +368,126 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
                   </a>
                 </div>
 
+                {/* Shopping List Selection */}
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600' }}>
-                    Ingredients ({importedRecipe.ingredients.length})
-                  </h4>
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '0.5rem' }}>
-                    {importedRecipe.ingredients.map((ingredient, index) => (
-                      <div key={index} style={{ padding: '0.5rem', fontSize: '0.875rem' }}>
-                        {ingredient}
-                      </div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                    Select Shopping List:
+                  </label>
+                  <select
+                    value={targetListId || ''}
+                    onChange={(e) => setTargetListId(e.target.value)}
+                    disabled={loadingLists}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      backgroundColor: loadingLists ? '#f3f4f6' : '#ffffff'
+                    }}
+                  >
+                    <option value="">Select a list...</option>
+                    {userShoppingLists.map(list => (
+                      <option key={list.id} value={list.id}>
+                        {list.name} {list.isDefault ? '(Default)' : ''}
+                      </option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Ingredients with Checkboxes */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+                      Ingredients ({importedRecipe.ingredients.length})
+                    </h4>
+                    {ingredientStatuses.length > 0 && (
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        <span style={{ color: '#059669', marginRight: '0.5rem' }}>In Dashboard: {availableCount}</span>
+                        <span style={{ color: '#dc2626' }}>Missing: {missingCount}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '0.5rem' }}>
+                    {ingredientStatuses.map(({ ingredient, index, status, count }) => {
+                      const isAvailable = status === 'available' || status === 'partial';
+                      const backgroundColor = isAvailable 
+                        ? (selectedIngredientIndices.has(index) ? '#d1fae5' : '#ecfdf5')
+                        : (selectedIngredientIndices.has(index) ? '#fee2e2' : '#fef2f2');
+                      const borderColor = isAvailable ? '#10b981' : '#ef4444';
+                      const badgeBg = isAvailable ? '#10b981' : '#ef4444';
+
+                      return (
+                        <label
+                          key={index}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0.75rem',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            marginBottom: '0.25rem',
+                            backgroundColor,
+                            border: `2px solid ${borderColor}`,
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (isAvailable) {
+                              e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#a7f3d0' : '#d1fae5';
+                            } else {
+                              e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#fecaca' : '#fee2e2';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (isAvailable) {
+                              e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#d1fae5' : '#ecfdf5';
+                            } else {
+                              e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#fee2e2' : '#fef2f2';
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedIngredientIndices.has(index)}
+                            onChange={() => toggleIngredient(index)}
+                            style={{
+                              marginRight: '0.75rem',
+                              width: '1.25rem',
+                              height: '1.25rem',
+                              cursor: 'pointer'
+                            }}
+                          />
+                          <span style={{ flex: 1, fontSize: '0.875rem', color: '#1f2937' }}>{ingredient}</span>
+                          {isAvailable && count > 0 && (
+                            <span
+                              style={{
+                                fontSize: '0.75rem',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                backgroundColor: badgeBg,
+                                color: '#ffffff',
+                                marginRight: '0.5rem'
+                              }}
+                            >
+                              {count} in dashboard
+                            </span>
+                          )}
+                          <span
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '4px',
+                              fontWeight: '500',
+                              backgroundColor: badgeBg,
+                              color: '#ffffff'
+                            }}
+                          >
+                            {isAvailable ? (status === 'partial' ? 'Partial' : 'Available') : 'Missing'}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -338,6 +498,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
                   onClick={() => {
                     setImportedRecipe(null);
                     setUrlInput('');
+                    setSelectedIngredientIndices(new Set());
                   }}
                   disabled={saving}
                   style={{
@@ -356,19 +517,19 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
                 </button>
                 <button
                   onClick={handleSaveRecipe}
-                  disabled={saving}
+                  disabled={saving || !targetListId}
                   style={{
                     padding: '0.75rem 1.5rem',
-                    backgroundColor: saving ? '#9ca3af' : '#002B4D',
+                    backgroundColor: saving || !targetListId ? '#9ca3af' : '#002B4D',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
                     fontSize: '1rem',
                     fontWeight: '500',
-                    cursor: saving ? 'not-allowed' : 'pointer'
+                    cursor: saving || !targetListId ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  {saving ? 'Saving...' : 'Save & Continue'}
+                  {saving ? 'Saving...' : `Save & Add ${selectedIngredientIndices.size} to List`}
                 </button>
               </div>
             </>
