@@ -163,6 +163,110 @@ exports.handler = async (event) => {
       }
     }
 
+    // Method 3: Fallback - Parse ingredients from HTML patterns
+    if (!recipeData) {
+      // Look for common ingredient list patterns
+      // Pattern 1: List items after "Ingredients" heading
+      const ingredientsSectionMatch = html.match(/<h[2-6][^>]*>.*?[Ii]ngredients?.*?<\/h[2-6]>(.*?)(?=<h[2-6]|<div[^>]*class|<section|$)/is);
+      
+      if (ingredientsSectionMatch) {
+        const ingredientsSection = ingredientsSectionMatch[1];
+        // Extract list items
+        const listItemMatches = ingredientsSection.match(/<li[^>]*>(.*?)<\/li>/gis);
+        if (listItemMatches && listItemMatches.length > 0) {
+          const ingredients = listItemMatches.map(match => {
+            // Remove HTML tags and clean up
+            let text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            // Remove common prefixes like bullet points, numbers, etc.
+            text = text.replace(/^[\d\s•\-\*\.]+/, '').trim();
+            return text;
+          }).filter(ing => ing.length > 0 && ing.length < 200); // Filter out empty or too long items
+
+          if (ingredients.length > 0) {
+            // Try to extract title
+            let title = 'Untitled Recipe';
+            const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i) ||
+                              html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+                              html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+            if (titleMatch) {
+              title = titleMatch[1].replace(/<[^>]*>/g, '').trim();
+            }
+
+            // Try to extract image
+            let imageUrl;
+            const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+                              html.match(/<img[^>]*class[^>]*recipe[^>]*src=["']([^"']+)["']/i);
+            if (imageMatch) {
+              imageUrl = imageMatch[1];
+            }
+
+            recipeData = {
+              title,
+              ingredients,
+              imageUrl,
+              sourceUrl: url,
+              sourceDomain
+            };
+          }
+        }
+      }
+
+      // Pattern 2: Look for ingredients in common recipe card/list structures
+      if (!recipeData) {
+        // Try to find ingredients in divs with common class names
+        const recipeCardMatch = html.match(/<div[^>]*class[^>]*recipe[^>]*ingredients?[^>]*>(.*?)<\/div>/is) ||
+                               html.match(/<section[^>]*class[^>]*ingredients?[^>]*>(.*?)<\/section>/is);
+        
+        if (recipeCardMatch) {
+          const cardContent = recipeCardMatch[1];
+          const listItemMatches = cardContent.match(/<li[^>]*>(.*?)<\/li>/gis) ||
+                                 cardContent.match(/<p[^>]*>(.*?)<\/p>/gis);
+          
+          if (listItemMatches && listItemMatches.length > 0) {
+            const ingredients = listItemMatches.map(match => {
+              let text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+              text = text.replace(/^[\d\s•\-\*\.]+/, '').trim();
+              return text;
+            }).filter(ing => {
+              const lower = ing.toLowerCase();
+              // Filter out common non-ingredient text
+              return ing.length > 0 && 
+                     ing.length < 200 && 
+                     !lower.includes('instructions') &&
+                     !lower.includes('directions') &&
+                     !lower.includes('method') &&
+                     !lower.includes('prep time') &&
+                     !lower.includes('cook time');
+            });
+
+            if (ingredients.length > 0) {
+              let title = 'Untitled Recipe';
+              const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i) ||
+                                html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+                                html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+              if (titleMatch) {
+                title = titleMatch[1].replace(/<[^>]*>/g, '').trim();
+              }
+
+              let imageUrl;
+              const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+              if (imageMatch) {
+                imageUrl = imageMatch[1];
+              }
+
+              recipeData = {
+                title,
+                ingredients,
+                imageUrl,
+                sourceUrl: url,
+                sourceDomain
+              };
+            }
+          }
+        }
+      }
+    }
+
     // If no structured data found, return 422
     if (!recipeData || recipeData.ingredients.length === 0) {
       return {
