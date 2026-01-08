@@ -26,7 +26,6 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
   selectedMealType
 }) => {
   const navigate = useNavigate();
-  const [recipeSites, setRecipeSites] = useState<RecipeSite[]>([]);
   const [favoriteSites, setFavoriteSites] = useState<RecipeSite[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'google' | 'favorites'>('google');
@@ -40,7 +39,6 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
       try {
         setLoading(true);
         const allSites = await recipeSiteService.getRecipeSites();
-        setRecipeSites(allSites);
         
         // For now, treat enabled sites as favorites (can be enhanced later with user preferences)
         const enabled = allSites.filter(site => site.enabled);
