@@ -216,7 +216,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               }, 200);
             }}
           >
-            Planned Meal Calendar
+            Meal Planner
           </Link>
           <Link
             to="/favorite-websites"
