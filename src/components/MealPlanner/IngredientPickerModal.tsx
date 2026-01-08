@@ -7,7 +7,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { foodItemService, shoppingListService, shoppingListsService } from '../../services';
-import type { FoodItem, ShoppingListItem, MealType } from '../../types';
+import type { MealType } from '../../types';
 import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays } from 'date-fns';
 import { WebsiteSelectionModal } from './WebsiteSelectionModal';

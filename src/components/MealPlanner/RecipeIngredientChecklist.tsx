@@ -111,7 +111,7 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
   const ingredientStatus = useMemo(() => {
     return filteredIngredients.map((item) => {
       // All items in filtered list are missing (we filtered out available ones)
-      return { ingredient: item.ingredient, status: 'missing' as const, index: item.originalIndex, displayIndex: item.index };
+      return { ingredient: item.ingredient, status: 'missing' as const, originalIndex: item.originalIndex };
     });
   }, [filteredIngredients]);
 
@@ -229,7 +229,7 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
           </div>
         ) : (
           <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '0.5rem' }}>
-            {ingredientStatus.map(({ ingredient, status, originalIndex }) => (
+            {ingredientStatus.map(({ ingredient, originalIndex }) => (
               <label
                 key={originalIndex}
                 style={{
