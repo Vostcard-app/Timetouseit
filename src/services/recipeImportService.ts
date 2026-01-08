@@ -4,7 +4,7 @@
  */
 
 import type { RecipeSite, RecipeImportResult } from '../types/recipeImport';
-import type { FoodItem } from '../types';
+import type { FoodItem, ShoppingListItem } from '../types';
 import { recipeSiteService } from './recipeSiteService';
 import { logServiceOperation, logServiceError } from './baseService';
 
@@ -123,10 +123,12 @@ export const recipeImportService = {
   /**
    * Check ingredient availability with detailed matching information
    * Returns matching items and counts for dashboard cross-reference
+   * Excludes pantry items that are already in the shopping list
    */
   checkIngredientAvailabilityDetailed(
     ingredient: string,
-    pantryItems: FoodItem[]
+    pantryItems: FoodItem[],
+    shoppingListItems: ShoppingListItem[] = []
   ): {
     status: 'available' | 'missing' | 'partial';
     matchingItems: FoodItem[];
@@ -147,10 +149,31 @@ export const recipeImportService = {
       return text.replace(regex, '').trim();
     }, cleanedIngredient);
     
-    // Find matching items
+    // Get shopping list item names (normalized, excluding crossed-off items)
+    const shoppingListItemNames = shoppingListItems
+      .filter(item => !item.crossedOff)
+      .map(item => item.name.toLowerCase().trim());
+    
+    // Helper function to check if a pantry item name matches any shopping list item
+    const isInShoppingList = (pantryItemName: string): boolean => {
+      const normalizedPantryName = pantryItemName.toLowerCase().trim();
+      return shoppingListItemNames.some(shoppingName => {
+        // Check for exact match or substring match
+        return normalizedPantryName === shoppingName ||
+               normalizedPantryName.includes(shoppingName) ||
+               shoppingName.includes(normalizedPantryName);
+      });
+    };
+    
+    // Find matching items (excluding those in shopping list)
     const matchingItems: FoodItem[] = [];
     
     pantryItems.forEach(item => {
+      // Skip if this pantry item is already in the shopping list
+      if (isInShoppingList(item.name)) {
+        return;
+      }
+      
       const normalizedItemName = item.name.toLowerCase();
       const itemWords = normalizedItemName.split(/\s+/);
       const ingredientWords = cleanedIngredient.split(/\s+/);

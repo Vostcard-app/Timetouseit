@@ -19,6 +19,12 @@ interface CustomMealIngredientScreenProps {
   ingredients: string[]; // All ingredients (selected + manually added)
 }
 
+const mealTypeLabels: Record<MealType, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner'
+};
+
 export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProps> = ({
   isOpen,
   onClose,
@@ -33,6 +39,8 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
   const [targetListId, setTargetListId] = useState<string | null>(null);
   const [userShoppingLists, setUserShoppingLists] = useState<any[]>([]);
   const [loadingLists, setLoadingLists] = useState(false);
+  const [mealName, setMealName] = useState('');
+  const [shoppingListItems, setShoppingListItems] = useState<any[]>([]);
 
   // Load pantry items (dashboard items) for cross-reference
   useEffect(() => {
@@ -45,7 +53,7 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
     return () => unsubscribe();
   }, [user, isOpen]);
 
-  // Load shopping lists
+  // Load shopping lists and items
   useEffect(() => {
     if (!user || !isOpen) return;
 
@@ -59,6 +67,12 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
         const defaultList = lists.find(list => list.isDefault) || lists[0];
         if (defaultList) {
           setTargetListId(defaultList.id);
+          
+          // Load shopping list items from default list
+          const items = await shoppingListService.getShoppingListItems(user.uid, defaultList.id);
+          setShoppingListItems(items);
+        } else {
+          setShoppingListItems([]);
         }
       } catch (error) {
         console.error('Error loading shopping lists:', error);
@@ -70,12 +84,12 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
     loadShoppingLists();
   }, [user, isOpen]);
 
-  // Check ingredient availability against pantry items
+  // Check ingredient availability against pantry items (excluding shopping list items)
   const ingredientStatuses = useMemo(() => {
     if (!ingredients || ingredients.length === 0) return [];
     
     return ingredients.map((ingredient, index) => {
-      const matchResult = recipeImportService.checkIngredientAvailabilityDetailed(ingredient, pantryItems);
+      const matchResult = recipeImportService.checkIngredientAvailabilityDetailed(ingredient, pantryItems, shoppingListItems);
       return {
         ingredient,
         index,
@@ -84,7 +98,7 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
         count: matchResult.count
       };
     });
-  }, [ingredients, pantryItems]);
+  }, [ingredients, pantryItems, shoppingListItems]);
 
   // Set default selections (only missing items selected by default)
   useEffect(() => {
@@ -121,18 +135,15 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
     setSaving(true);
     try {
       const mealId = `custom-${Date.now()}`;
-      const mealTypeLabels: Record<MealType, string> = {
-        breakfast: 'Breakfast',
-        lunch: 'Lunch',
-        dinner: 'Dinner'
-      };
+      // Use custom meal name or default to meal type label
+      const finalMealName = mealName.trim() || mealTypeLabels[selectedMealType];
 
       // Create a planned meal from the custom ingredients
       const plannedMeal: PlannedMeal = {
         id: mealId,
         date: selectedDate,
         mealType: selectedMealType,
-        mealName: mealTypeLabels[selectedMealType],
+        mealName: finalMealName,
         finishBy: '18:00', // Default, can be updated later
         suggestedIngredients: ingredients,
         usesExpiringItems: [],
@@ -140,7 +151,7 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
         shoppingListItems: [],
         skipped: false,
         isLeftover: false,
-        recipeTitle: mealTypeLabels[selectedMealType],
+        recipeTitle: finalMealName,
         recipeIngredients: ingredients,
         // No recipeSourceUrl - this is a custom meal
         recipeSourceUrl: null,
@@ -255,6 +266,27 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
             <p style={{ textAlign: 'center', color: '#6b7280' }}>No ingredients added yet.</p>
           ) : (
             <>
+              {/* Meal Name Input */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937' }}>
+                  Meal Name
+                </label>
+                <input
+                  type="text"
+                  value={mealName}
+                  onChange={(e) => setMealName(e.target.value)}
+                  placeholder={`e.g., Spaghetti and meatballs (defaults to ${mealTypeLabels[selectedMealType]})`}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
               {/* Ingredients with Checkboxes */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>

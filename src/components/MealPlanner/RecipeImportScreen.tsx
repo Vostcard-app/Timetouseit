@@ -37,6 +37,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
   const [targetListId, setTargetListId] = useState<string | null>(null);
   const [userShoppingLists, setUserShoppingLists] = useState<any[]>([]);
   const [loadingLists, setLoadingLists] = useState(false);
+  const [shoppingListItems, setShoppingListItems] = useState<any[]>([]);
 
   // Load pantry items (dashboard items) for cross-reference
   useEffect(() => {
@@ -49,7 +50,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     return () => unsubscribe();
   }, [user, isOpen]);
 
-  // Load shopping lists
+  // Load shopping lists and items
   useEffect(() => {
     if (!user || !isOpen) return;
 
@@ -63,6 +64,12 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         const defaultList = lists.find(list => list.isDefault) || lists[0];
         if (defaultList) {
           setTargetListId(defaultList.id);
+          
+          // Load shopping list items from default list
+          const items = await shoppingListService.getShoppingListItems(user.uid, defaultList.id);
+          setShoppingListItems(items);
+        } else {
+          setShoppingListItems([]);
         }
       } catch (error) {
         console.error('Error loading shopping lists:', error);
@@ -74,12 +81,12 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     loadShoppingLists();
   }, [user, isOpen]);
 
-  // Check ingredient availability against pantry items
+  // Check ingredient availability against pantry items (excluding shopping list items)
   const ingredientStatuses = useMemo(() => {
     if (!importedRecipe) return [];
     
     return importedRecipe.ingredients.map((ingredient, index) => {
-      const matchResult = recipeImportService.checkIngredientAvailabilityDetailed(ingredient, pantryItems);
+      const matchResult = recipeImportService.checkIngredientAvailabilityDetailed(ingredient, pantryItems, shoppingListItems);
       return {
         ingredient,
         index,
@@ -88,7 +95,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         count: matchResult.count
       };
     });
-  }, [importedRecipe, pantryItems]);
+  }, [importedRecipe, pantryItems, shoppingListItems]);
 
   // Set default selections (only missing items selected by default)
   useEffect(() => {

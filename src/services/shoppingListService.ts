@@ -143,6 +143,27 @@ export const shoppingListService = {
       logServiceError('deleteShoppingListItem', 'shoppingList', error, { itemId });
       throw toServiceError(error, 'shoppingList');
     }
+  },
+
+  /**
+   * Delete all shopping list items for a given mealId
+   */
+  async deleteShoppingListItemsByMealId(userId: string, mealId: string): Promise<void> {
+    logServiceOperation('deleteShoppingListItemsByMealId', 'shoppingList', { userId, mealId });
+    
+    try {
+      const q = buildQueryWithFilters('shoppingList', userId, [['mealId', '==', mealId]], 'createdAt', 'desc');
+      const querySnapshot = await getDocs(q);
+      
+      const deletePromises = querySnapshot.docs.map(docSnapshot => 
+        deleteDoc(doc(db, 'shoppingList', docSnapshot.id))
+      );
+      
+      await Promise.all(deletePromises);
+    } catch (error) {
+      logServiceError('deleteShoppingListItemsByMealId', 'shoppingList', error, { userId, mealId });
+      throw toServiceError(error, 'shoppingList');
+    }
   }
 };
 
