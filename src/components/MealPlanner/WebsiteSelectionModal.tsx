@@ -30,7 +30,7 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
   const navigate = useNavigate();
   const [favoriteSites, setFavoriteSites] = useState<RecipeSite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'google' | 'favorites' | 'createMyOwn'>('google');
+  const [activeTab, setActiveTab] = useState<'google' | 'favorites' | 'createMyOwn'>('createMyOwn');
   const [showRecipeImport, setShowRecipeImport] = useState(false);
   const [showCustomMeal, setShowCustomMeal] = useState(false);
   const [customIngredients, setCustomIngredients] = useState<string[]>([]);
@@ -207,6 +207,21 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
             <button
+              onClick={() => setActiveTab('createMyOwn')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: 'transparent',
+                color: activeTab === 'createMyOwn' ? '#002B4D' : '#6b7280',
+                border: 'none',
+                borderBottom: activeTab === 'createMyOwn' ? '2px solid #002B4D' : '2px solid transparent',
+                fontSize: '1rem',
+                fontWeight: activeTab === 'createMyOwn' ? '600' : '500',
+                cursor: 'pointer'
+              }}
+            >
+              Create My Own
+            </button>
+            <button
               onClick={() => setActiveTab('google')}
               style={{
                 padding: '0.75rem 1.5rem',
@@ -234,22 +249,7 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
                 cursor: 'pointer'
               }}
             >
-              Favorites
-            </button>
-            <button
-              onClick={() => setActiveTab('createMyOwn')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: 'transparent',
-                color: activeTab === 'createMyOwn' ? '#002B4D' : '#6b7280',
-                border: 'none',
-                borderBottom: activeTab === 'createMyOwn' ? '2px solid #002B4D' : '2px solid transparent',
-                fontSize: '1rem',
-                fontWeight: activeTab === 'createMyOwn' ? '600' : '500',
-                cursor: 'pointer'
-              }}
-            >
-              Create My Own
+              Websites
             </button>
           </div>
 
@@ -408,7 +408,7 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
           ) : displayedSites.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-                No favorite websites available.
+                No websites available.
               </p>
               <button
                 onClick={handleManageFavorites}
@@ -423,7 +423,7 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
                   cursor: 'pointer'
                 }}
               >
-                Manage Favorites
+                Manage Websites
               </button>
             </div>
           ) : (
@@ -470,7 +470,7 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
                 cursor: 'pointer'
               }}
             >
-              Manage Favorites
+              Manage Websites
             </button>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
