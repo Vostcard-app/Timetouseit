@@ -3,7 +3,7 @@
  * Displays meal information with recipe link, ingredients, edit and delete functionality
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { mealPlanningService, shoppingListService } from '../../services';
@@ -24,6 +24,22 @@ const MEAL_TYPE_LABELS: Record<MealType, string> = {
   dinner: 'Dinner'
 };
 
+/**
+ * Smart truncate text at word boundary with ellipsis
+ * Finds the last space before maxLength and truncates there
+ */
+const smartTruncate = (text: string, maxLength: number = 60): string => {
+  if (text.length <= maxLength) return text;
+  
+  // Find the last space before maxLength
+  const truncated = text.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  // If we found a space, truncate there; otherwise truncate at maxLength
+  const cutPoint = lastSpace > 0 ? lastSpace : maxLength;
+  return text.substring(0, cutPoint) + '...';
+};
+
 export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   isOpen,
   onClose,
@@ -32,8 +48,91 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
 }) => {
   const [user] = useAuthState(auth);
   const [deleting, setDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedMealName, setEditedMealName] = useState('');
+  const [editedDate, setEditedDate] = useState('');
+  const [editedMealType, setEditedMealType] = useState<MealType>('breakfast');
+  const [saving, setSaving] = useState(false);
 
   if (!isOpen || !meal) return null;
+
+  // Initialize edit state when meal changes
+  useEffect(() => {
+    if (meal) {
+      setEditedMealName(meal.recipeTitle || meal.mealName);
+      setEditedDate(format(meal.date, 'yyyy-MM-dd'));
+      setEditedMealType(meal.mealType);
+    }
+  }, [meal]);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Reset to original values
+    if (meal) {
+      setEditedMealName(meal.recipeTitle || meal.mealName);
+      setEditedDate(format(meal.date, 'yyyy-MM-dd'));
+      setEditedMealType(meal.mealType);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user || !meal) {
+      showToast('Please log in to edit meals', 'error');
+      return;
+    }
+
+    if (!editedMealName.trim()) {
+      showToast('Meal name is required', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Get the meal plan for this week
+      const weekStart = new Date(meal.date);
+      weekStart.setDate(meal.date.getDate() - meal.date.getDay()); // Start of week (Sunday)
+      weekStart.setHours(0, 0, 0, 0);
+
+      const mealPlan = await mealPlanningService.getMealPlan(user.uid, weekStart);
+      
+      if (!mealPlan) {
+        showToast('Meal plan not found', 'error');
+        setSaving(false);
+        return;
+      }
+
+      // Find and update the meal
+      const updatedMeals = mealPlan.meals.map(m => {
+        if (m.id === meal.id) {
+          const newDate = new Date(editedDate);
+          newDate.setHours(meal.date.getHours(), meal.date.getMinutes());
+          
+          return {
+            ...m,
+            mealName: editedMealName.trim(),
+            recipeTitle: m.recipeSourceUrl ? editedMealName.trim() : undefined,
+            date: newDate,
+            mealType: editedMealType
+          };
+        }
+        return m;
+      });
+
+      await mealPlanningService.updateMealPlan(mealPlan.id, { meals: updatedMeals });
+
+      showToast('Meal updated successfully', 'success');
+      setIsEditing(false);
+      onMealDeleted?.(); // Refresh calendar
+    } catch (error) {
+      console.error('Error updating meal:', error);
+      showToast('Failed to update meal. Please try again.', 'error');
+      setSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!user || !meal) {
@@ -73,12 +172,8 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
     }
   };
 
-  const handleEdit = () => {
-    // Placeholder for edit functionality
-    showToast('Edit functionality coming soon', 'info');
-  };
-
   const displayName = meal.recipeTitle || meal.mealName;
+  const truncatedDisplayName = smartTruncate(displayName, 60);
   const ingredients = meal.recipeIngredients || meal.suggestedIngredients || [];
 
   return (
@@ -138,16 +233,67 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
         <div style={{ padding: '1.5rem' }}>
           {/* Meal Name */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
-              {displayName}
-            </h3>
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
-              {format(meal.date, 'EEEE, MMMM d, yyyy')}
-            </p>
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  value={editedMealName}
+                  onChange={(e) => setEditedMealName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    marginBottom: '0.5rem'
+                  }}
+                  placeholder="Meal name"
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <input
+                    type="date"
+                    value={editedDate}
+                    onChange={(e) => setEditedDate(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      fontSize: '0.875rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <select
+                    value={editedMealType}
+                    onChange={(e) => setEditedMealType(e.target.value as MealType)}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      fontSize: '0.875rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
+                  {truncatedDisplayName}
+                </h3>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                  {format(meal.date, 'EEEE, MMMM d, yyyy')}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Recipe Link */}
-          {meal.recipeSourceUrl && (
+          {meal.recipeSourceUrl && !isEditing && (
             <div style={{ marginBottom: '1.5rem' }}>
               <a
                 href={meal.recipeSourceUrl}
@@ -165,7 +311,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
                   cursor: 'pointer'
                 }}
               >
-                View Recipe: {displayName}
+                Recipe
               </a>
             </div>
           )}
@@ -197,37 +343,77 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-            <button
-              onClick={handleEdit}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#f3f4f6',
-                color: '#1f2937',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: deleting ? '#9ca3af' : '#dc2626',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: deleting ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {deleting ? 'Deleting...' : 'Delete'}
-            </button>
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={saving}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#f3f4f6',
+                    color: '#1f2937',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: saving ? 0.5 : 1
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: saving ? '#9ca3af' : '#002B4D',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: saving ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleEdit}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#f3f4f6',
+                    color: '#1f2937',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: deleting ? '#9ca3af' : '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: deleting ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
