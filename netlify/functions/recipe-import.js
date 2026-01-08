@@ -476,8 +476,16 @@ exports.handler = async (event) => {
       }
     }
 
-    // If no structured data found, return 422
-    if (!recipeData || recipeData.ingredients.length === 0) {
+    // If no structured data found, return 422 with helpful error
+    if (!recipeData || !recipeData.ingredients || recipeData.ingredients.length === 0) {
+      // Log for debugging (visible in Netlify function logs)
+      console.error('Recipe import failed:', {
+        url,
+        hasRecipeData: !!recipeData,
+        ingredientCount: recipeData?.ingredients?.length || 0,
+        sourceDomain
+      });
+      
       return {
         statusCode: 422,
         headers: {
