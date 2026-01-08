@@ -256,11 +256,35 @@ const PlannedMealCalendar: React.FC = () => {
                           borderRadius: '4px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
                         }}
                         title={meal.mealName}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (meal.recipeSourceUrl) {
+                            window.open(meal.recipeSourceUrl, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
                       >
-                        {MEAL_TYPE_LABELS[meal.mealType]}: {meal.mealName}
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {MEAL_TYPE_LABELS[meal.mealType]}: {meal.mealName}
+                        </span>
+                        {meal.recipeSourceUrl && (
+                          <span
+                            style={{
+                              fontSize: '0.625rem',
+                              cursor: 'pointer',
+                              opacity: 0.8,
+                              textDecoration: 'underline'
+                            }}
+                            title="View recipe"
+                          >
+                            🔗
+                          </span>
+                        )}
                       </div>
                     ))}
                     {dayMeals.length > 3 && (

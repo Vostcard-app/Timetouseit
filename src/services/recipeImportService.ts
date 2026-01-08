@@ -118,6 +118,76 @@ export const recipeImportService = {
     });
 
     return hasIngredient ? 'have' : 'missing';
+  },
+
+  /**
+   * Check ingredient availability with detailed matching information
+   * Returns matching items and counts for dashboard cross-reference
+   */
+  checkIngredientAvailabilityDetailed(
+    ingredient: string,
+    pantryItems: FoodItem[]
+  ): {
+    status: 'available' | 'missing' | 'partial';
+    matchingItems: FoodItem[];
+    count: number;
+  } {
+    const normalizedIngredient = ingredient.toLowerCase().trim();
+    
+    // Remove common measurement words and quantities for better matching
+    const measurementWords = ['cup', 'cups', 'tbsp', 'tsp', 'oz', 'lb', 'lbs', 'g', 'kg', 'ml', 'l', 'piece', 'pieces', 'clove', 'cloves', 'tablespoon', 'tablespoons', 'teaspoon', 'teaspoons'];
+    const quantityPattern = /^[\d\s½¼¾⅓⅔⅛⅜⅝⅞]+/;
+    
+    let cleanedIngredient = normalizedIngredient;
+    // Remove quantities at the start
+    cleanedIngredient = cleanedIngredient.replace(quantityPattern, '').trim();
+    // Remove measurement words
+    cleanedIngredient = measurementWords.reduce((text, word) => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      return text.replace(regex, '').trim();
+    }, cleanedIngredient);
+    
+    // Find matching items
+    const matchingItems: FoodItem[] = [];
+    
+    pantryItems.forEach(item => {
+      const normalizedItemName = item.name.toLowerCase();
+      const itemWords = normalizedItemName.split(/\s+/);
+      const ingredientWords = cleanedIngredient.split(/\s+/);
+      
+      // Check for exact match
+      if (cleanedIngredient === normalizedItemName || normalizedItemName === cleanedIngredient) {
+        matchingItems.push(item);
+        return;
+      }
+      
+      // Check if ingredient contains item name or vice versa
+      if (cleanedIngredient.includes(normalizedItemName) || normalizedItemName.includes(cleanedIngredient)) {
+        matchingItems.push(item);
+        return;
+      }
+      
+      // Check for word overlap (at least 2 words match)
+      const matchingWords = itemWords.filter(word => 
+        word.length > 2 && ingredientWords.some(ingWord => 
+          ingWord.includes(word) || word.includes(ingWord)
+        )
+      );
+      
+      if (matchingWords.length >= Math.min(2, itemWords.length)) {
+        matchingItems.push(item);
+      }
+    });
+
+    const count = matchingItems.length;
+    
+    if (count === 0) {
+      return { status: 'missing', matchingItems: [], count: 0 };
+    } else if (count === 1 && matchingItems[0].name.toLowerCase() === cleanedIngredient) {
+      return { status: 'available', matchingItems, count };
+    } else {
+      return { status: 'partial', matchingItems, count };
+    }
   }
 };
 

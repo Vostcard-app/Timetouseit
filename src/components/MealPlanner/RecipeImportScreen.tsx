@@ -33,6 +33,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [showIngredientChecklist, setShowIngredientChecklist] = useState(false);
+  const [savedMealId, setSavedMealId] = useState<string | undefined>(undefined);
 
   const handleImportFromUrl = async () => {
     if (!urlInput.trim()) {
@@ -104,6 +105,9 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
 
       showToast('Recipe saved to meal planner successfully!', 'success');
       
+      // Store the meal ID for passing to ingredient checklist
+      setSavedMealId(plannedMeal.id);
+      
       // Show ingredient checklist
       setShowIngredientChecklist(true);
     } catch (error) {
@@ -158,6 +162,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         >
           <RecipeIngredientChecklist
             ingredients={importedRecipe.ingredients}
+            mealId={savedMealId}
             onClose={handleIngredientChecklistClose}
           />
         </div>

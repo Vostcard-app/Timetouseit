@@ -1,6 +1,7 @@
 /**
  * Recipe Ingredient Checklist Component
- * Displays recipe ingredients with pantry matching and shopping list integration
+ * Displays ALL recipe ingredients with pantry matching and shopping list integration
+ * Shows dashboard cross-reference with counts and highlighting
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -9,13 +10,21 @@ import { auth } from '../../firebase/firebaseConfig';
 import { foodItemService } from '../../services';
 import { recipeImportService } from '../../services';
 import { shoppingListService, shoppingListsService } from '../../services';
-import type { FoodItem, ShoppingListItem } from '../../types';
+import type { FoodItem } from '../../types';
 import { showToast } from '../Toast';
 
 interface RecipeIngredientChecklistProps {
   ingredients: string[];
   mealId?: string;
   onClose: () => void;
+}
+
+interface IngredientStatus {
+  ingredient: string;
+  index: number;
+  status: 'available' | 'missing' | 'partial';
+  matchingItems: FoodItem[];
+  count: number;
 }
 
 export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps> = ({
@@ -25,7 +34,6 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
 }) => {
   const [user] = useAuthState(auth);
   const [pantryItems, setPantryItems] = useState<FoodItem[]>([]);
-  const [shopListItems, setShopListItems] = useState<ShoppingListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIngredients, setSelectedIngredients] = useState<Set<number>>(new Set());
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
@@ -57,10 +65,7 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
         if (defaultList) {
           setTargetListId(defaultList.id);
           
-          // Load shop list items
-          const items = await shoppingListService.getShoppingListItems(user.uid, defaultList.id);
-          // Only include non-crossed-off items
-          setShopListItems(items.filter(item => !item.crossedOff));
+          // Shop list items are not needed for cross-reference (only pantry items are checked)
         }
         
         setLoading(false);
@@ -73,55 +78,33 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
     loadShoppingLists();
   }, [user]);
 
-  // Combine pantry items and shop list items for checking
-  const allAvailableItems = useMemo(() => {
-    const combined: FoodItem[] = [...pantryItems];
-    // Add shop list items as FoodItem-like objects
-    shopListItems.forEach(item => {
-      combined.push({
-        id: item.id,
-        name: item.name
-      } as FoodItem);
+  // Check ingredient availability against pantry items (dashboard)
+  // Show ALL ingredients with their status and matching counts
+  const ingredientStatuses = useMemo<IngredientStatus[]>(() => {
+    return ingredients.map((ingredient, index) => {
+      // Check against pantry items only (dashboard items)
+      const matchResult = recipeImportService.checkIngredientAvailabilityDetailed(ingredient, pantryItems);
+      
+      return {
+        ingredient,
+        index,
+        status: matchResult.status,
+        matchingItems: matchResult.matchingItems,
+        count: matchResult.count
+      };
     });
-    return combined;
-  }, [pantryItems, shopListItems]);
+  }, [ingredients, pantryItems]);
 
-  // Check ingredient availability against both pantry and shop list
-  // Filter out ingredients that exist in either, showing only missing ones
-  const filteredIngredients = useMemo(() => {
-    return ingredients
-      .map((ingredient, index) => {
-        // Check against combined list (pantry + shop list)
-        const status = recipeImportService.checkIngredientAvailability(ingredient, allAvailableItems);
-        
-        // Ingredient is available if it's found in pantry OR shop list
-        const isAvailable = status === 'have';
-        
-        return {
-          ingredient,
-          index,
-          isAvailable,
-          originalIndex: index
-        };
-      })
-      .filter(item => !item.isAvailable); // Only show missing ingredients
-  }, [ingredients, allAvailableItems]);
-
-  // Check ingredient availability for display (for the filtered list)
-  const ingredientStatus = useMemo(() => {
-    return filteredIngredients.map((item) => {
-      // All items in filtered list are missing (we filtered out available ones)
-      return { ingredient: item.ingredient, status: 'missing' as const, originalIndex: item.originalIndex };
-    });
-  }, [filteredIngredients]);
-
-  // Set default selections (all filtered ingredients are missing, so select all)
+  // Set default selections (only missing items selected by default)
   useEffect(() => {
     if (loading || selectedIngredients.size > 0) return;
 
-    const missingIndices = ingredientStatus.map(item => item.originalIndex);
+    const missingIndices = ingredientStatuses
+      .filter(item => item.status === 'missing')
+      .map(item => item.index);
+    
     setSelectedIngredients(new Set(missingIndices));
-  }, [ingredientStatus, loading]);
+  }, [ingredientStatuses, loading]);
 
   const toggleIngredient = (index: number) => {
     const newSelected = new Set(selectedIngredients);
@@ -145,12 +128,6 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
 
     if (selectedItems.length === 0) {
       showToast('Please select at least one ingredient', 'error');
-      return;
-    }
-
-    if (ingredientStatus.length === 0) {
-      showToast('All ingredients are already available', 'info');
-      onClose();
       return;
     }
 
@@ -187,11 +164,36 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
     );
   }
 
+  const availableCount = ingredientStatuses.filter(item => item.status === 'available' || item.status === 'partial').length;
+  const missingCount = ingredientStatuses.filter(item => item.status === 'missing').length;
+
   return (
     <div style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
-      <h2 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: '600' }}>
+      <h2 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>
         Add Ingredients to Shopping List
       </h2>
+
+      {/* Summary */}
+      <div style={{ 
+        marginBottom: '1.5rem', 
+        padding: '0.75rem', 
+        backgroundColor: '#f0f8ff', 
+        borderRadius: '6px',
+        fontSize: '0.875rem',
+        color: '#1f2937'
+      }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <span>
+            <strong>Total:</strong> {ingredients.length} ingredients
+          </span>
+          <span style={{ color: '#059669' }}>
+            <strong>In Dashboard:</strong> {availableCount}
+          </span>
+          <span style={{ color: '#dc2626' }}>
+            <strong>Missing:</strong> {missingCount}
+          </span>
+        </div>
+      </div>
 
       <div style={{ marginBottom: '1.5rem' }}>
         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -219,19 +221,22 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
 
       <div style={{ marginBottom: '1.5rem' }}>
         <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-          Select ingredients to add to your shopping list. Items already in your dashboard or shop list have been filtered out.
+          Select ingredients to add to your shopping list. Items in your dashboard are highlighted in green with counts.
         </p>
-        {ingredientStatus.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
-            <p style={{ color: '#6b7280', margin: 0 }}>
-              All ingredients are already available in your dashboard or shop list!
-            </p>
-          </div>
-        ) : (
-          <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '0.5rem' }}>
-            {ingredientStatus.map(({ ingredient, originalIndex }) => (
+        <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '0.5rem' }}>
+          {ingredientStatuses.map(({ ingredient, index, status, count }) => {
+            // Determine styling based on status
+            const isAvailable = status === 'available' || status === 'partial';
+            const backgroundColor = isAvailable 
+              ? (selectedIngredients.has(index) ? '#d1fae5' : '#ecfdf5')
+              : (selectedIngredients.has(index) ? '#fee2e2' : '#fef2f2');
+            const borderColor = isAvailable ? '#10b981' : '#ef4444';
+            const badgeBg = isAvailable ? '#10b981' : '#ef4444';
+            const badgeText = '#ffffff';
+
+            return (
               <label
-                key={originalIndex}
+                key={index}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -239,24 +244,29 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
                   cursor: 'pointer',
                   borderRadius: '4px',
                   marginBottom: '0.25rem',
-                  backgroundColor: selectedIngredients.has(originalIndex) ? '#f3f4f6' : 'transparent',
+                  backgroundColor,
+                  border: `2px solid ${borderColor}`,
                   transition: 'background-color 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  if (!selectedIngredients.has(originalIndex)) {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                  if (isAvailable) {
+                    e.currentTarget.style.backgroundColor = selectedIngredients.has(index) ? '#a7f3d0' : '#d1fae5';
+                  } else {
+                    e.currentTarget.style.backgroundColor = selectedIngredients.has(index) ? '#fecaca' : '#fee2e2';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!selectedIngredients.has(originalIndex)) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                  if (isAvailable) {
+                    e.currentTarget.style.backgroundColor = selectedIngredients.has(index) ? '#d1fae5' : '#ecfdf5';
+                  } else {
+                    e.currentTarget.style.backgroundColor = selectedIngredients.has(index) ? '#fee2e2' : '#fef2f2';
                   }
                 }}
               >
                 <input
                   type="checkbox"
-                  checked={selectedIngredients.has(originalIndex)}
-                  onChange={() => toggleIngredient(originalIndex)}
+                  checked={selectedIngredients.has(index)}
+                  onChange={() => toggleIngredient(index)}
                   style={{
                     marginRight: '0.75rem',
                     width: '1.25rem',
@@ -264,23 +274,38 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
                     cursor: 'pointer'
                   }}
                 />
-                <span style={{ flex: 1, fontSize: '1rem' }}>{ingredient}</span>
+                <span style={{ flex: 1, fontSize: '1rem', color: '#1f2937' }}>{ingredient}</span>
+                {isAvailable && count > 0 && (
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '12px',
+                      fontWeight: '600',
+                      backgroundColor: badgeBg,
+                      color: badgeText,
+                      marginRight: '0.5rem'
+                    }}
+                  >
+                    {count} in dashboard
+                  </span>
+                )}
                 <span
                   style={{
                     fontSize: '0.875rem',
                     padding: '0.25rem 0.5rem',
                     borderRadius: '4px',
                     fontWeight: '500',
-                    backgroundColor: '#fee2e2',
-                    color: '#991b1b'
+                    backgroundColor: badgeBg,
+                    color: badgeText
                   }}
                 >
-                  Missing
+                  {isAvailable ? (status === 'partial' ? 'Partial Match' : 'Available') : 'Missing'}
                 </span>
               </label>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
@@ -321,4 +346,3 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
     </div>
   );
 };
-
