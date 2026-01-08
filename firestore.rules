@@ -116,5 +116,19 @@ service cloud.firestore {
       // Allow admins to list all unplanned events
       allow list: if request.auth != null && isAdmin();
     }
+
+    // Recipe Sites - shared collection, all authenticated users can read and manage
+    match /recipe_sites/{siteId} {
+      // All authenticated users can read recipe sites (shared catalog)
+      allow read: if request.auth != null;
+      // All authenticated users can create new recipe sites
+      allow create: if request.auth != null;
+      // All authenticated users can update recipe sites (e.g., toggle favorites/enabled)
+      allow update: if request.auth != null;
+      // Only admins can delete recipe sites
+      allow delete: if request.auth != null && isAdmin();
+      // Allow collection-level queries for authenticated users
+      allow list: if request.auth != null;
+    }
   }
 }
