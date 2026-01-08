@@ -4,9 +4,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { recipeImportService } from '../../services';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase/firebaseConfig';
+import { recipeImportService, shoppingListsService, shoppingListService } from '../../services';
 import type { RecipeSite, RecipeImportResult } from '../../types/recipeImport';
-import type { FoodItem, MealType } from '../../types';
+import type { FoodItem, MealType, ShoppingListItem } from '../../types';
 import { showToast } from '../Toast';
 
 interface AddMealFromRecipeModalProps {
@@ -22,9 +24,13 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
   onSave,
   expiringItems = []
 }) => {
-  const [activeTab, setActiveTab] = useState<'search' | 'paste'>('search');
+  const [user] = useAuthState(auth);
   const [recipeSites, setRecipeSites] = useState<RecipeSite[]>([]);
   const [loadingSites, setLoadingSites] = useState(true);
+  const [shoppingListItems, setShoppingListItems] = useState<ShoppingListItem[]>([]);
+  const [loadingShoppingList, setLoadingShoppingList] = useState(true);
+  const [selectedExpiringItems, setSelectedExpiringItems] = useState<Set<string>>(new Set());
+  const [selectedShoppingListItems, setSelectedShoppingListItems] = useState<Set<string>>(new Set());
   const [urlInput, setUrlInput] = useState('');
   const [importing, setImporting] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
@@ -53,13 +59,42 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
     loadSites();
   }, [isOpen]);
 
+  // Load default shopping list items
+  useEffect(() => {
+    if (!isOpen || !user) return;
+
+    const loadShoppingList = async () => {
+      setLoadingShoppingList(true);
+      try {
+        const lists = await shoppingListsService.getShoppingLists(user.uid);
+        const defaultList = lists.find(list => list.isDefault) || lists[0];
+        
+        if (defaultList) {
+          const items = await shoppingListService.getShoppingListItems(user.uid, defaultList.id);
+          // Only show items that are not crossed off
+          setShoppingListItems(items.filter(item => !item.crossedOff));
+        } else {
+          setShoppingListItems([]);
+        }
+      } catch (error) {
+        console.error('Error loading shopping list:', error);
+        showToast('Failed to load shopping list', 'error');
+      } finally {
+        setLoadingShoppingList(false);
+      }
+    };
+
+    loadShoppingList();
+  }, [isOpen, user]);
+
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setUrlInput('');
       setImportedRecipe(null);
       setSelectedIngredients(new Set());
-      setActiveTab('search');
+      setSelectedExpiringItems(new Set());
+      setSelectedShoppingListItems(new Set());
       setSelectedDate(new Date());
       setSelectedMealType('dinner');
       setSelectedFinishBy('18:00');
@@ -73,10 +108,57 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
     }
   }, [importedRecipe]);
 
-  const suggestedQuery = recipeImportService.generateSuggestedQuery(expiringItems);
+  // Toggle expiring item selection
+  const toggleExpiringItem = (itemId: string) => {
+    const newSelected = new Set(selectedExpiringItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedExpiringItems(newSelected);
+  };
+
+  // Toggle shopping list item selection
+  const toggleShoppingListItem = (itemId: string) => {
+    const newSelected = new Set(selectedShoppingListItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedShoppingListItems(newSelected);
+  };
+
+  // Combine selected items into search query
+  const buildSearchQuery = (): string => {
+    const selectedItems: string[] = [];
+    
+    // Add selected expiring items
+    expiringItems.forEach(item => {
+      if (selectedExpiringItems.has(item.id)) {
+        selectedItems.push(item.name);
+      }
+    });
+    
+    // Add selected shopping list items
+    shoppingListItems.forEach(item => {
+      if (selectedShoppingListItems.has(item.id)) {
+        selectedItems.push(item.name);
+      }
+    });
+    
+    return selectedItems.join(' ');
+  };
 
   const handleSearchSite = (site: RecipeSite) => {
-    const query = suggestedQuery || 'recipe';
+    const query = buildSearchQuery();
+    
+    if (!query.trim()) {
+      showToast('Please select at least one item to search', 'error');
+      return;
+    }
+    
     const searchUrl = recipeImportService.buildSearchUrl(site, query);
     window.open(searchUrl, '_blank');
   };
@@ -192,186 +274,196 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
         <div style={{ padding: '1.5rem' }}>
           {!importedRecipe ? (
             <>
-              {/* Tabs */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
-                <button
-                  onClick={() => setActiveTab('search')}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: activeTab === 'search' ? '2px solid #002B4D' : '2px solid transparent',
-                    color: activeTab === 'search' ? '#002B4D' : '#6b7280',
-                    fontWeight: activeTab === 'search' ? '600' : '400',
-                    cursor: 'pointer',
-                    fontSize: '1rem'
-                  }}
-                >
-                  Search Sites
-                </button>
-                <button
-                  onClick={() => setActiveTab('paste')}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: activeTab === 'paste' ? '2px solid #002B4D' : '2px solid transparent',
-                    color: activeTab === 'paste' ? '#002B4D' : '#6b7280',
-                    fontWeight: activeTab === 'paste' ? '600' : '400',
-                    cursor: 'pointer',
-                    fontSize: '1rem'
-                  }}
-                >
-                  Paste URL
-                </button>
-              </div>
-
-              {/* Tab 1: Search Sites */}
-              {activeTab === 'search' && (
-                <div>
-                  {loadingSites ? (
-                    <p style={{ textAlign: 'center', color: '#6b7280' }}>Loading recipe sites...</p>
-                  ) : recipeSites.length === 0 ? (
-                    <p style={{ textAlign: 'center', color: '#6b7280' }}>
-                      No recipe sites available. Please contact an administrator.
-                    </p>
-                  ) : (
-                    <>
-                      {suggestedQuery && (
-                        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f0f8ff', borderRadius: '6px' }}>
-                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#6b7280' }}>
-                            Suggested search based on your expiring items:
-                          </p>
-                          <p style={{ margin: 0, fontWeight: '600', color: '#002B4D' }}>{suggestedQuery}</p>
-                        </div>
-                      )}
-
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
-                          Recipe Sites
-                        </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {recipeSites.map(site => (
-                            <button
-                              key={site.id}
-                              onClick={() => handleSearchSite(site)}
-                              style={{
-                                padding: '1rem',
-                                backgroundColor: '#f9fafb',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '6px',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#f3f4f6';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#f9fafb';
-                              }}
-                            >
-                              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{site.label}</div>
-                              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{site.baseUrl}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Paste URL option */}
-                      <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
-                        <h3 style={{ marginBottom: '0.75rem', fontSize: '1.125rem', fontWeight: '600' }}>
-                          Or paste a recipe URL
-                        </h3>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {/* Expiring Soon Items Section */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+                  Expiring Soon Items
+                </h3>
+                {expiringItems.length === 0 ? (
+                  <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                    No items expiring soon
+                  </p>
+                ) : (
+                  <div style={{ 
+                    maxHeight: '200px', 
+                    overflowY: 'auto', 
+                    border: '1px solid #e5e7eb', 
+                    borderRadius: '6px', 
+                    padding: '0.5rem' 
+                  }}>
+                    {expiringItems.map(item => {
+                      const expDate = item.expirationDate || item.thawDate;
+                      const daysUntil = expDate ? Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+                      return (
+                        <label
+                          key={item.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0.75rem',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            marginBottom: '0.25rem',
+                            backgroundColor: selectedExpiringItems.has(item.id) ? '#f3f4f6' : 'transparent'
+                          }}
+                        >
                           <input
-                            type="url"
-                            value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
-                            placeholder="https://example.com/recipe"
+                            type="checkbox"
+                            checked={selectedExpiringItems.has(item.id)}
+                            onChange={() => toggleExpiringItem(item.id)}
                             style={{
-                              flex: 1,
-                              padding: '0.75rem',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              fontSize: '1rem'
-                            }}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleImportFromUrl();
-                              }
+                              marginRight: '0.75rem',
+                              width: '1.25rem',
+                              height: '1.25rem',
+                              cursor: 'pointer'
                             }}
                           />
-                          <button
-                            onClick={handleImportFromUrl}
-                            disabled={importing || !urlInput.trim()}
-                            style={{
-                              padding: '0.75rem 1.5rem',
-                              backgroundColor: importing || !urlInput.trim() ? '#9ca3af' : '#002B4D',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '1rem',
-                              fontWeight: '500',
-                              cursor: importing || !urlInput.trim() ? 'not-allowed' : 'pointer'
-                            }}
-                          >
-                            {importing ? 'Importing...' : 'Import'}
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Tab 2: Paste URL */}
-              {activeTab === 'paste' && (
-                <div>
-                  <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
-                    Import Recipe from URL
-                  </h3>
-                  <p style={{ marginBottom: '1.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                    Paste a recipe URL to import its ingredients. The recipe must be in a supported format (JSON-LD or microdata).
-                  </p>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="https://example.com/recipe"
-                      style={{
-                        flex: 1,
-                        padding: '0.75rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '1rem'
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleImportFromUrl();
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={handleImportFromUrl}
-                      disabled={importing || !urlInput.trim()}
-                      style={{
-                        padding: '0.75rem 1.5rem',
-                        backgroundColor: importing || !urlInput.trim() ? '#9ca3af' : '#002B4D',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '1rem',
-                        fontWeight: '500',
-                        cursor: importing || !urlInput.trim() ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {importing ? 'Importing...' : 'Import Ingredients'}
-                    </button>
+                          <span style={{ flex: 1, fontSize: '1rem' }}>
+                            {item.name} {expDate && `(expires in ${daysUntil} day${daysUntil !== 1 ? 's' : ''})`}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
+                )}
+              </div>
+
+              {/* Shopping List Items Section */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+                  Shopping List Items
+                </h3>
+                {loadingShoppingList ? (
+                  <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Loading shopping list...</p>
+                ) : shoppingListItems.length === 0 ? (
+                  <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                    No items in your shopping list
+                  </p>
+                ) : (
+                  <div style={{ 
+                    maxHeight: '200px', 
+                    overflowY: 'auto', 
+                    border: '1px solid #e5e7eb', 
+                    borderRadius: '6px', 
+                    padding: '0.5rem' 
+                  }}>
+                    {shoppingListItems.map(item => (
+                      <label
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                          marginBottom: '0.25rem',
+                          backgroundColor: selectedShoppingListItems.has(item.id) ? '#f3f4f6' : 'transparent'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedShoppingListItems.has(item.id)}
+                          onChange={() => toggleShoppingListItem(item.id)}
+                          style={{
+                            marginRight: '0.75rem',
+                            width: '1.25rem',
+                            height: '1.25rem',
+                            cursor: 'pointer'
+                          }}
+                        />
+                        <span style={{ flex: 1, fontSize: '1rem' }}>{item.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recipe Sites Section */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
+                  Recipe Sites
+                </h3>
+                {loadingSites ? (
+                  <p style={{ textAlign: 'center', color: '#6b7280' }}>Loading recipe sites...</p>
+                ) : recipeSites.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#6b7280' }}>
+                    No recipe sites available. Please contact an administrator.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {recipeSites.map(site => (
+                      <button
+                        key={site.id}
+                        onClick={() => handleSearchSite(site)}
+                        style={{
+                          padding: '1rem',
+                          backgroundColor: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '6px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f9fafb';
+                        }}
+                      >
+                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{site.label}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{site.baseUrl}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Paste URL Section */}
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                <h3 style={{ marginBottom: '0.75rem', fontSize: '1.125rem', fontWeight: '600' }}>
+                  Or paste a recipe URL
+                </h3>
+                <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                  Paste a recipe URL to import its ingredients directly.
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="https://example.com/recipe"
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleImportFromUrl();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleImportFromUrl}
+                    disabled={importing || !urlInput.trim()}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: importing || !urlInput.trim() ? '#9ca3af' : '#002B4D',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                      cursor: importing || !urlInput.trim() ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {importing ? 'Importing...' : 'Import'}
+                  </button>
                 </div>
-              )}
+              </div>
             </>
           ) : (
             /* Recipe Preview */
