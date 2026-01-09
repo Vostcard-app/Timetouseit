@@ -68,7 +68,6 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
     shoppingListItems,
     ingredientStatuses,
     reservedQuantitiesMap,
-    userShoppingLists,
     targetListId
   } = useIngredientAvailability(
     ingredients,
