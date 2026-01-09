@@ -280,7 +280,7 @@ const PlannedMealCalendar: React.FC = () => {
                         style={{
                           fontSize: '0.75rem',
                           padding: '0.25rem 0.5rem',
-                          backgroundColor: '#002B4D',
+                          backgroundColor: meal.completed ? '#9ca3af' : '#002B4D',
                           color: '#ffffff',
                           borderRadius: '4px',
                           overflow: 'hidden',
@@ -288,7 +288,8 @@ const PlannedMealCalendar: React.FC = () => {
                           whiteSpace: 'nowrap',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.25rem'
+                          gap: '0.25rem',
+                          opacity: meal.completed ? 0.6 : 1
                         }}
                         title={meal.mealName}
                       >

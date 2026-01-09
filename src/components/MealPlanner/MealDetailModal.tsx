@@ -52,6 +52,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   const [user] = useAuthState(auth);
   const [deleting, setDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
   const [editedMealName, setEditedMealName] = useState('');
   const [editedDate, setEditedDate] = useState('');
   const [editedMealType, setEditedMealType] = useState<MealType>('breakfast');
@@ -84,6 +85,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       setEditedMealType(meal.mealType);
       setEditedIngredients(meal.recipeIngredients || meal.suggestedIngredients || []);
       setSelectedIngredientIndices(new Set()); // Reset selections
+      setIsPreparing(false); // Reset preparing state
     }
   }, [meal]);
 
@@ -104,6 +106,11 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       setEditedMealType(meal.mealType);
       setEditedIngredients(meal.recipeIngredients || meal.suggestedIngredients || []);
     }
+  };
+
+  const handleCancelPreparing = () => {
+    setIsPreparing(false);
+    setSelectedIngredientIndices(new Set()); // Reset selections
   };
 
   const handleSave = async () => {
@@ -312,33 +319,77 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
     setSelectedIngredientIndices(newSelected);
   };
 
-  const handlePrepared = async () => {
+  const handlePrepared = () => {
+    // Enter preparing mode - show ingredient selection
+    setIsPreparing(true);
+    // Pre-select all ingredients by default
+    const allIndices = new Set(ingredients.map((_, index) => index));
+    setSelectedIngredientIndices(allIndices);
+  };
+
+  const handleConfirmPrepared = async () => {
     if (!user || !meal) {
       showToast('Please log in to mark meals as prepared', 'error');
       return;
     }
 
-    if (!window.confirm(`Mark "${meal.recipeTitle || meal.mealName}" as prepared? This will remove associated items from your shopping list and reduce quantities in your dashboard.`)) {
+    if (selectedIngredientIndices.size === 0) {
+      showToast('Please select at least one ingredient to mark as prepared', 'error');
       return;
     }
 
     setPreparing(true);
     try {
-      // Delete all shopping list items associated with this meal
-      await shoppingListService.deleteShoppingListItemsByMealId(user.uid, meal.id);
+      // Get checked ingredients
+      const checkedIngredients = ingredients.filter((_, index) => 
+        selectedIngredientIndices.has(index)
+      );
+
+      // Get current shopping list items for this meal
+      const currentShoppingListItems = shoppingListItems.filter(item => item.mealId === meal.id);
+
+      // Delete shopping list items that match checked ingredients (fuzzy match)
+      for (const shoppingItem of currentShoppingListItems) {
+        const matchesCheckedIngredient = checkedIngredients.some(ingredient =>
+          fuzzyMatchIngredientToItem(ingredient, shoppingItem.name)
+        );
+        if (matchesCheckedIngredient) {
+          await shoppingListService.deleteShoppingListItem(shoppingItem.id);
+        }
+      }
 
       // Get dashboard items that are used by this meal
       const itemsUsedByMeal = pantryItems.filter(item => 
         item.usedByMeals?.includes(meal.id)
       );
 
-      // Reduce quantities and remove mealId from usedByMeals
-      if (itemsUsedByMeal.length > 0 && meal.reservedQuantities) {
+      // Process only checked ingredients for dashboard items
+      const itemsToProcess: string[] = [];
+      const reservedQuantitiesForChecked: Record<string, number> = {};
+
+      for (const item of itemsUsedByMeal) {
+        // Check if this item matches any checked ingredient
+        const matchesCheckedIngredient = checkedIngredients.some(ingredient =>
+          fuzzyMatchIngredientToItem(ingredient, item.name)
+        );
+        
+        if (matchesCheckedIngredient) {
+          itemsToProcess.push(item.id);
+          // Get reserved quantity for this item
+          const normalizedName = item.name.toLowerCase().trim();
+          if (meal.reservedQuantities?.[normalizedName]) {
+            reservedQuantitiesForChecked[normalizedName] = meal.reservedQuantities[normalizedName];
+          }
+        }
+      }
+
+      // Reduce quantities and remove mealId from usedByMeals for checked ingredients only
+      if (itemsToProcess.length > 0 && Object.keys(reservedQuantitiesForChecked).length > 0) {
         await foodItemService.markItemsAsUsedForMeal(
           user.uid,
           meal.id,
-          itemsUsedByMeal.map(item => item.id),
-          meal.reservedQuantities
+          itemsToProcess,
+          reservedQuantitiesForChecked
         );
       }
 
@@ -524,7 +575,8 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
           {/* Ingredients */}
           <div style={{ marginBottom: '1.5rem' }}>
             <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-              Ingredients {!isEditing && `(${ingredients.length})`}
+              Ingredients {!isEditing && !isPreparing && `(${ingredients.length})`}
+              {isPreparing && ' - Select ingredients to mark as prepared'}
             </h4>
             {isEditing ? (
               <textarea
@@ -597,24 +649,59 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
                   {saving ? 'Saving...' : 'Save'}
                 </button>
               </>
+            ) : isPreparing ? (
+              <>
+                <button
+                  onClick={handleCancelPreparing}
+                  disabled={preparing}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#f3f4f6',
+                    color: '#1f2937',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: preparing ? 'not-allowed' : 'pointer',
+                    opacity: preparing ? 0.5 : 1
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmPrepared}
+                  disabled={preparing}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: preparing ? '#9ca3af' : '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: preparing ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {preparing ? 'Preparing...' : 'Confirm Prepared'}
+                </button>
+              </>
             ) : (
               <>
                 {!meal.completed && (
                   <button
                     onClick={handlePrepared}
-                    disabled={preparing}
                     style={{
                       padding: '0.75rem 1.5rem',
-                      backgroundColor: preparing ? '#9ca3af' : '#10b981',
+                      backgroundColor: '#10b981',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       fontSize: '1rem',
                       fontWeight: '500',
-                      cursor: preparing ? 'not-allowed' : 'pointer'
+                      cursor: 'pointer'
                     }}
                   >
-                    {preparing ? 'Preparing...' : 'Prepared'}
+                    Prepared
                   </button>
                 )}
                 <button
