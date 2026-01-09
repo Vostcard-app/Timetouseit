@@ -55,9 +55,11 @@ export const useIngredientAvailability = (
     return () => unsubscribe();
   }, [user, isOpen]);
 
-  // Load shopping lists and items, and calculate reserved quantities
+  // Load shopping lists and items, subscribe to shopping list, and calculate reserved quantities
   useEffect(() => {
     if (!user || !isOpen) return;
+
+    let unsubscribeShoppingList: (() => void) | null = null;
 
     const loadData = async () => {
       try {
@@ -72,9 +74,14 @@ export const useIngredientAvailability = (
         if (defaultList) {
           setTargetListId(defaultList.id);
           
-          // Load shopping list items from default list
-          const items = await shoppingListService.getShoppingListItems(user.uid, defaultList.id);
-          setShoppingListItems(items);
+          // Subscribe to shopping list items for real-time updates
+          unsubscribeShoppingList = shoppingListService.subscribeToShoppingList(
+            user.uid,
+            defaultList.id,
+            (items) => {
+              setShoppingListItems(items);
+            }
+          );
         } else {
           setShoppingListItems([]);
         }
@@ -98,6 +105,12 @@ export const useIngredientAvailability = (
     };
 
     loadData();
+
+    return () => {
+      if (unsubscribeShoppingList) {
+        unsubscribeShoppingList();
+      }
+    };
   }, [user, isOpen, pantryItems, excludeMealId]);
 
   // Check ingredient availability against pantry items (excluding shopping list items and reserved quantities)

@@ -85,6 +85,7 @@ export interface PlannedMeal {
   shoppingListItems: string[]; // Items needed from store
   skipped: boolean;
   isLeftover: boolean;
+  completed?: boolean; // Whether the meal has been prepared
   // Recipe import fields
   recipeTitle?: string | null;
   recipeIngredients?: string[] | null;

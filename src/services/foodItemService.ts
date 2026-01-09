@@ -10,7 +10,8 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  getDocs
+  getDocs,
+  getDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
@@ -230,6 +231,122 @@ export const foodItemService = {
       return photoUrl;
     } catch (error) {
       logServiceError('uploadPhoto', 'foodItems', error, { userId, fileName: file.name });
+      throw toServiceError(error, 'foodItems');
+    }
+  },
+
+  /**
+   * Update the usedByMeals array for a food item
+   */
+  async updateFoodItemUsedByMeals(userId: string, itemId: string, mealIds: string[]): Promise<void> {
+    logServiceOperation('updateFoodItemUsedByMeals', 'foodItems', { userId, itemId, mealIds });
+    
+    try {
+      await updateDoc(doc(db, 'foodItems', itemId), { usedByMeals: mealIds });
+    } catch (error) {
+      logServiceError('updateFoodItemUsedByMeals', 'foodItems', error, { userId, itemId });
+      throw toServiceError(error, 'foodItems');
+    }
+  },
+
+  /**
+   * Mark items as used for a meal (add mealId to usedByMeals and reduce quantities)
+   */
+  async markItemsAsUsedForMeal(
+    userId: string,
+    mealId: string,
+    itemIds: string[],
+    reservedQuantities: Record<string, number>
+  ): Promise<void> {
+    logServiceOperation('markItemsAsUsedForMeal', 'foodItems', { userId, mealId, itemIds });
+    
+    try {
+      const updatePromises = itemIds.map(async (itemId) => {
+        const itemRef = doc(db, 'foodItems', itemId);
+        const itemSnap = await getDoc(itemRef);
+        
+        if (!itemSnap.exists()) return;
+        
+        const itemData = itemSnap.data();
+        // Verify userId matches
+        if (itemData.userId !== userId) return;
+        
+        const item = { id: itemSnap.id, ...itemData } as FoodItem;
+        
+        // Get current usedByMeals array
+        const currentUsedByMeals = item.usedByMeals || [];
+        
+        // Add mealId if not already present
+        const updatedUsedByMeals = currentUsedByMeals.includes(mealId)
+          ? currentUsedByMeals
+          : [...currentUsedByMeals, mealId];
+        
+        // Get reserved quantity for this item (by normalized name)
+        const normalizedName = item.name.toLowerCase().trim();
+        const reservedQty = reservedQuantities[normalizedName] || 0;
+        
+        // Reduce quantity (minimum 0)
+        const currentQuantity = item.quantity || 0;
+        const newQuantity = Math.max(0, currentQuantity - reservedQty);
+        
+        await updateDoc(itemRef, {
+          usedByMeals: updatedUsedByMeals,
+          quantity: newQuantity
+        });
+      });
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      logServiceError('markItemsAsUsedForMeal', 'foodItems', error, { userId, mealId });
+      throw toServiceError(error, 'foodItems');
+    }
+  },
+
+  /**
+   * Unmark items as used for a meal (remove mealId from usedByMeals and restore quantities)
+   */
+  async unmarkItemsAsUsedForMeal(
+    userId: string,
+    mealId: string,
+    itemIds: string[],
+    reservedQuantities: Record<string, number>
+  ): Promise<void> {
+    logServiceOperation('unmarkItemsAsUsedForMeal', 'foodItems', { userId, mealId, itemIds });
+    
+    try {
+      const updatePromises = itemIds.map(async (itemId) => {
+        const itemRef = doc(db, 'foodItems', itemId);
+        const itemSnap = await getDoc(itemRef);
+        
+        if (!itemSnap.exists()) return;
+        
+        const itemData = itemSnap.data();
+        // Verify userId matches
+        if (itemData.userId !== userId) return;
+        
+        const item = { id: itemSnap.id, ...itemData } as FoodItem;
+        
+        // Get current usedByMeals array
+        const currentUsedByMeals = item.usedByMeals || [];
+        
+        // Remove mealId
+        const updatedUsedByMeals = currentUsedByMeals.filter(id => id !== mealId);
+        
+        // Restore quantity (get reserved quantity and add it back)
+        const normalizedName = item.name.toLowerCase().trim();
+        const reservedQty = reservedQuantities[normalizedName] || 0;
+        const currentQuantity = item.quantity || 0;
+        const newQuantity = currentQuantity + reservedQty;
+        
+        await updateDoc(itemRef, {
+          usedByMeals: updatedUsedByMeals,
+          quantity: newQuantity
+        });
+      });
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      logServiceError('unmarkItemsAsUsedForMeal', 'foodItems', error, { userId, mealId });
       throw toServiceError(error, 'foodItems');
     }
   }

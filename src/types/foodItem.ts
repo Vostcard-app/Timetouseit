@@ -20,6 +20,7 @@ export interface FoodItem {
   isFrozen?: boolean;
   freezeCategory?: string;
   isDryCanned?: boolean; // Explicitly mark as dry/canned goods
+  usedByMeals?: string[]; // Array of meal IDs that use this item
 }
 
 export interface FoodItemData {
@@ -35,6 +36,7 @@ export interface FoodItemData {
   isFrozen?: boolean;
   freezeCategory?: string;
   isDryCanned?: boolean; // Explicitly mark as dry/canned goods
+  usedByMeals?: string[]; // Array of meal IDs that use this item
 }
 
 export type FoodItemStatus = 'fresh' | 'expiring_soon' | 'expired';

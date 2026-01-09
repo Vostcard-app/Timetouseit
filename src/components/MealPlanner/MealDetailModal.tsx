@@ -6,10 +6,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
-import { mealPlanningService, shoppingListService } from '../../services';
+import { mealPlanningService, shoppingListService, foodItemService, recipeImportService } from '../../services';
 import type { PlannedMeal, MealType } from '../../types';
 import { showToast } from '../Toast';
 import { format } from 'date-fns';
+import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
+import { IngredientChecklist } from './IngredientChecklist';
+import { fuzzyMatchIngredientToItem } from '../../utils/fuzzyIngredientMatcher';
 
 interface MealDetailModalProps {
   isOpen: boolean;
@@ -54,6 +57,23 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   const [editedMealType, setEditedMealType] = useState<MealType>('breakfast');
   const [editedIngredients, setEditedIngredients] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [selectedIngredientIndices, setSelectedIngredientIndices] = useState<Set<number>>(new Set());
+  const [preparing, setPreparing] = useState(false);
+
+  const ingredients = meal?.recipeIngredients || meal?.suggestedIngredients || [];
+
+  // Use ingredient availability hook
+  const {
+    pantryItems,
+    shoppingListItems,
+    ingredientStatuses,
+    reservedQuantitiesMap,
+    userShoppingLists,
+    targetListId
+  } = useIngredientAvailability(
+    ingredients,
+    { isOpen, excludeMealId: meal?.id }
+  );
 
   if (!isOpen || !meal) return null;
 
@@ -64,8 +84,13 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       setEditedDate(format(meal.date, 'yyyy-MM-dd'));
       setEditedMealType(meal.mealType);
       setEditedIngredients(meal.recipeIngredients || meal.suggestedIngredients || []);
+      setSelectedIngredientIndices(new Set()); // Reset selections
     }
   }, [meal]);
+
+  // Note: Real-time subscriptions are handled by useIngredientAvailability hook
+  // The hook subscribes to food items and loads shopping list items
+  // ingredientStatuses will automatically update when pantry items or shopping list items change
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -113,6 +138,98 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
         .map(ing => ing.trim())
         .filter(ing => ing.length > 0);
 
+      // Calculate reserved quantities for new ingredients
+      const newReservedQuantities = recipeImportService.calculateMealReservedQuantities(
+        parsedIngredients,
+        pantryItems
+      );
+
+      // Get current shopping list items for this meal
+      const currentShoppingListItems = shoppingListItems.filter(item => item.mealId === meal.id);
+      
+      // Two-way sync: Update shopping list based on ingredient changes
+      if (targetListId) {
+        // Find ingredients that need to be added (missing/not available)
+        const ingredientsToAdd: string[] = [];
+        for (const ingredient of parsedIngredients) {
+          const status = recipeImportService.checkIngredientAvailabilityDetailed(
+            ingredient,
+            pantryItems,
+            shoppingListItems.filter(item => item.mealId !== meal.id), // Exclude current meal's items
+            reservedQuantitiesMap
+          );
+          
+          // If missing or partial, check if already in shopping list
+          if (status.status === 'missing' || status.status === 'partial') {
+            const alreadyInList = currentShoppingListItems.some(item => 
+              fuzzyMatchIngredientToItem(ingredient, item.name)
+            );
+            if (!alreadyInList) {
+              ingredientsToAdd.push(ingredient);
+            }
+          }
+        }
+        
+        // Add missing ingredients to shopping list
+        for (const ingredient of ingredientsToAdd) {
+          await shoppingListService.addShoppingListItem(
+            user.uid,
+            targetListId,
+            ingredient,
+            false,
+            'meal_edit',
+            meal.id
+          );
+        }
+        
+        // Remove shopping list items that no longer match any ingredient (fuzzy matching)
+        for (const shoppingItem of currentShoppingListItems) {
+          const stillMatches = parsedIngredients.some(ingredient =>
+            fuzzyMatchIngredientToItem(ingredient, shoppingItem.name)
+          );
+          if (!stillMatches) {
+            await shoppingListService.deleteShoppingListItem(shoppingItem.id);
+          }
+        }
+      }
+
+      // Update dashboard items' usedByMeals arrays
+      // Find matching pantry items for each ingredient
+      const matchingItemIds: string[] = [];
+      for (const ingredient of parsedIngredients) {
+        for (const pantryItem of pantryItems) {
+          if (fuzzyMatchIngredientToItem(ingredient, pantryItem.name)) {
+            if (!matchingItemIds.includes(pantryItem.id)) {
+              matchingItemIds.push(pantryItem.id);
+            }
+          }
+        }
+      }
+      
+      // Update usedByMeals for matching items
+      for (const itemId of matchingItemIds) {
+        const item = pantryItems.find(p => p.id === itemId);
+        if (item) {
+          const currentUsedByMeals = item.usedByMeals || [];
+          const updatedUsedByMeals = currentUsedByMeals.includes(meal.id)
+            ? currentUsedByMeals
+            : [...currentUsedByMeals, meal.id];
+          await foodItemService.updateFoodItemUsedByMeals(user.uid, itemId, updatedUsedByMeals);
+        }
+      }
+      
+      // Remove mealId from items that no longer match
+      const allItemIds = pantryItems.map(item => item.id);
+      for (const itemId of allItemIds) {
+        if (!matchingItemIds.includes(itemId)) {
+          const item = pantryItems.find(p => p.id === itemId);
+          if (item && item.usedByMeals?.includes(meal.id)) {
+            const updatedUsedByMeals = item.usedByMeals.filter(id => id !== meal.id);
+            await foodItemService.updateFoodItemUsedByMeals(user.uid, itemId, updatedUsedByMeals);
+          }
+        }
+      }
+
       // Find and update the meal
       const updatedMeals = mealPlan.meals.map(m => {
         if (m.id === meal.id) {
@@ -126,7 +243,8 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
             date: newDate,
             mealType: editedMealType,
             recipeIngredients: parsedIngredients,
-            suggestedIngredients: parsedIngredients
+            suggestedIngredients: parsedIngredients,
+            reservedQuantities: newReservedQuantities
           };
         }
         return m;
@@ -184,7 +302,69 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
 
   const displayName = meal.recipeTitle || meal.mealName;
   const truncatedDisplayName = smartTruncate(displayName, 60);
-  const ingredients = meal.recipeIngredients || meal.suggestedIngredients || [];
+
+  const toggleIngredient = (index: number) => {
+    const newSelected = new Set(selectedIngredientIndices);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedIngredientIndices(newSelected);
+  };
+
+  const handlePrepared = async () => {
+    if (!user || !meal) {
+      showToast('Please log in to mark meals as prepared', 'error');
+      return;
+    }
+
+    if (!window.confirm(`Mark "${meal.recipeTitle || meal.mealName}" as prepared? This will remove associated items from your shopping list and reduce quantities in your dashboard.`)) {
+      return;
+    }
+
+    setPreparing(true);
+    try {
+      // Delete all shopping list items associated with this meal
+      await shoppingListService.deleteShoppingListItemsByMealId(user.uid, meal.id);
+
+      // Get dashboard items that are used by this meal
+      const itemsUsedByMeal = pantryItems.filter(item => 
+        item.usedByMeals?.includes(meal.id)
+      );
+
+      // Reduce quantities and remove mealId from usedByMeals
+      if (itemsUsedByMeal.length > 0 && meal.reservedQuantities) {
+        await foodItemService.markItemsAsUsedForMeal(
+          user.uid,
+          meal.id,
+          itemsUsedByMeal.map(item => item.id),
+          meal.reservedQuantities
+        );
+      }
+
+      // Mark meal as completed
+      const weekStart = new Date(meal.date);
+      weekStart.setDate(meal.date.getDate() - meal.date.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+
+      const mealPlan = await mealPlanningService.getMealPlan(user.uid, weekStart);
+      if (mealPlan) {
+        const updatedMeals = mealPlan.meals.map(m => 
+          m.id === meal.id ? { ...m, completed: true } : m
+        );
+        await mealPlanningService.updateMealPlan(mealPlan.id, { meals: updatedMeals });
+      }
+
+      showToast('Meal marked as prepared!', 'success');
+      onMealDeleted?.(); // Refresh calendar
+      onClose();
+    } catch (error) {
+      console.error('Error marking meal as prepared:', error);
+      showToast('Failed to mark meal as prepared. Please try again.', 'error');
+      setPreparing(false);
+    }
+  };
 
   return (
     <div
@@ -221,9 +401,25 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       >
         {/* Header */}
         <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-            {MEAL_TYPE_LABELS[meal.mealType]}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+              {MEAL_TYPE_LABELS[meal.mealType]}
+            </h2>
+            {meal.completed && (
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '12px',
+                  fontWeight: '600',
+                  backgroundColor: '#10b981',
+                  color: '#ffffff'
+                }}
+              >
+                Completed
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             style={{
@@ -352,22 +548,11 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
                 }}
               />
             ) : ingredients.length > 0 ? (
-              <div style={{ 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '6px', 
-                padding: '0.75rem',
-                maxHeight: '300px',
-                overflowY: 'auto',
-                backgroundColor: '#f9fafb'
-              }}>
-                <ul style={{ margin: 0, paddingLeft: '1.5rem', listStyle: 'disc' }}>
-                  {ingredients.map((ingredient, index) => (
-                    <li key={index} style={{ marginBottom: '0.5rem', fontSize: '0.875rem', color: '#1f2937' }}>
-                      {ingredient}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <IngredientChecklist
+                ingredientStatuses={ingredientStatuses}
+                selectedIngredientIndices={selectedIngredientIndices}
+                onToggleIngredient={toggleIngredient}
+              />
             ) : (
               <p style={{ fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
                 No ingredients listed.
@@ -415,6 +600,24 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
               </>
             ) : (
               <>
+                {!meal.completed && (
+                  <button
+                    onClick={handlePrepared}
+                    disabled={preparing}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: preparing ? '#9ca3af' : '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                      cursor: preparing ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {preparing ? 'Preparing...' : 'Prepared'}
+                  </button>
+                )}
                 <button
                   onClick={handleEdit}
                   style={{
