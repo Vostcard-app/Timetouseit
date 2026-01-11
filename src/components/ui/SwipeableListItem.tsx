@@ -429,11 +429,11 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
           </span>
         </div>
 
-        {/* Second line: Expires date and buttons */}
+        {/* Second line: Best by date and buttons */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              {item.isFrozen ? 'Thaws' : 'Expires'}
+              {item.isFrozen ? 'Thaws' : 'Best By'}
             </span>
             <span style={{ fontSize: '0.875rem', color: '#1f2937', fontWeight: '500' }}>
               {item.isFrozen && item.thawDate 

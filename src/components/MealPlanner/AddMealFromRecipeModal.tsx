@@ -319,7 +319,7 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
                             }}
                           />
                           <span style={{ flex: 1, fontSize: '1rem' }}>
-                            {item.name} {expDate && `(expires in ${daysUntil} day${daysUntil !== 1 ? 's' : ''})`}
+                            {item.name} {expDate && `(best by in ${daysUntil} day${daysUntil !== 1 ? 's' : ''})`}
                           </span>
                         </label>
                       );
