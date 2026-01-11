@@ -105,7 +105,7 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
         mealName: finalMealName,
         finishBy: '18:00', // Default, can be updated later
         suggestedIngredients: ingredients,
-        usesExpiringItems: [],
+        usesBestBySoonItems: [],
         confirmed: false,
         shoppingListItems: [],
         skipped: false,

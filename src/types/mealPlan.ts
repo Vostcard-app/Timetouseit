@@ -80,7 +80,7 @@ export interface PlannedMeal {
   finishBy: string; // HH:mm format
   startCookingAt?: string; // HH:mm format - Calculated based on meal duration
   suggestedIngredients: string[];
-  usesExpiringItems: string[]; // Food item IDs that will be used
+  usesBestBySoonItems: string[]; // Food item IDs that will be used
   confirmed: boolean;
   shoppingListItems: string[]; // Items needed from store
   skipped: boolean;
@@ -121,10 +121,10 @@ export interface MealSuggestion {
   mealType: MealType;
   date: Date;
   suggestedIngredients: string[];
-  usesExpiringItems: string[]; // Food item IDs
+  usesBestBySoonItems: string[]; // Food item IDs
   usesLeftovers?: string[]; // Leftover meal IDs
   reasoning?: string; // Why this meal was suggested
-  priority?: 'high' | 'medium' | 'low'; // Based on expiration urgency
+  priority?: 'high' | 'medium' | 'low'; // Based on best by urgency
 }
 
 /**
@@ -151,7 +151,7 @@ export interface LeftoverMeal {
   ingredients: string[];
   quantity: string; // e.g., "2 servings"
   addedToCalendar: boolean;
-  expirationDate?: Date; // When the leftover expires
+  bestByDate?: Date; // When the leftover is best by
   createdAt: Date;
 }
 
@@ -159,10 +159,10 @@ export interface LeftoverMeal {
  * Context for meal planning AI
  */
 export interface MealPlanningContext {
-  expiringItems: Array<{
+  bestBySoonItems: Array<{
     id: string;
     name: string;
-    expirationDate?: Date;
+    bestByDate?: Date;
     thawDate?: Date;
     category?: string;
   }>;
@@ -184,7 +184,7 @@ export interface MealPlanningContext {
   currentInventory: Array<{
     id: string;
     name: string;
-    expirationDate?: Date;
+    bestByDate?: Date;
     thawDate?: Date;
   }>;
 }
@@ -197,9 +197,9 @@ export interface ReplanningContext extends MealPlanningContext {
   wasteRiskItems: Array<{
     id: string;
     name: string;
-    expirationDate?: Date;
+    bestByDate?: Date;
     thawDate?: Date;
-    daysUntilExpiration: number;
+    daysUntilBestBy: number;
   }>;
   unplannedEvent: UnplannedEvent;
 }

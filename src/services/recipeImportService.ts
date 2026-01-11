@@ -71,20 +71,20 @@ export const recipeImportService = {
   },
 
   /**
-   * Generate suggested query from expiring items
-   * Returns top 1-2 expiring items as a search query
+   * Generate suggested query from best by soon items
+   * Returns top 1-2 best by soon items as a search query
    */
-  generateSuggestedQuery(expiringItems: FoodItem[]): string {
-    if (expiringItems.length === 0) {
+  generateSuggestedQuery(bestBySoonItems: FoodItem[]): string {
+    if (bestBySoonItems.length === 0) {
       return '';
     }
 
-    // Get top 1-2 items (sorted by expiration date, closest first)
-    const sorted = [...expiringItems]
-      .filter(item => item.expirationDate || item.thawDate)
+    // Get top 1-2 items (sorted by best by date, closest first)
+    const sorted = [...bestBySoonItems]
+      .filter(item => item.bestByDate || item.thawDate)
       .sort((a, b) => {
-        const dateA = a.expirationDate || a.thawDate || new Date(0);
-        const dateB = b.expirationDate || b.thawDate || new Date(0);
+        const dateA = a.bestByDate || a.thawDate || new Date(0);
+        const dateB = b.bestByDate || b.thawDate || new Date(0);
         return dateA.getTime() - dateB.getTime();
       })
       .slice(0, 2)

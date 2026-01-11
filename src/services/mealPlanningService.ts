@@ -297,7 +297,7 @@ export const mealPlanningService = {
           finishBy,
           startCookingAt,
           suggestedIngredients: suggestion.suggestedIngredients,
-          usesExpiringItems: suggestion.usesExpiringItems,
+          usesBestBySoonItems: suggestion.usesBestBySoonItems,
           confirmed: false,
           shoppingListItems: [],
           skipped: false,
@@ -668,7 +668,7 @@ export const mealPlanningService = {
           finishBy,
           startCookingAt,
           suggestedIngredients: suggestion.suggestedIngredients,
-          usesExpiringItems: suggestion.usesExpiringItems,
+          usesBestBySoonItems: suggestion.usesBestBySoonItems,
           confirmed: false,
           shoppingListItems: [],
           skipped: false,
@@ -745,7 +745,7 @@ export const mealPlanningService = {
       plan.meals
         .filter(meal => meal.confirmed && !meal.skipped)
         .forEach(meal => {
-          meal.usesExpiringItems.forEach(itemId => reservedItemIds.add(itemId));
+          meal.usesBestBySoonItems.forEach(itemId => reservedItemIds.add(itemId));
         });
 
       // Return all items (reserved items are still available, just tracked)
@@ -785,7 +785,7 @@ export const mealPlanningService = {
 
         // Find when this item is planned to be used
         const plannedUse = plan.meals
-          .filter(meal => meal.usesExpiringItems.includes(item.id) && !meal.skipped)
+          .filter(meal => meal.usesBestBySoonItems.includes(item.id) && !meal.skipped)
           .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
 
         if (!plannedUse) {

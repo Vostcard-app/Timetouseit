@@ -7,14 +7,14 @@ export interface FoodItem {
   userId: string;
   name: string;
   barcode?: string;
-  expirationDate?: Date; // Optional - frozen items use thawDate instead
+  bestByDate?: Date; // Optional - frozen items use thawDate instead
   thawDate?: Date; // For frozen items
   addedDate: Date;
   photoUrl?: string;
   quantity?: number;
   quantityUnit?: string; // Unit for quantity (cans, packages, cups, boxes, bags, bottles, jars, units)
   category?: string;
-  status: 'fresh' | 'expiring_soon' | 'expired';
+  status: 'fresh' | 'bestBySoon' | 'pastBestBy';
   reminderSent?: boolean;
   notes?: string;
   isFrozen?: boolean;
@@ -26,7 +26,7 @@ export interface FoodItem {
 export interface FoodItemData {
   name: string;
   barcode?: string;
-  expirationDate?: Date; // Optional - frozen items use thawDate instead
+  bestByDate?: Date; // Optional - frozen items use thawDate instead
   thawDate?: Date; // For frozen items
   photoUrl?: string;
   quantity?: number;
@@ -39,7 +39,7 @@ export interface FoodItemData {
   usedByMeals?: string[]; // Array of meal IDs that use this item
 }
 
-export type FoodItemStatus = 'fresh' | 'expiring_soon' | 'expired';
+export type FoodItemStatus = 'fresh' | 'bestBySoon' | 'pastBestBy';
 
 export interface FoodKeeperItem {
   name: string;

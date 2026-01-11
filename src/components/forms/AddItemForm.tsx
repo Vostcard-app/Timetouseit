@@ -24,7 +24,7 @@ const QUANTITY_UNITS = [
 ] as const;
 
 interface AddItemFormProps {
-  onSubmit: (data: FoodItemData, photoFile?: File, noExpiration?: boolean) => Promise<void>;
+  onSubmit: (data: FoodItemData, photoFile?: File, noBestBy?: boolean) => Promise<void>;
   onCancel?: () => void;
   onToss?: () => void;
   initialBarcode?: string;
@@ -45,7 +45,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [formData, setFormData] = useState<FoodItemData>({
     name: initialItem?.name || initialName || '',
     barcode: initialBarcode || initialItem?.barcode || '',
-    expirationDate: initialItem?.isFrozen ? undefined : (initialItem?.expirationDate ? new Date(initialItem.expirationDate) : new Date()),
+    bestByDate: initialItem?.isFrozen ? undefined : (initialItem?.bestByDate ? new Date(initialItem.bestByDate) : new Date()),
     thawDate: initialItem?.isFrozen && initialItem?.thawDate ? new Date(initialItem.thawDate) : undefined,
     quantity: initialItem?.quantity || 1,
     quantityUnit: initialItem?.quantityUnit || 'units',
@@ -58,7 +58,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
+  const [suggestedBestByDate, setSuggestedBestByDate] = useState<Date | null>(null);
   const [qualityMessage, setQualityMessage] = useState<string | null>(null);
   // Use external isFrozen if provided, otherwise use internal state
   const [internalIsFrozen, setInternalIsFrozen] = useState(false);
@@ -116,7 +116,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setFormData({
         name: initialItem.name,
         barcode: initialItem.barcode || '',
-        expirationDate: shouldFreeze ? undefined : (initialItem.expirationDate ? new Date(initialItem.expirationDate) : new Date()),
+        bestByDate: shouldFreeze ? undefined : (initialItem.bestByDate ? new Date(initialItem.bestByDate) : new Date()),
         thawDate: shouldFreeze && initialItem.thawDate ? new Date(initialItem.thawDate) : undefined,
         quantity: initialItem.quantity || 1,
         quantityUnit: initialItem.quantityUnit || 'units',
@@ -199,16 +199,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         }
       }
       
-      setSuggestedExpirationDate(suggestion);
+      setSuggestedBestByDate(suggestion);
       setQualityMessage(qualityMsg);
       
       // Auto-apply suggestion if available and user hasn't manually changed the date
       // BUT: Don't auto-apply if freeze is checked (we'll use category-based calculation instead)
-      if (suggestion && !hasManuallyChangedDate && !isFrozen && formData.expirationDate) {
+      if (suggestion && !hasManuallyChangedDate && !isFrozen && formData.bestByDate) {
         // Only auto-apply if current date is today (default) or if we're editing and date hasn't been manually changed
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const currentDate = new Date(formData.expirationDate);
+        const currentDate = new Date(formData.bestByDate);
         currentDate.setHours(0, 0, 0, 0);
         const isDefaultDate = currentDate.getTime() === today.getTime();
         
@@ -216,12 +216,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         if (isDefaultDate || !initialItem) {
           setFormData(prev => ({
             ...prev,
-            expirationDate: suggestion
+            bestByDate: suggestion
           }));
         }
       }
     } else {
-      setSuggestedExpirationDate(null);
+      setSuggestedBestByDate(null);
       setQualityMessage(null);
     }
   }, [formData.name, formData.isDryCanned, isFrozen, hasManuallyChangedDate, initialItem, userItems]);
@@ -236,19 +236,19 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       // Calculate thaw date = today + bestQualityMonths
       const thawDate = addMonths(today, bestQualityMonths);
       
-      // Set thawDate and remove expirationDate for frozen items
+      // Set thawDate and remove bestByDate for frozen items
       setFormData(prev => ({
         ...prev,
         thawDate: thawDate,
-        expirationDate: undefined
+        bestByDate: undefined
       }));
       setHasManuallyChangedDate(false); // Reset flag since we're auto-setting
     } else if (!isFrozen) {
-      // If unfrozen, clear thawDate and ensure expirationDate exists
+      // If unfrozen, clear thawDate and ensure bestByDate exists
       setFormData(prev => ({
         ...prev,
         thawDate: undefined,
-        expirationDate: prev.expirationDate || new Date()
+        bestByDate: prev.bestByDate || new Date()
       }));
     }
   }, [isFrozen, freezeCategory]);
@@ -269,7 +269,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     setHasManuallyChangedDate(true);
     setFormData(prev => ({
       ...prev,
-      expirationDate: new Date(e.target.value)
+      bestByDate: new Date(e.target.value)
     }));
   };
 
@@ -327,7 +327,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       return;
     }
     
-    // Validation: frozen items need thawDate, non-frozen items need expirationDate
+    // Validation: frozen items need thawDate, non-frozen items need bestByDate
     if (isFrozen) {
       if (!freezeCategory) {
         alert('Please select a freeze category');
@@ -338,15 +338,15 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         return;
       }
     } else {
-      if (!formData.expirationDate) {
-        alert('Expiration date is required');
+      if (!formData.bestByDate) {
+        alert('Best by date is required');
         return;
       }
     }
 
     setIsSubmitting(true);
     try {
-      // Build dataToSubmit: frozen items have thawDate (no expirationDate), non-frozen have expirationDate (no thawDate)
+      // Build dataToSubmit: frozen items have thawDate (no bestByDate), non-frozen have bestByDate (no thawDate)
       // Use isDryCannedOverride if provided (from button click), otherwise use formData.isDryCanned
       // IMPORTANT: isDryCannedOverride takes precedence - it's explicitly set by the button clicked
       const finalIsDryCanned = isDryCannedOverride !== undefined ? isDryCannedOverride : (formData.isDryCanned || false);
@@ -364,8 +364,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         // For frozen items: include thawDate, exclude expirationDate
         // For non-frozen items: include expirationDate, exclude thawDate
         ...(isFrozen 
-          ? { thawDate: formData.thawDate, expirationDate: undefined }
-          : { expirationDate: formData.expirationDate, thawDate: undefined }
+          ? { thawDate: formData.thawDate, bestByDate: undefined }
+          : { bestByDate: formData.bestByDate, thawDate: undefined }
         )
         // Don't include photoUrl here - it will be set after upload
       };
@@ -378,7 +378,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         setFormData({
           name: '',
           barcode: '',
-          expirationDate: new Date(),
+          bestByDate: new Date(),
           thawDate: undefined,
           quantity: 1,
           quantityUnit: 'units',
@@ -588,18 +588,18 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         )}
       </div>
 
-      {/* 2. Expiration Date / Thaw Date Field */}
+      {/* 2. Best By Date / Thaw Date Field */}
       {!isFrozen && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <label htmlFor="expirationDate" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
-            Expiration Date * (Dates are suggestions not guarantees)
+          <label htmlFor="bestByDate" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '1rem' }}>
+            Best By Date * (Dates are suggestions not guarantees)
           </label>
           <input
             ref={dateInputRef}
             type="date"
-            id="expirationDate"
-            name="expirationDate"
-            value={formData.expirationDate ? formData.expirationDate.toISOString().split('T')[0] : ''}
+            id="bestByDate"
+            name="bestByDate"
+            value={formData.bestByDate ? formData.bestByDate.toISOString().split('T')[0] : ''}
             onChange={handleDateChange}
             required
             style={{
@@ -985,7 +985,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       </div>
 
       {/* 2. Change Expiration Date button (appears when suggestion is available) */}
-      {formData.name.trim() && suggestedExpirationDate && (
+      {formData.name.trim() && suggestedBestByDate && (
         <div style={{ marginBottom: '1.5rem' }}>
           <button
             type="button"

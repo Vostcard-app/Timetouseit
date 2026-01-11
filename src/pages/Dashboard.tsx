@@ -13,8 +13,9 @@ import Banner from '../components/layout/Banner';
 import type { FoodItem } from '../types';
 import { analyticsService } from '../services/analyticsService';
 import { isDryCannedItem } from '../utils/storageUtils';
+import { getStatusLabel } from '../utils/statusUtils';
 
-type FilterType = 'all' | 'expiring_soon' | 'expired';
+type FilterType = 'all' | 'bestBySoon' | 'pastBestBy';
 type StorageTabType = 'perishable' | 'dryCanned';
 
 const Dashboard: React.FC = () => {
@@ -332,7 +333,7 @@ const Dashboard: React.FC = () => {
 
 
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '5px', marginBottom: '5px', flexWrap: 'wrap' }}>
-        {(['all', 'expiring_soon', 'expired'] as FilterType[]).map((filterType) => (
+        {(['all', 'bestBySoon', 'pastBestBy'] as FilterType[]).map((filterType) => (
           <button
             key={filterType}
             onClick={() => setFilter(filterType)}
@@ -348,7 +349,7 @@ const Dashboard: React.FC = () => {
               textTransform: 'capitalize'
             }}
           >
-            {filterType.replace('_', ' ')} ({filterType === 'all' ? foodItems.length : foodItems.filter(i => i.status === filterType).length})
+            {filterType === 'all' ? 'All' : getStatusLabel(filterType as any)} ({filterType === 'all' ? foodItems.length : foodItems.filter(i => i.status === filterType).length})
           </button>
         ))}
       </div>

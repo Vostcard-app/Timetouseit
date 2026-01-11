@@ -123,7 +123,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         mealName: importedRecipe.title,
         finishBy: '18:00', // Default, can be updated later
         suggestedIngredients: selectedIngredients.length > 0 ? selectedIngredients : importedRecipe.ingredients,
-        usesExpiringItems: [],
+        usesBestBySoonItems: [],
         confirmed: false,
         shoppingListItems: [],
         skipped: false,

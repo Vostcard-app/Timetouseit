@@ -28,6 +28,17 @@ import { getDateFieldsForCollection } from '../utils/firestoreDateUtils';
  */
 export const foodItemService = {
   /**
+   * Map Firestore expirationDate field to bestByDate for TypeScript types
+   */
+  mapFirestoreToFoodItem(item: any): FoodItem {
+    if (item.expirationDate && !item.bestByDate) {
+      item.bestByDate = item.expirationDate;
+      delete item.expirationDate;
+    }
+    return item as FoodItem;
+  },
+
+  /**
    * Get all food items for a user
    */
   async getFoodItems(userId: string): Promise<FoodItem[]> {
@@ -37,7 +48,9 @@ export const foodItemService = {
       const q = buildUserQueryWithOrder('foodItems', userId, 'expirationDate', 'asc');
       const querySnapshot = await getDocs(q);
       const dateFields = getDateFieldsForCollection('foodItems');
-      return transformSnapshot<FoodItem>(querySnapshot, dateFields);
+      const items = transformSnapshot<any>(querySnapshot, dateFields);
+      return items.map(item => foodItemService.mapFirestoreToFoodItem(item));
+      return items.map(item => foodItemService.mapFirestoreToFoodItem(item));
     } catch (error) {
       logServiceError('getFoodItems', 'foodItems', error, { userId });
       throw toServiceError(error, 'foodItems');
@@ -61,8 +74,9 @@ export const foodItemService = {
     const unsubscribe = onSnapshot(
       q,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const items = transformSnapshot<FoodItem>(snapshot, dateFields);
-        callback(items);
+        const items = transformSnapshot<any>(snapshot, dateFields);
+        const mappedItems = items.map(item => foodItemService.mapFirestoreToFoodItem(item));
+        callback(mappedItems);
       },
       (error) => {
         handleSubscriptionError(
@@ -75,8 +89,9 @@ export const foodItemService = {
             return getDocs(fallbackQ);
           },
           (snapshot) => {
-            const items = transformSnapshot<FoodItem>(snapshot, dateFields);
-            callback(items);
+            const items = transformSnapshot<any>(snapshot, dateFields);
+            const mappedItems = items.map(item => foodItemService.mapFirestoreToFoodItem(item));
+            callback(mappedItems);
           }
         );
         callback([]); // Return empty array so app doesn't break
@@ -89,9 +104,9 @@ export const foodItemService = {
   /**
    * Add a new food item
    */
-  async addFoodItem(userId: string, data: FoodItemData, status: 'fresh' | 'expiring_soon' | 'expired'): Promise<string> {
-    // Check if this is the first item with expiration/thaw date (activation event)
-    const hasDate = (data.isFrozen && data.thawDate) || (!data.isFrozen && data.expirationDate);
+  async addFoodItem(userId: string, data: FoodItemData, status: 'fresh' | 'bestBySoon' | 'pastBestBy'): Promise<string> {
+    // Check if this is the first item with best by/thaw date (activation event)
+    const hasDate = (data.isFrozen && data.thawDate) || (!data.isFrozen && data.bestByDate);
     let isActivation = false;
     let timeToActivation: number | null = null;
     
@@ -103,10 +118,10 @@ export const foodItemService = {
       );
       const existingSnapshot = await getDocs(existingItemsQuery);
       
-      // Check if any existing items have expiration or thaw dates
+      // Check if any existing items have best by or thaw dates
       const hasExistingItemsWithDates = existingSnapshot.docs.some(doc => {
         const itemData = doc.data();
-        return itemData.expirationDate || itemData.thawDate;
+        return itemData.expirationDate || itemData.bestByDate || itemData.thawDate;
       });
       
       if (!hasExistingItemsWithDates) {
@@ -130,12 +145,12 @@ export const foodItemService = {
       reminderSent: false
     };
     
-    // For frozen items: save thawDate, for non-frozen: save expirationDate
+    // For frozen items: save thawDate, for non-frozen: save bestByDate (as expirationDate in Firestore for backward compatibility)
     if (data.isFrozen && data.thawDate) {
       itemData.thawDate = data.thawDate; // Will be converted to Timestamp
-      // Don't include expirationDate for frozen items
-    } else if (data.expirationDate) {
-      itemData.expirationDate = data.expirationDate; // Will be converted to Timestamp
+      // Don't include bestByDate for frozen items
+    } else if (data.bestByDate) {
+      itemData.expirationDate = data.bestByDate; // Map to expirationDate in Firestore for backward compatibility
     }
     
     // Add optional fields
@@ -180,7 +195,7 @@ export const foodItemService = {
   /**
    * Update a food item
    */
-  async updateFoodItem(itemId: string, updates: Partial<FoodItemData & { status?: 'fresh' | 'expiring_soon' | 'expired'; reminderSent?: boolean }>): Promise<void> {
+  async updateFoodItem(itemId: string, updates: Partial<FoodItemData & { status?: 'fresh' | 'bestBySoon' | 'pastBestBy'; reminderSent?: boolean }>): Promise<void> {
     logServiceOperation('updateFoodItem', 'foodItems', { itemId });
     
     try {
@@ -190,7 +205,11 @@ export const foodItemService = {
       const updateData = cleanFirestoreData(updates as Record<string, unknown>);
       
       // Convert Date objects to Firestore Timestamps
-      if (updateData.expirationDate && updateData.expirationDate instanceof Date) {
+      // Map bestByDate to expirationDate in Firestore for backward compatibility
+      if (updateData.bestByDate && updateData.bestByDate instanceof Date) {
+        updateData.expirationDate = Timestamp.fromDate(updateData.bestByDate);
+        delete updateData.bestByDate;
+      } else if (updateData.expirationDate && updateData.expirationDate instanceof Date) {
         updateData.expirationDate = Timestamp.fromDate(updateData.expirationDate);
       }
       if (updateData.thawDate && updateData.thawDate instanceof Date) {

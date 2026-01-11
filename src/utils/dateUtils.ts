@@ -1,10 +1,10 @@
-export const calculateDaysUntilExpiration = (expirationDate: Date): number => {
+export const calculateDaysUntilBestBy = (bestByDate: Date): number => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const expDate = new Date(expirationDate);
-  expDate.setHours(0, 0, 0, 0);
+  const bestBy = new Date(bestByDate);
+  bestBy.setHours(0, 0, 0, 0);
   
-  const diffTime = expDate.getTime() - today.getTime();
+  const diffTime = bestBy.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   return diffDays;
@@ -23,29 +23,33 @@ export const formatDate = (date: Date | string): string => {
 export const formatRelativeDate = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return 'Invalid date';
-  const days = calculateDaysUntilExpiration(d);
+  const days = calculateDaysUntilBestBy(d);
   
   if (days < 0) {
-    return `Expired ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`;
+    return `Past best by ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`;
   } else if (days === 0) {
-    return 'Expires today';
+    return 'Best by today';
   } else if (days === 1) {
-    return 'Expires tomorrow';
+    return 'Best by tomorrow';
   } else {
-    return `Expires in ${days} days`;
+    return `Best by in ${days} days`;
   }
 };
 
-export const isExpired = (expirationDate: Date | string): boolean => {
-  const d = typeof expirationDate === 'string' ? new Date(expirationDate) : expirationDate;
+export const isPastBestBy = (bestByDate: Date | string): boolean => {
+  const d = typeof bestByDate === 'string' ? new Date(bestByDate) : bestByDate;
   if (isNaN(d.getTime())) return false;
-  return calculateDaysUntilExpiration(d) < 0;
+  return calculateDaysUntilBestBy(d) < 0;
 };
 
-export const isExpiringSoon = (expirationDate: Date | string, daysThreshold: number = 7): boolean => {
-  const d = typeof expirationDate === 'string' ? new Date(expirationDate) : expirationDate;
+export const isBestBySoon = (bestByDate: Date | string, daysThreshold: number = 7): boolean => {
+  const d = typeof bestByDate === 'string' ? new Date(bestByDate) : bestByDate;
   if (isNaN(d.getTime())) return false;
-  const days = calculateDaysUntilExpiration(d);
+  const days = calculateDaysUntilBestBy(d);
   return days >= 0 && days <= daysThreshold;
 };
 
+// Legacy aliases for backward compatibility during migration
+export const calculateDaysUntilExpiration = calculateDaysUntilBestBy;
+export const isExpired = isPastBestBy;
+export const isExpiringSoon = isBestBySoon;
