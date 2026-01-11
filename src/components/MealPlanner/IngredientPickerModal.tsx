@@ -11,6 +11,8 @@ import type { MealType } from '../../types';
 import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays } from 'date-fns';
 import { WebsiteSelectionModal } from './WebsiteSelectionModal';
+import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
+import { IngredientChecklist } from './IngredientChecklist';
 
 interface IngredientPickerModalProps {
   isOpen: boolean;
@@ -42,6 +44,64 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [showWebsiteSelection, setShowWebsiteSelection] = useState(false);
   const [recipeUrl, setRecipeUrl] = useState('');
+  const [pastedIngredients, setPastedIngredients] = useState('');
+  const [parsedIngredients, setParsedIngredients] = useState<string[]>([]);
+  const [selectedPastedIngredientIndices, setSelectedPastedIngredientIndices] = useState<Set<number>>(new Set());
+
+  // Parse pasted ingredients when text changes
+  useEffect(() => {
+    if (!pastedIngredients.trim()) {
+      setParsedIngredients([]);
+      setSelectedPastedIngredientIndices(new Set());
+      return;
+    }
+
+    // Split by newlines, commas, or semicolons, then clean up each ingredient
+    const lines = pastedIngredients
+      .split(/[\n,;]/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    setParsedIngredients(lines);
+    // Select all by default
+    setSelectedPastedIngredientIndices(new Set(lines.map((_, index) => index)));
+  }, [pastedIngredients]);
+
+  // Use ingredient availability hook for pasted ingredients
+  const {
+    ingredientStatuses: pastedIngredientStatuses,
+    loading: loadingPastedIngredients
+  } = useIngredientAvailability(
+    parsedIngredients,
+    { isOpen: isOpen && parsedIngredients.length > 0 }
+  );
+
+  // Set default selections for pasted ingredients (only missing items selected by default)
+  useEffect(() => {
+    if (parsedIngredients.length === 0 || pastedIngredientStatuses.length === 0) return;
+    
+    // Only set default selections on initial parse (when all are selected)
+    const allSelected = selectedPastedIngredientIndices.size === parsedIngredients.length;
+    if (!allSelected) return; // Respect user's manual selections
+    
+    const missingIndices = pastedIngredientStatuses
+      .filter(item => item.status === 'missing')
+      .map(item => item.index);
+    
+    if (missingIndices.length > 0) {
+      setSelectedPastedIngredientIndices(new Set(missingIndices));
+    }
+  }, [pastedIngredientStatuses.length, parsedIngredients.length]); // Only depend on lengths to avoid infinite loops
+
+  const togglePastedIngredient = (index: number) => {
+    const newSelected = new Set(selectedPastedIngredientIndices);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedPastedIngredientIndices(newSelected);
+  };
 
   // Load ingredients from all sources
   useEffect(() => {
@@ -142,6 +202,9 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       setSelectedIngredients(new Set());
       setShowWebsiteSelection(false);
       setRecipeUrl('');
+      setPastedIngredients('');
+      setParsedIngredients([]);
+      setSelectedPastedIngredientIndices(new Set());
     }
   }, [isOpen]);
 
@@ -183,18 +246,24 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       return;
     }
 
-    // Copy selected ingredients to clipboard (if any)
+    // Get selected pasted ingredients
+    const selectedPastedIngredientNames = Array.from(selectedPastedIngredientIndices)
+      .map(index => parsedIngredients[index])
+      .filter(Boolean);
+
+    // Combine selected ingredients from picker and pasted ingredients
     const selectedNames = Array.from(selectedIngredients)
       .map(id => {
         const ingredient = ingredients.find(ing => ing.id === id);
         return ingredient?.name || '';
       })
-      .filter(Boolean)
-      .join(', ');
+      .filter(Boolean);
+
+    const allSelectedIngredients = [...selectedNames, ...selectedPastedIngredientNames];
 
     // Copy to clipboard if there are ingredients
-    if (selectedNames) {
-      navigator.clipboard.writeText(selectedNames).catch(err => {
+    if (allSelectedIngredients.length > 0) {
+      navigator.clipboard.writeText(allSelectedIngredients.join(', ')).catch(err => {
         console.error('Failed to copy to clipboard:', err);
       });
     }
@@ -354,6 +423,48 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     }}
                   />
                 </div>
+
+                {/* Paste Ingredients Input */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="pastedIngredients" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+                    Paste Ingredients (optional)
+                  </label>
+                  <textarea
+                    id="pastedIngredients"
+                    value={pastedIngredients}
+                    onChange={(e) => setPastedIngredients(e.target.value)}
+                    placeholder="Paste ingredients here, one per line or separated by commas...&#10;Example:&#10;2 cups flour&#10;1 cup sugar&#10;3 eggs"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      color: '#1f2937',
+                      minHeight: '100px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+
+                {/* Parsed Ingredients Checklist */}
+                {parsedIngredients.length > 0 && (
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
+                      Parsed Ingredients ({selectedPastedIngredientIndices.size} of {parsedIngredients.length} selected)
+                    </h4>
+                    {loadingPastedIngredients ? (
+                      <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>Checking ingredient availability...</p>
+                    ) : (
+                      <IngredientChecklist
+                        ingredientStatuses={pastedIngredientStatuses}
+                        selectedIngredientIndices={selectedPastedIngredientIndices}
+                        onToggleIngredient={togglePastedIngredient}
+                      />
+                    )}
+                  </div>
+                )}
 
                 {loading ? (
                   <p style={{ textAlign: 'center', color: '#6b7280' }}>Loading ingredients...</p>
@@ -570,10 +681,13 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             setShowWebsiteSelection(false);
             onClose();
           }}
-          selectedIngredients={Array.from(selectedIngredients).map(id => {
-            const ingredient = ingredients.find(ing => ing.id === id);
-            return ingredient?.name || '';
-          }).filter(Boolean)}
+          selectedIngredients={[
+            ...Array.from(selectedIngredients).map(id => {
+              const ingredient = ingredients.find(ing => ing.id === id);
+              return ingredient?.name || '';
+            }).filter(Boolean),
+            ...Array.from(selectedPastedIngredientIndices).map(index => parsedIngredients[index]).filter(Boolean)
+          ]}
           selectedDate={selectedDate}
           selectedMealType={selectedMealType}
           recipeUrl={recipeUrl || undefined}
