@@ -447,7 +447,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
     }
 
     if (expirationLength < 1) {
-      setError('Expiration length must be at least 1 day.');
+      setError('Best by date length must be at least 1 day.');
       return;
     }
 
