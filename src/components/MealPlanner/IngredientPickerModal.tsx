@@ -41,6 +41,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWebsiteSelection, setShowWebsiteSelection] = useState(false);
+  const [recipeUrl, setRecipeUrl] = useState('');
 
   // Load ingredients from all sources
   useEffect(() => {
@@ -79,9 +80,9 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
         
         if (defaultList) {
           const shopListItems = await shoppingListService.getShoppingListItems(user.uid, defaultList.id);
-          // Only include non-crossed-off items
+          // Only include non-crossed-off items that aren't already claimed by other meals
           shopListItems
-            .filter(item => !item.crossedOff)
+            .filter(item => !item.crossedOff && !item.mealId)
             .forEach(item => {
               allIngredients.push({
                 id: `shopList-${item.id}`,
@@ -140,6 +141,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       setSelectedMealType(null);
       setSelectedIngredients(new Set());
       setShowWebsiteSelection(false);
+      setRecipeUrl('');
     }
   }, [isOpen]);
 
@@ -329,6 +331,28 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                   >
                     Back
                   </button>
+                </div>
+
+                {/* Recipe URL Input */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="recipeUrl" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+                    Recipe URL (optional)
+                  </label>
+                  <input
+                    id="recipeUrl"
+                    type="url"
+                    value={recipeUrl}
+                    onChange={(e) => setRecipeUrl(e.target.value)}
+                    placeholder="https://example.com/recipe"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      color: '#1f2937'
+                    }}
+                  />
                 </div>
 
                 {loading ? (
@@ -552,6 +576,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           }).filter(Boolean)}
           selectedDate={selectedDate}
           selectedMealType={selectedMealType}
+          recipeUrl={recipeUrl || undefined}
         />
       )}
     </>

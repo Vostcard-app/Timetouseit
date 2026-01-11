@@ -18,6 +18,7 @@ interface WebsiteSelectionModalProps {
   selectedIngredients: string[];
   selectedDate: Date;
   selectedMealType: MealType;
+  recipeUrl?: string;
 }
 
 export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
@@ -25,7 +26,8 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
   onClose,
   selectedIngredients,
   selectedDate,
-  selectedMealType
+  selectedMealType,
+  recipeUrl
 }) => {
   const navigate = useNavigate();
   const [favoriteSites, setFavoriteSites] = useState<RecipeSite[]>([]);
@@ -119,9 +121,17 @@ export const WebsiteSelectionModal: React.FC<WebsiteSelectionModalProps> = ({
         selectedDate={selectedDate}
         selectedMealType={selectedMealType}
         selectedIngredients={selectedIngredients}
+        initialRecipeUrl={recipeUrl}
       />
     );
   }
+
+  // If recipeUrl is provided, automatically show recipe import screen
+  useEffect(() => {
+    if (isOpen && recipeUrl && recipeUrl.trim() && !showRecipeImport && !showCustomMeal) {
+      setShowRecipeImport(true);
+    }
+  }, [isOpen, recipeUrl, showRecipeImport, showCustomMeal]);
 
   // If showing custom meal screen, render that instead
   if (showCustomMeal) {

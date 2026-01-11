@@ -20,6 +20,7 @@ interface RecipeImportScreenProps {
   selectedDate: Date;
   selectedMealType: MealType;
   selectedIngredients?: string[]; // Originally selected ingredients from ingredient picker
+  initialRecipeUrl?: string; // Pre-populated recipe URL from ingredient picker
 }
 
 export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
@@ -27,7 +28,8 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
   onClose,
   selectedDate,
   selectedMealType,
-  selectedIngredients = []
+  selectedIngredients = [],
+  initialRecipeUrl
 }) => {
   const [user] = useAuthState(auth);
   const [urlInput, setUrlInput] = useState('');
@@ -49,6 +51,32 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     importedRecipe?.ingredients || [],
     { isOpen }
   );
+
+  // Initialize URL input from prop and auto-import if provided
+  useEffect(() => {
+    if (isOpen && initialRecipeUrl && initialRecipeUrl.trim() && !importedRecipe) {
+      setUrlInput(initialRecipeUrl);
+      // Auto-import the recipe
+      const autoImport = async () => {
+        if (!user) return;
+        setImporting(true);
+        try {
+          const recipe = await recipeImportService.importRecipe(initialRecipeUrl.trim());
+          setImportedRecipe(recipe);
+          setSelectedIngredientIndices(new Set());
+          showToast('Recipe imported successfully', 'success');
+        } catch (error: any) {
+          console.error('Error auto-importing recipe:', error);
+          showToast(error.message || 'Failed to import recipe', 'error');
+        } finally {
+          setImporting(false);
+        }
+      };
+      autoImport();
+    } else if (isOpen && !initialRecipeUrl) {
+      setUrlInput('');
+    }
+  }, [isOpen, initialRecipeUrl, user, importedRecipe]);
 
   // Set default selections (only missing items selected by default)
   useEffect(() => {
