@@ -65,11 +65,11 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           return expDate >= now && expDate <= twoWeeksFromNow;
         });
 
-        expiringItems.forEach(item => {
+        bestBySoonItems.forEach(item => {
           allIngredients.push({
-            id: `expiring-${item.id}`,
+            id: `bestBySoon-${item.id}`,
             name: item.name,
-            source: 'expiring'
+            source: 'bestBySoon'
           });
         });
 
@@ -341,13 +341,13 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
 
                     <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '1.5rem' }}>
                       {/* Expiring Soon */}
-                      {groupedIngredients.expiring.length > 0 && (
+                      {groupedIngredients.bestBySoon.length > 0 && (
                         <div style={{ marginBottom: '1.5rem' }}>
                           <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                            {getSourceLabel('expiring')}
+                            {getSourceLabel('bestBySoon')}
                           </h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {groupedIngredients.expiring.map(ingredient => (
+                            {groupedIngredients.bestBySoon.map(ingredient => (
                               <label
                                 key={ingredient.id}
                                 style={{

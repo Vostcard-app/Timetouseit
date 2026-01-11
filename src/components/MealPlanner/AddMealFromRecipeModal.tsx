@@ -279,7 +279,7 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
                 <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600' }}>
                   Expiring Soon Items
                 </h3>
-                {expiringItems.length === 0 ? (
+                {bestBySoonItems.length === 0 ? (
                   <p style={{ color: '#6b7280', fontSize: '0.875rem', fontStyle: 'italic' }}>
                     No items expiring soon
                   </p>
@@ -291,8 +291,8 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
                     borderRadius: '6px', 
                     padding: '0.5rem' 
                   }}>
-                    {expiringItems.map(item => {
-                      const expDate = item.expirationDate || item.thawDate;
+                    {bestBySoonItems.map(item => {
+                      const expDate = item.bestByDate || item.thawDate;
                       const daysUntil = expDate ? Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
                       return (
                         <label
