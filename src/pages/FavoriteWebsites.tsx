@@ -402,7 +402,20 @@ const FavoriteWebsites: React.FC = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ flex: 1 }}>
                         <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem', fontWeight: '600' }}>
-                          {site.label}
+                          <a
+                            href={site.baseUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: '#2563eb',
+                              textDecoration: 'none',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                          >
+                            {site.label}
+                          </a>
                         </h3>
                         <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>
                           {site.baseUrl}
@@ -471,7 +484,20 @@ const FavoriteWebsites: React.FC = () => {
                 >
                   <div style={{ flex: 1 }}>
                     <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem', fontWeight: '600' }}>
-                      {site.label}
+                      <a
+                        href={site.baseUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: '#2563eb',
+                          textDecoration: 'none',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                      >
+                        {site.label}
+                      </a>
                     </h3>
                     <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>
                       {site.baseUrl}
