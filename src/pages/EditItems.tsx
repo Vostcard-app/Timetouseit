@@ -284,7 +284,7 @@ const EditItems: React.FC = () => {
                   <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                     {item.type === 'userItem' && item.expirationLength !== undefined && (
                       <>
-                    Expiration: {item.expirationLength} days
+                    Best By Date Length: {item.expirationLength} days
                         {item.userItem?.category && ` • Category: ${item.userItem.category}`}
                       </>
                     )}
@@ -294,7 +294,7 @@ const EditItems: React.FC = () => {
                         {(() => {
                           const matchingUserItem = userItems.find(ui => ui.name.toLowerCase() === item.name.toLowerCase());
                           if (matchingUserItem && matchingUserItem.expirationLength) {
-                            return ` • Expiration: ${matchingUserItem.expirationLength} days`;
+                            return ` • Best By Date Length: ${matchingUserItem.expirationLength} days`;
                           }
                           return '';
                         })()}
@@ -523,7 +523,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave }) 
             <>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-              Suggested Expiration (days)
+              Suggested Best By Date Length (days)
             </label>
             <input
               type="number"

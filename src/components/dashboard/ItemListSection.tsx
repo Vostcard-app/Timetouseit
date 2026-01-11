@@ -8,7 +8,7 @@ import SwipeableListItem from '../ui/SwipeableListItem';
 import type { FoodItem } from '../../types';
 import type { StorageTabType } from '../../hooks/useStorageTabs';
 
-type FilterType = 'all' | 'expiring_soon' | 'expired';
+type FilterType = 'all' | 'bestBySoon' | 'pastBestBy';
 
 interface ItemListSectionProps {
   items: FoodItem[];
@@ -33,11 +33,11 @@ export const ItemListSection: React.FC<ItemListSectionProps> = ({
         <p style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
           {filter === 'all' 
             ? `No ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} items yet.`
-            : `No ${filter.replace('_', ' ')} ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} items.`}
+            : `No ${filter === 'bestBySoon' ? 'best by soon' : filter === 'pastBestBy' ? 'past best by' : filter} ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} items.`}
         </p>
         <p style={{ marginBottom: '1.5rem' }}>
           {filter === 'all' 
-            ? `Add your first ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} item to start tracking expiration dates!`
+            ? `Add your first ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} item to start tracking best by dates!`
             : 'Try a different filter.'}
         </p>
       </div>

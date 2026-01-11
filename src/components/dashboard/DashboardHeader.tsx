@@ -7,14 +7,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Banner from '../layout/Banner';
 
-type FilterType = 'all' | 'expiring_soon' | 'expired';
+type FilterType = 'all' | 'bestBySoon' | 'pastBestBy';
 
 interface DashboardHeaderProps {
   filter: FilterType;
   onFilterChange: (filter: FilterType) => void;
   totalItems: number;
-  expiringSoonCount: number;
-  expiredCount: number;
+  expiringSoonCount: number; // Maps to bestBySoonCount
+  expiredCount: number; // Maps to pastBestByCount
   onMenuClick: () => void;
 }
 
@@ -30,8 +30,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
   const getFilterCount = (filterType: FilterType): number => {
     if (filterType === 'all') return totalItems;
-    if (filterType === 'expiring_soon') return expiringSoonCount;
-    if (filterType === 'expired') return expiredCount;
+    if (filterType === 'bestBySoon') return expiringSoonCount;
+    if (filterType === 'pastBestBy') return expiredCount;
     return 0;
   };
 
@@ -96,7 +96,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '5px', marginBottom: '5px', flexWrap: 'wrap', padding: '0 1rem' }}>
-        {(['all', 'expiring_soon', 'expired'] as FilterType[]).map((filterType) => (
+        {(['all', 'bestBySoon', 'pastBestBy'] as FilterType[]).map((filterType) => (
           <button
             key={filterType}
             onClick={() => onFilterChange(filterType)}
@@ -112,7 +112,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               textTransform: 'capitalize'
             }}
           >
-            {filterType.replace('_', ' ')} ({getFilterCount(filterType)})
+            {filterType === 'bestBySoon' ? 'Best By Soon' : filterType === 'pastBestBy' ? 'Past Best By' : 'All'} ({getFilterCount(filterType)})
           </button>
         ))}
       </div>
