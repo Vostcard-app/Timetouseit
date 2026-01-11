@@ -1,6 +1,7 @@
 /**
  * useExpirationDate Hook
- * Handles expiration date logic including FoodKeeper suggestions, AI helper, and dry goods shelf life
+ * Handles best by date logic including FoodKeeper suggestions, AI helper, and dry goods shelf life
+ * Note: Hook name kept for backward compatibility, but handles best by dates
  */
 
 import { useState, useEffect } from 'react';
@@ -18,8 +19,8 @@ interface UseExpirationDateProps {
   isDryCanned?: boolean;
   userItems: UserItem[];
   hasManuallyChangedDate: boolean;
-  initialItem?: { expirationDate?: Date } | null;
-  onExpirationDateChange: (date: Date | undefined) => void;
+  initialItem?: { expirationDate?: Date } | null; // expirationDate maps to bestByDate
+  onExpirationDateChange: (date: Date | undefined) => void; // date is best by date
 }
 
 export function useExpirationDate({
@@ -31,7 +32,7 @@ export function useExpirationDate({
   initialItem,
   onExpirationDateChange
 }: UseExpirationDateProps) {
-  const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null);
+  const [suggestedExpirationDate, setSuggestedExpirationDate] = useState<Date | null>(null); // Maps to bestByDate
   const [qualityMessage, setQualityMessage] = useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [hasCredits, setHasCredits] = useState(true);
@@ -65,7 +66,7 @@ export function useExpirationDate({
       let qualityMsg: string | null = null;
       
       if (userItem && !isFrozen) {
-        // Use user's custom expirationLength
+        // Use user's custom expirationLength (maps to best by date)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         suggestion = addDays(today, userItem.expirationLength);
@@ -101,7 +102,7 @@ export function useExpirationDate({
     }
   }, [itemName, isDryCanned, isFrozen, hasManuallyChangedDate, initialItem, userItems, onExpirationDateChange]);
 
-  // Handle AI Expiration Helper
+  // Handle AI Best By Date Helper
   const handleExpirationHelper = async () => {
     if (!itemName.trim()) {
       showToast('Please enter an item name first', 'warning');
@@ -109,7 +110,7 @@ export function useExpirationDate({
     }
 
     if (isFrozen) {
-      showToast('Expiration Helper is for non-frozen items only', 'warning');
+      showToast('Best By Date Helper is for non-frozen items only', 'warning');
       return;
     }
 
@@ -119,17 +120,17 @@ export function useExpirationDate({
       const result = await getExpirationSuggestion(itemName.trim(), storageType, false);
       
       if (result.success && result.expirationDate) {
-        onExpirationDateChange(result.expirationDate);
+        onExpirationDateChange(result.expirationDate); // Maps to bestByDate
         const creditsMsg = result.creditsRemaining !== undefined 
           ? `${result.creditsRemaining} credits remaining`
           : '';
-        showToast(creditsMsg || 'Expiration date updated', 'success');
+        showToast(creditsMsg || 'Best by date updated', 'success');
       } else {
-        showToast(result.error || 'Failed to get expiration suggestion', 'error');
+        showToast(result.error || 'Failed to get best by date suggestion', 'error');
       }
     } catch (error) {
       // Error already logged by expirationHelperService
-      showToast('Failed to get expiration suggestion', 'error');
+      showToast('Failed to get best by date suggestion', 'error');
     } finally {
       setIsLoadingAI(false);
     }

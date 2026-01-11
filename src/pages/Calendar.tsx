@@ -90,8 +90,8 @@ const Calendar: React.FC = () => {
 
     const allEvents: CalendarEvent[] = [];
     
-    // Sort items by how close they are to expiring/thawing (soonest first) for proper row ordering
-    // Items expiring/thawing today should be at the top, then tomorrow, etc.
+    // Sort items by how close they are to best by date/thawing (soonest first) for proper row ordering
+    // Items with best by date/thawing today should be at the top, then tomorrow, etc.
     const today = startOfDay(new Date());
     const sortedItems = [...foodItems].sort((a, b) => {
       // Use thawDate for frozen items, bestByDate for regular items
@@ -99,8 +99,8 @@ const Calendar: React.FC = () => {
       const dateB = b.isFrozen && b.thawDate ? new Date(b.thawDate) : (b.bestByDate ? new Date(b.bestByDate) : new Date());
       const daysUntilA = Math.ceil((dateA.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       const daysUntilB = Math.ceil((dateB.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      // Sort by days until expiration/thaw (negative = past, 0 = today, positive = future)
-      // Closest to expiring/thawing (smallest number) should be first
+      // Sort by days until best by date/thaw (negative = past, 0 = today, positive = future)
+      // Closest to best by date/thawing (smallest number) should be first
       return daysUntilA - daysUntilB;
     });
 
@@ -144,15 +144,15 @@ const Calendar: React.FC = () => {
           },
         } as CalendarEvent);
         
-        // Skip normal expiration date rendering for frozen items (thaw date replaces it)
+        // Skip normal best by date rendering for frozen items (thaw date replaces it)
         rowIndex++;
-        return; // Don't process frozen items with normal expiration logic
+          return; // Don't process frozen items with normal best by date logic
       }
 
       // For all items (fresh, bestBySoon, and pastBestBy), 
       // Create: 2 yellow days (best by soon), 2 blue days (freeze), 1 red day (past best by)
       // Create individual events for each day (works for both week and day/month views)
-      // Day -4: Yellow (expiring soon)
+      // Day -4: Yellow (best by soon)
         allEvents.push({
           title: item.name,
         start: setToMidnight(addDays(bestByDate, -4)),
@@ -164,7 +164,7 @@ const Calendar: React.FC = () => {
           },
         } as CalendarEvent);
       
-      // Day -3: Yellow (expiring soon)
+      // Day -3: Yellow (best by soon)
       allEvents.push({
             title: item.name,
         start: setToMidnight(addDays(bestByDate, -3)),
@@ -183,7 +183,7 @@ const Calendar: React.FC = () => {
         end: setToEndOfDay(addDays(bestByDate, -2)),
             resource: {
               itemId: item.id,
-          status: 'bestBySoon', // Use expiring_soon status but isFreezeDate will override color
+          status: 'bestBySoon', // Use bestBySoon status but isFreezeDate will override color
               rowIndex: rowIndex,
           isFreezeDate: true,
             },
@@ -196,7 +196,7 @@ const Calendar: React.FC = () => {
         end: setToEndOfDay(addDays(bestByDate, -1)),
               resource: {
                 itemId: item.id,
-          status: 'bestBySoon', // Use expiring_soon status but isFreezeDate will override color
+          status: 'bestBySoon', // Use bestBySoon status but isFreezeDate will override color
                 rowIndex: rowIndex,
           isFreezeDate: true,
               },
@@ -255,7 +255,7 @@ const Calendar: React.FC = () => {
       // Use thawDate for frozen items, bestByDate for regular items
       const dateField = item.isFrozen && item.thawDate ? item.thawDate : (item.bestByDate || new Date());
       const expDate = new Date(dateField);
-      // Frozen items don't have expiration status, so always return false
+      // Frozen items don't have best by date status, so always return false
       if (item.isFrozen) return false;
       return getFoodItemStatus(expDate, 7) === 'bestBySoon';
     });
@@ -309,8 +309,8 @@ const Calendar: React.FC = () => {
     const className = `calendar-event-${event.resource.status}`;
 
     // Position events vertically by row index in day/week views
-    // Start from top (0px) and stack downward based on expiration proximity
-    // Items closest to expiring (rowIndex 0) appear at the top
+    // Start from top (0px) and stack downward based on best by date proximity
+    // Items closest to best by date (rowIndex 0) appear at the top
     if (currentView === 'day' || currentView === 'week') {
       const rowIndex = event.resource.rowIndex ?? 0;
       const rowHeight = 44; // Height per row in pixels
@@ -481,7 +481,7 @@ const Calendar: React.FC = () => {
                 backgroundColor: '#eab308',
               }}
             />
-            <span style={{ fontSize: '0.875rem' }}>Expiring Soon</span>
+            <span style={{ fontSize: '0.875rem' }}>Best By Soon</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div
@@ -720,7 +720,7 @@ const Calendar: React.FC = () => {
                     // Determine color based on which day it is
                     let backgroundColor = '#eab308'; // Default yellow
                     if (isRedDay) {
-                      backgroundColor = '#ef4444'; // Red for expiration day
+                      backgroundColor = '#ef4444'; // Red for best by date day
                     } else if (isDayMinus2 || isDayMinus1) {
                       backgroundColor = '#3b82f6'; // Blue for days -2 and -1
                     } else if (isDayMinus4 || isDayMinus3) {
@@ -808,7 +808,7 @@ const Calendar: React.FC = () => {
     if (currentView === 'month') {
       // In month view, show item title with colored background
       const color = event.resource.isThawDate ? '#F4A261' : getStatusColor(event.resource.status);
-      // Only show title if it's not empty (red expiration day adjacent to yellow has empty title)
+      // Only show title if it's not empty (red best by date day adjacent to yellow has empty title)
       if (!event.title || event.title === '') {
         return null; // Don't render empty events in month view
       }
@@ -842,9 +842,9 @@ const Calendar: React.FC = () => {
     }
     
     // In week/day view, show full event with title
-    // For day view, also show expiration/thaw date
+    // For day view, also show best by date/thaw date
     if (currentView === 'day') {
-      // Find the original item to get expiration/thaw date
+      // Find the original item to get best by date/thaw date
       const item = foodItems.find((i) => i.id === event.resource.itemId);
       // Use thawDate for frozen items, bestByDate for regular items
       const dateField = item && item.isFrozen && item.thawDate ? item.thawDate : (item?.bestByDate || null);
@@ -874,9 +874,9 @@ const Calendar: React.FC = () => {
       );
     }
     
-    // Week view: show title only if not empty (red expiration day adjacent to yellow has empty title)
+    // Week view: show title only if not empty (red best by date day adjacent to yellow has empty title)
     if (event.resource.isAdjacentToYellow) {
-      return <div style={{ padding: '2px 4px' }}></div>; // Empty div for red expiration day
+      return <div style={{ padding: '2px 4px' }}></div>; // Empty div for red best by date day
     }
     // Show title for all other events (including yellow spanning events)
     // For thaw events, show name and (Thaw) on separate lines
@@ -1040,8 +1040,8 @@ const Calendar: React.FC = () => {
         visibility: visible !important;
         opacity: 1 !important;
       }
-      /* Ensure all events with expiring_soon status are visible */
-      .rbc-time-view .rbc-event.calendar-event-expiring_soon {
+      /* Ensure all events with bestBySoon status are visible */
+      .rbc-time-view .rbc-event.calendar-event-bestBySoon {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -1057,7 +1057,7 @@ const Calendar: React.FC = () => {
         opacity: 1 !important;
       }
       /* Ensure yellow events are not hidden by any parent containers */
-      .rbc-time-view .rbc-day-slot .rbc-events-container .rbc-event.calendar-event-expiring_soon {
+      .rbc-time-view .rbc-day-slot .rbc-events-container .rbc-event.calendar-event-bestBySoon {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;

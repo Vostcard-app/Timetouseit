@@ -1,6 +1,7 @@
 /**
- * Expiration Credit Service
- * Manages credits for AI expiration date helper feature
+ * Best By Date Credit Service
+ * Manages credits for AI best by date helper feature
+ * Note: Service name and database fields kept as "expiration" for backward compatibility
  */
 
 import { getExpirationCredits, updateExpirationCredits, initializeExpirationCredits } from '../storage/db';
@@ -8,7 +9,7 @@ import { logServiceError } from './baseService';
 import type { ExpirationCredits, UseCreditResult } from '../types/credits';
 
 /**
- * Get current user's expiration credits from IndexedDB
+ * Get current user's best by date helper credits from IndexedDB
  */
 export async function getCredits(): Promise<ExpirationCredits> {
   try {
@@ -39,7 +40,7 @@ export async function hasAvailableCredits(): Promise<boolean> {
 }
 
 /**
- * Use an expiration credit (deducts free first, then paid)
+ * Use a best by date helper credit (deducts free first, then paid)
  * Returns whether a free credit was used and remaining credits
  */
 export async function useCredit(): Promise<UseCreditResult> {
@@ -53,7 +54,7 @@ export async function useCredit(): Promise<UseCreditResult> {
         success: false,
         usedFree: false,
         remaining: credits,
-        error: 'No expiration helper credits available. Please purchase credits to continue.'
+        error: 'No best by date helper credits available. Please purchase credits to continue.'
       };
     }
 
@@ -92,7 +93,7 @@ export async function useCredit(): Promise<UseCreditResult> {
 }
 
 /**
- * Add paid expiration credits (called after successful payment)
+ * Add paid best by date helper credits (called after successful payment)
  */
 export async function addPaidCredits(amount: number): Promise<void> {
   try {
@@ -107,7 +108,7 @@ export async function addPaidCredits(amount: number): Promise<void> {
 }
 
 /**
- * Initialize expiration credits for new user
+ * Initialize best by date helper credits for new user
  */
 export async function initializeCredits(): Promise<void> {
   try {

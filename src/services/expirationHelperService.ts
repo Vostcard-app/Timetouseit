@@ -1,6 +1,6 @@
 /**
- * Expiration Helper Service
- * Handles AI-powered expiration date suggestions
+ * Best By Date Helper Service
+ * Handles AI-powered best by date suggestions
  */
 
 import { suggestExpirationDate } from './openaiService';
@@ -10,14 +10,14 @@ import type { UseCreditResult } from '../types/credits';
 
 export interface ExpirationSuggestionResult {
   success: boolean;
-  expirationDate?: Date;
+  expirationDate?: Date; // Keep for backward compatibility, maps to bestByDate
   reasoning?: string;
   creditsRemaining?: number;
   error?: string;
 }
 
 /**
- * Get AI-suggested expiration date for an item
+ * Get AI-suggested best by date for an item
  * This will use a credit and call the AI service
  */
 export async function getExpirationSuggestion(
@@ -31,7 +31,7 @@ export async function getExpirationSuggestion(
     if (!hasCredits) {
       return {
         success: false,
-        error: 'No expiration helper credits available. Please purchase credits to continue.'
+        error: 'No best by date helper credits available. Please purchase credits to continue.'
       };
     }
 
@@ -47,7 +47,7 @@ export async function getExpirationSuggestion(
     // Call AI service
     const aiResult = await suggestExpirationDate(itemName, storageType, isLeftover);
     
-    // Parse the expiration date
+    // Parse the best by date (AI service returns expirationDate which maps to bestByDate)
     const expirationDate = new Date(aiResult.expirationDate);
     if (isNaN(expirationDate.getTime())) {
       throw new Error('Invalid date returned from AI');
@@ -55,7 +55,7 @@ export async function getExpirationSuggestion(
 
     return {
       success: true,
-      expirationDate,
+      expirationDate, // Maps to bestByDate in the calling code
       reasoning: aiResult.reasoning,
       creditsRemaining: creditResult.remaining.freeCreditsRemaining + creditResult.remaining.paidCredits
     };
@@ -63,7 +63,7 @@ export async function getExpirationSuggestion(
     logServiceError('getExpirationSuggestion', 'expirationHelper', error, { itemName, storageType });
     return {
       success: false,
-      error: error?.message || 'Failed to get expiration suggestion. Please try again.'
+      error: error?.message || 'Failed to get best by date suggestion. Please try again.'
     };
   }
 }
