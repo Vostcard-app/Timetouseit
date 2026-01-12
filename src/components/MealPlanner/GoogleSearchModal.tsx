@@ -1,6 +1,6 @@
 /**
  * Google Search Modal
- * Embeds Google search with selected ingredients and provides copy URL functionality
+ * Shows Google search URL with selected ingredients and provides copy/open functionality
  */
 
 import React, { useMemo } from 'react';
@@ -34,6 +34,10 @@ export const GoogleSearchModal: React.FC<GoogleSearchModalProps> = ({
     }
   };
 
+  const handleOpenInGoogle = () => {
+    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -61,10 +65,8 @@ export const GoogleSearchModal: React.FC<GoogleSearchModalProps> = ({
         style={{
           backgroundColor: '#ffffff',
           borderRadius: '8px',
-          maxWidth: '900px',
+          maxWidth: '600px',
           width: '100%',
-          maxHeight: '90vh',
-          overflow: 'hidden',
           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
           display: 'flex',
           flexDirection: 'column'
@@ -82,16 +84,59 @@ export const GoogleSearchModal: React.FC<GoogleSearchModalProps> = ({
           <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
             Google Recipe Search
           </h2>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              color: '#6b7280',
+              padding: '0.25rem 0.5rem'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Search Info */}
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
+              Searching for:
+            </p>
+            <p style={{ margin: 0, fontSize: '1rem', color: '#1f2937', fontWeight: '600' }}>
+              {ingredients.join(', ')} recipe
+            </p>
+          </div>
+
+          {/* Search URL Display */}
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
+              Search URL:
+            </p>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '0.875rem', 
+              color: '#6b7280',
+              wordBreak: 'break-all',
+              fontFamily: 'monospace'
+            }}>
+              {searchUrl}
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
             <button
               onClick={handleCopyUrl}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#002B4D',
-                color: 'white',
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#f3f4f6',
+                color: '#1f2937',
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '0.875rem',
+                fontSize: '1rem',
                 fontWeight: '500',
                 cursor: 'pointer'
               }}
@@ -99,50 +144,21 @@ export const GoogleSearchModal: React.FC<GoogleSearchModalProps> = ({
               Copy URL
             </button>
             <button
-              onClick={onClose}
+              onClick={handleOpenInGoogle}
               style={{
-                background: 'none',
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
                 border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: '#6b7280',
-                padding: '0.25rem 0.5rem'
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '500',
+                cursor: 'pointer'
               }}
             >
-              ×
+              Open in Google
             </button>
           </div>
-        </div>
-
-        {/* Search Info */}
-        <div style={{ padding: '1rem 1.5rem', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151' }}>
-            Searching for: <strong>{ingredients.join(', ')}</strong>
-          </p>
-        </div>
-
-        {/* Google Search iframe */}
-        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-          {searchUrl ? (
-            <iframe
-              src={searchUrl}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                minHeight: '600px'
-              }}
-              title="Google Recipe Search"
-            />
-          ) : (
-            <div style={{ 
-              padding: '2rem', 
-              textAlign: 'center', 
-              color: '#6b7280' 
-            }}>
-              No ingredients selected for search
-            </div>
-          )}
         </div>
       </div>
     </div>
