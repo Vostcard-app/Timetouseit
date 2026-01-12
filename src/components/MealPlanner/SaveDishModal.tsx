@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import type { MealType } from '../../types';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
+import { parseIngredientQuantity } from '../../utils/ingredientQuantityParser';
 import { showToast } from '../Toast';
 
 interface SaveDishModalProps {
@@ -319,6 +320,8 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {ingredientStatuses.map((item) => {
                     const ingredient = allIngredients[item.index];
+                    const parsed = parseIngredientQuantity(ingredient);
+                    const displayName = parsed.itemName; // Use parsed ingredient name without quantity/unit
                     const isAvailable = item.status === 'available' || item.status === 'partial';
                     const isMissing = item.status === 'missing';
                     const isChecked = selectedForShoppingList.has(item.index) || selectedToReserve.has(item.index);
@@ -369,7 +372,7 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                           fontWeight: '500', 
                           color: '#1f2937' 
                         }}>
-                          {ingredient}
+                          {displayName}
                         </span>
                         
                         {/* Status button(s) on the right */}
