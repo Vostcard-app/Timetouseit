@@ -51,7 +51,18 @@ const PrintMealList: React.FC = () => {
       try {
         setLoading(true);
         const allMeals = await mealPlanningService.loadAllPlannedMealsForMonth(user.uid, selectedDate);
-        setMeals(allMeals);
+        
+        // Normalize meal dates to start of day for consistent comparison
+        const normalizedMeals = allMeals.map(meal => ({
+          ...meal,
+          date: startOfDay(meal.date)
+        }));
+        
+        console.log('Loaded meals:', normalizedMeals.length);
+        console.log('Selected date:', selectedDate);
+        console.log('Meal dates:', normalizedMeals.map(m => ({ date: m.date, mealType: m.mealType, dishes: m.dishes?.length || 0 })));
+        
+        setMeals(normalizedMeals);
       } catch (error) {
         console.error('Error loading meals:', error);
       } finally {
@@ -65,15 +76,19 @@ const PrintMealList: React.FC = () => {
   // Filter meals based on view mode
   const filteredMeals = useMemo(() => {
     if (viewMode === 'day') {
-      return meals.filter(meal => isSameDay(meal.date, selectedDate));
+      const filtered = meals.filter(meal => isSameDay(meal.date, selectedDate));
+      console.log('Day view - filtered meals:', filtered.length, 'for date:', selectedDate);
+      return filtered;
     } else {
       // Week view: get week starting from selected date
-      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
-      const weekEnd = addDays(weekStart, 6);
-      return meals.filter(meal => {
-        const mealDate = meal.date;
+      const weekStart = startOfDay(startOfWeek(selectedDate, { weekStartsOn: 0 }));
+      const weekEnd = startOfDay(addDays(weekStart, 6));
+      const filtered = meals.filter(meal => {
+        const mealDate = startOfDay(meal.date);
         return mealDate >= weekStart && mealDate <= weekEnd;
       });
+      console.log('Week view - filtered meals:', filtered.length, 'for week:', weekStart, 'to', weekEnd);
+      return filtered;
     }
   }, [meals, selectedDate, viewMode]);
 

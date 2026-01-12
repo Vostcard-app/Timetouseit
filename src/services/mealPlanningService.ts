@@ -38,7 +38,7 @@ import { generateMealSuggestions, replanMeals } from './openaiService';
 import { mealProfileService } from './mealProfileService';
 import { leftoverMealService } from './leftoverMealService';
 import { foodItemService } from './foodItemService';
-import { addDays, startOfWeek, format, isSameDay } from 'date-fns';
+import { addDays, startOfWeek, format, isSameDay, startOfDay } from 'date-fns';
 
 /**
  * Meal Planning Service
@@ -435,7 +435,7 @@ export const mealPlanningService = {
         weekStartDate: data.weekStartDate.toDate(),
         meals: data.meals.map((meal: any) => ({
           ...meal,
-          date: meal.date.toDate()
+          date: startOfDay(meal.date.toDate()) // Normalize to start of day for consistent comparison
         })),
         createdAt: data.createdAt.toDate(),
         confirmedAt: data.confirmedAt?.toDate()
@@ -478,7 +478,7 @@ export const mealPlanningService = {
           weekStartDate: data.weekStartDate.toDate(),
           meals: data.meals.map((meal: any) => ({
             ...meal,
-            date: meal.date.toDate()
+            date: startOfDay(meal.date.toDate()) // Normalize to start of day for consistent comparison
           })),
           createdAt: data.createdAt.toDate(),
           confirmedAt: data.confirmedAt?.toDate()
