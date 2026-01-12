@@ -16,6 +16,7 @@ import { MealTypeSelectionModal } from '../components/MealPlanner/MealTypeSelect
 import { DayMealsModal } from '../components/MealPlanner/DayMealsModal';
 import { DishListModal } from '../components/MealPlanner/DishListModal';
 import { addDays, startOfWeek, format, isSameDay, startOfDay } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const MEAL_TYPE_ABBREVIATIONS: Record<MealType, string> = {
@@ -26,6 +27,7 @@ const MEAL_TYPE_ABBREVIATIONS: Record<MealType, string> = {
 
 const PlannedMealCalendar: React.FC = () => {
   const [user] = useAuthState(auth);
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
@@ -238,9 +240,26 @@ const PlannedMealCalendar: React.FC = () => {
           >
             ← Previous
           </button>
-          <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-            {format(currentDate, 'MMMM yyyy')}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+              {format(currentDate, 'MMMM yyyy')}
+            </h3>
+            <button
+              onClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
+            >
+              List View
+            </button>
+          </div>
           <button
             onClick={() => navigateMonth('next')}
             style={{

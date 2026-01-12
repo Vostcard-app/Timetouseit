@@ -29,6 +29,7 @@ const Admin = lazy(() => import('./pages/Admin'));
 const UserGuide = lazy(() => import('./pages/UserGuide'));
 const PlannedMealCalendar = lazy(() => import('./pages/PlannedMealCalendar'));
 const FavoriteWebsites = lazy(() => import('./pages/FavoriteWebsites'));
+const PrintMealList = lazy(() => import('./pages/PrintMealList'));
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -135,6 +136,7 @@ function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/planned-meal-calendar" element={<PlannedMealCalendar />} />
                     <Route path="/favorite-websites" element={<FavoriteWebsites />} />
+                    <Route path="/print-meal-list" element={<PrintMealList />} />
                     <Route path="*" element={<Navigate to="/shop" replace />} />
                   </Routes>
                 </Suspense>

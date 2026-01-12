@@ -84,7 +84,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     { isOpen: isOpen && parsedIngredients.length > 0 }
   );
 
-  // Set default selections for pasted ingredients (only missing items selected by default)
+  // Set default selections for pasted ingredients (unavailable items selected by default)
   useEffect(() => {
     if (parsedIngredients.length === 0 || pastedIngredientStatuses.length === 0) return;
     
@@ -92,12 +92,12 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     const allSelected = selectedPastedIngredientIndices.size === parsedIngredients.length;
     if (!allSelected) return; // Respect user's manual selections
     
-    const missingIndices = pastedIngredientStatuses
-      .filter(item => item.status === 'missing')
+    const unavailableIndices = pastedIngredientStatuses
+      .filter(item => item.status === 'missing' || item.status === 'partial')
       .map(item => item.index);
     
-    if (missingIndices.length > 0) {
-      setSelectedPastedIngredientIndices(new Set(missingIndices));
+    if (unavailableIndices.length > 0) {
+      setSelectedPastedIngredientIndices(new Set(unavailableIndices));
     }
   }, [pastedIngredientStatuses.length, parsedIngredients.length]); // Only depend on lengths to avoid infinite loops
 
@@ -253,17 +253,17 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   // Selected indices for combined ingredients list
   const [selectedCombinedIndices, setSelectedCombinedIndices] = useState<Set<number>>(new Set());
 
-  // Set default selections for combined ingredients (only missing items selected by default)
+  // Set default selections for combined ingredients (unavailable items selected by default)
   useEffect(() => {
     if (combinedIngredients.length === 0 || combinedIngredientStatuses.length === 0) return;
     if (selectedCombinedIndices.size > 0) return; // Respect user's manual selections
     
-    const missingIndices = combinedIngredientStatuses
-      .filter(item => item.status === 'missing')
+    const unavailableIndices = combinedIngredientStatuses
+      .filter(item => item.status === 'missing' || item.status === 'partial')
       .map(item => item.index);
     
-    if (missingIndices.length > 0) {
-      setSelectedCombinedIndices(new Set(missingIndices));
+    if (unavailableIndices.length > 0) {
+      setSelectedCombinedIndices(new Set(unavailableIndices));
     }
   }, [combinedIngredientStatuses.length, combinedIngredients.length]);
 
@@ -674,9 +674,27 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
               /* Tabbed Ingredient Selection */
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>
-                    {MEAL_TYPES.find(m => m.value === selectedMealType)?.label}
-                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                    <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>
+                      {MEAL_TYPES.find(m => m.value === selectedMealType)?.label}
+                    </h3>
+                    <button
+                      onClick={handleSaveMeal}
+                      disabled={saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        backgroundColor: saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0 ? '#9ca3af' : '#002B4D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        fontWeight: '500',
+                        cursor: saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {saving ? 'Saving...' : `Create Dish${selectedCombinedIndices.size > 0 ? ` & Add ${selectedCombinedIndices.size} to List` : ''}`}
+                    </button>
+                  </div>
                   <button
                     onClick={() => setSelectedMealType(null)}
                     style={{
@@ -1099,7 +1117,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                   </div>
                 )}
 
-                {/* Create Button */}
+                {/* Cancel Button */}
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                   <button
                     onClick={onClose}
@@ -1117,22 +1135,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     }}
                   >
                     Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveMeal}
-                    disabled={saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      backgroundColor: saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0 ? '#9ca3af' : '#002B4D',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '1rem',
-                      fontWeight: '500',
-                      cursor: saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0 ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {saving ? 'Saving...' : `Create Dish${selectedCombinedIndices.size > 0 ? ` & Add ${selectedCombinedIndices.size} to List` : ''}`}
                   </button>
                 </div>
               </div>
