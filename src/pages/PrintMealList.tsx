@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase/firebaseConfig';
 import { mealPlanningService } from '../services';
 import type { PlannedMeal, MealType } from '../types';
@@ -24,6 +24,7 @@ const MEAL_TYPE_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner'];
 const PrintMealList: React.FC = () => {
   const [user] = useAuthState(auth);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -272,9 +273,26 @@ const PrintMealList: React.FC = () => {
         <div className="printable-content">
           {/* Header */}
           <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-            <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
-              Meal List
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+              <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
+                Meal List
+              </h1>
+              <button
+                onClick={() => navigate('/planned-meal-calendar')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#002B4D',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Calendar
+              </button>
+            </div>
             {viewMode === 'day' ? (
               <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.25rem', color: '#6b7280' }}>
                 {format(selectedDate, 'EEEE, MMMM d, yyyy')}

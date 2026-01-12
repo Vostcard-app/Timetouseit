@@ -110,7 +110,12 @@ const PlannedMealCalendar: React.FC = () => {
     const meals: PlannedMeal[] = [];
     mealPlans.forEach(plan => {
       plan.meals.forEach(meal => {
-        meals.push(meal);
+        // Normalize meal date and ensure dishes array exists
+        meals.push({
+          ...meal,
+          date: startOfDay(meal.date),
+          dishes: meal.dishes || []
+        });
       });
     });
     return meals;
@@ -125,7 +130,18 @@ const PlannedMealCalendar: React.FC = () => {
   // Get meal for a specific day and meal type
   const getMealForDayAndType = (date: Date, mealType: MealType): PlannedMeal | null => {
     const normalizedDate = startOfDay(date);
-    return allPlannedMeals.find(meal => isSameDay(meal.date, normalizedDate) && meal.mealType === mealType) || null;
+    const meal = allPlannedMeals.find(meal => isSameDay(meal.date, normalizedDate) && meal.mealType === mealType);
+    
+    if (!meal) {
+      console.log('Meal not found for:', { date: normalizedDate, mealType, allMeals: allPlannedMeals.map(m => ({ date: m.date, mealType: m.mealType, dishes: m.dishes?.length || 0 })) });
+      return null;
+    }
+    
+    // Ensure dishes array exists
+    return {
+      ...meal,
+      dishes: meal.dishes || []
+    };
   };
 
   // Handle meal indicator click (specific meal type)
