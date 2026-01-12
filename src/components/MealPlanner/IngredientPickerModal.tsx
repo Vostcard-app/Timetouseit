@@ -1025,10 +1025,51 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
 
                   {activeTab === 'recipeUrl' && (
                     <div>
-                      {/* Instruction text */}
-                      <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px' }}>
-                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e40af' }}>
-                          When you find a recipe you like copy the URL below
+                      {/* Recipe URL Paste Field */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <label htmlFor="recipeUrl" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+                          Paste Recipe URL
+                        </label>
+                        <input
+                          id="recipeUrl"
+                          type="url"
+                          value={recipeUrl}
+                          onChange={(e) => setRecipeUrl(e.target.value)}
+                          placeholder="https://example.com/recipe"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            fontSize: '1rem',
+                            color: '#1f2937'
+                          }}
+                        />
+                        <button
+                          onClick={handleGetIngredients}
+                          disabled={!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())}
+                          style={{
+                            marginTop: '0.75rem',
+                            width: '100%',
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? '#9ca3af' : '#002B4D',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '1rem',
+                            fontWeight: '500',
+                            cursor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {importingRecipe ? 'Importing...' : 'Get Ingredients'}
+                        </button>
+                        {importingRecipe && (
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic', textAlign: 'center' }}>
+                            Importing recipe...
+                          </p>
+                        )}
+                        <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                          Paste a recipe URL and click "Get Ingredients" to import the recipe.
                         </p>
                       </div>
 
@@ -1183,53 +1224,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                         </button>
                       </div>
 
-                      {/* Recipe URL Paste Field */}
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label htmlFor="recipeUrl" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                          Paste Recipe URL
-                        </label>
-                        <input
-                          id="recipeUrl"
-                          type="url"
-                          value={recipeUrl}
-                          onChange={(e) => setRecipeUrl(e.target.value)}
-                          placeholder="https://example.com/recipe"
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            color: '#1f2937'
-                          }}
-                        />
-                        <button
-                          onClick={handleGetIngredients}
-                          disabled={!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())}
-                          style={{
-                            marginTop: '0.75rem',
-                            width: '100%',
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? '#9ca3af' : '#002B4D',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            fontWeight: '500',
-                            cursor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          {importingRecipe ? 'Importing...' : 'Get Ingredients'}
-                        </button>
-                        {importingRecipe && (
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic', textAlign: 'center' }}>
-                            Importing recipe...
-                          </p>
-                        )}
-                        <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                          Paste a recipe URL and click "Get Ingredients" to import the recipe.
-                        </p>
-                      </div>
                     </div>
                   )}
 
