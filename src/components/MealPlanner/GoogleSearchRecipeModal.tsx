@@ -12,7 +12,7 @@ interface GoogleSearchRecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
   ingredients: string[];
-  onRecipeImported: (recipe: RecipeImportResult, dishName: string) => void;
+  onRecipeImported: (recipe: RecipeImportResult) => void;
 }
 
 export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = ({
@@ -112,7 +112,7 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
 
     setSaving(true);
     try {
-      onRecipeImported(importedRecipe, dishName.trim());
+      onRecipeImported(importedRecipe);
       showToast('Recipe added to dish ingredients!', 'success');
       onClose();
     } catch (error) {

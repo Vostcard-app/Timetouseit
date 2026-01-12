@@ -4,9 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../../firebase/firebaseConfig';
-import type { MealType, FoodItem, ShoppingListItem } from '../../types';
+import type { MealType } from '../../types';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { showToast } from '../Toast';
 
@@ -33,12 +31,11 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
   onClose,
   onSave,
   ingredients,
-  selectedDate,
-  mealType,
-  recipeUrl,
+  selectedDate: _selectedDate,
+  mealType: _mealType,
+  recipeUrl: _recipeUrl,
   importedRecipeTitle
 }) => {
-  const [user] = useAuthState(auth);
   const [dishName, setDishName] = useState('');
   const [selectedForShoppingList, setSelectedForShoppingList] = useState<Set<number>>(new Set());
   const [selectedToReserve, setSelectedToReserve] = useState<Set<number>>(new Set());

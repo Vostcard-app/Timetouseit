@@ -297,7 +297,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   };
 
   // Handle recipe imported from Google search modal
-  const handleRecipeImported = (recipe: RecipeImportResult, importedDishName: string) => {
+  const handleRecipeImported = (recipe: RecipeImportResult) => {
     // Add imported ingredients to parsed ingredients and auto-select them
     if (recipe.ingredients && recipe.ingredients.length > 0) {
       setParsedIngredients(prev => {
