@@ -21,7 +21,6 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
   ingredients,
   onRecipeImported
 }) => {
-  const [copiedUrl, setCopiedUrl] = useState('');
   const [pastedUrl, setPastedUrl] = useState('');
   const [importingRecipe, setImportingRecipe] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
@@ -38,7 +37,6 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setCopiedUrl('');
       setPastedUrl('');
       setImportedRecipe(null);
       setDishName('');
@@ -53,21 +51,6 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
       setDishName(importedRecipe.title);
     }
   }, [importedRecipe, dishName]);
-
-  const handleCopyUrl = async () => {
-    if (!copiedUrl.trim()) {
-      showToast('Please enter a URL to copy', 'warning');
-      return;
-    }
-    
-    try {
-      await navigator.clipboard.writeText(copiedUrl);
-      showToast('URL copied to clipboard!', 'success');
-    } catch (error) {
-      console.error('Failed to copy URL:', error);
-      showToast('Failed to copy URL. Please try again.', 'error');
-    }
-  };
 
   const handlePasteUrl = async () => {
     if (!pastedUrl.trim()) {
@@ -245,45 +228,6 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
               title="Google Recipe Search"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
             />
-          </div>
-
-          {/* Copy URL Section */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-              Copy Recipe URL from Google Results:
-            </label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                value={copiedUrl}
-                onChange={(e) => setCopiedUrl(e.target.value)}
-                placeholder="Paste recipe URL here after copying from Google results..."
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '1rem',
-                  color: '#1f2937'
-                }}
-              />
-              <button
-                onClick={handleCopyUrl}
-                disabled={!copiedUrl.trim()}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: copiedUrl.trim() ? '#002B4D' : '#9ca3af',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: copiedUrl.trim() ? 'pointer' : 'not-allowed'
-                }}
-              >
-                Copy
-              </button>
-            </div>
           </div>
 
           {/* Paste URL and Import Section */}

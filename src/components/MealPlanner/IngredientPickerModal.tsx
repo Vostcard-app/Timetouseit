@@ -14,7 +14,6 @@ import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays, startOfWeek, isSameDay } from 'date-fns';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
-import { GoogleSearchModal } from './GoogleSearchModal';
 import { GoogleSearchRecipeModal } from './GoogleSearchRecipeModal';
 import { SaveDishModal } from './SaveDishModal';
 import { showToast } from '../Toast';
@@ -62,7 +61,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [selectedFavoriteSite, setSelectedFavoriteSite] = useState<RecipeSite | null>(null);
   const [selectedSearchIngredients, setSelectedSearchIngredients] = useState<Set<string>>(new Set());
-  const [showGoogleSearchModal, setShowGoogleSearchModal] = useState(false);
   const [showGoogleSearchRecipeModal, setShowGoogleSearchRecipeModal] = useState(false);
   const [showSaveDishModal, setShowSaveDishModal] = useState(false);
 
@@ -293,7 +291,11 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       showToast('Please select no more than 3 ingredients', 'warning');
       return;
     }
-    setShowGoogleSearchModal(true);
+    // Build Google search URL and open in new tab
+    const ingredients = Array.from(selectedSearchIngredients);
+    const query = `${ingredients.join(' ')} recipe`;
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    window.open(searchUrl, '_blank');
   };
 
   // Handle recipe imported from Google search modal
@@ -478,7 +480,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       setImportingRecipe(false);
       setSelectedFavoriteSite(null);
       setSelectedSearchIngredients(new Set());
-      setShowGoogleSearchModal(false);
       setShowGoogleSearchRecipeModal(false);
       setShowSaveDishModal(false);
     }
@@ -1041,6 +1042,13 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
 
                   {activeTab === 'recipeUrl' && (
                     <div>
+                      {/* Instruction text */}
+                      <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e40af' }}>
+                          When you find a recipe you like copy the URL below
+                        </p>
+                      </div>
+
                       {/* Favorite Websites Dropdown */}
                       <div style={{ marginBottom: '1.5rem' }}>
                         <label htmlFor="favoriteWebsite" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
@@ -1305,13 +1313,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Google Search Modal */}
-      <GoogleSearchModal
-        isOpen={showGoogleSearchModal}
-        onClose={() => setShowGoogleSearchModal(false)}
-        ingredients={Array.from(selectedSearchIngredients)}
-      />
 
       {/* Google Search Recipe Modal */}
       <GoogleSearchRecipeModal
