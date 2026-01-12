@@ -73,29 +73,39 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
     }
   }, [isOpen, importedRecipeTitle]);
 
-  // Set default selections for shopping list (missing items)
+  // Set default selections for shopping list (missing items) - checked by default
   useEffect(() => {
-    if (ingredientStatuses.length === 0 || selectedForShoppingList.size > 0) return;
+    if (ingredientStatuses.length === 0) return;
     
     const missingIndices = ingredientStatuses
       .filter(item => item.status === 'missing')
       .map(item => item.index);
     
+    // Always set missing items to be checked (for shopping list)
     if (missingIndices.length > 0) {
-      setSelectedForShoppingList(new Set(missingIndices));
+      setSelectedForShoppingList(prev => {
+        const newSet = new Set(prev);
+        missingIndices.forEach(idx => newSet.add(idx));
+        return newSet;
+      });
     }
   }, [ingredientStatuses.length]);
 
-  // Set default selections for reservation (available items)
+  // Set default selections for reservation (available items) - checked by default
   useEffect(() => {
-    if (ingredientStatuses.length === 0 || selectedToReserve.size > 0) return;
+    if (ingredientStatuses.length === 0) return;
     
     const availableIndices = ingredientStatuses
       .filter(item => item.status === 'available' || item.status === 'partial')
       .map(item => item.index);
     
+    // Always set available items to be checked (for reservation)
     if (availableIndices.length > 0) {
-      setSelectedToReserve(new Set(availableIndices));
+      setSelectedToReserve(prev => {
+        const newSet = new Set(prev);
+        availableIndices.forEach(idx => newSet.add(idx));
+        return newSet;
+      });
     }
   }, [ingredientStatuses.length]);
 
@@ -263,64 +273,112 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                     const ingredient = allIngredients[item.index];
                     const isAvailable = item.status === 'available' || item.status === 'partial';
                     const isMissing = item.status === 'missing';
+                    const isChecked = selectedForShoppingList.has(item.index) || selectedToReserve.has(item.index);
+                    
+                    // Get quantity info for available items
+                    const quantityText = isAvailable && item.availableQuantity > 0 && item.neededQuantity
+                      ? `${item.availableQuantity} available (need ${item.neededQuantity})`
+                      : isAvailable && item.availableQuantity > 0
+                      ? `${item.availableQuantity} available`
+                      : null;
                     
                     return (
                       <div
                         key={item.index}
                         style={{
-                          padding: '1rem',
-                          border: '1px solid #e5e7eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '0.75rem 1rem',
+                          border: isMissing ? '2px solid #dc2626' : isAvailable ? '2px solid #10b981' : '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          backgroundColor: '#f9fafb'
+                          backgroundColor: '#ffffff',
+                          gap: '1rem'
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <span style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937' }}>
-                            {ingredient}
-                          </span>
-                          <span style={{
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '12px',
-                            fontWeight: '500',
-                            backgroundColor: isAvailable ? '#d1fae5' : isMissing ? '#fee2e2' : '#fef3c7',
-                            color: isAvailable ? '#065f46' : isMissing ? '#991b1b' : '#92400e'
-                          }}>
-                            {item.status === 'available' ? 'Available' : item.status === 'partial' ? 'Partial' : 'Missing'}
-                          </span>
-                        </div>
+                        {/* Checkbox on the left */}
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isMissing) {
+                              toggleShoppingList(item.index);
+                            } else if (isAvailable) {
+                              toggleReserve(item.index);
+                            }
+                          }}
+                          style={{
+                            width: '1.25rem',
+                            height: '1.25rem',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                          }}
+                        />
                         
-                        <div style={{ display: 'flex', gap: '1.5rem' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedForShoppingList.has(item.index)}
-                              onChange={() => toggleShoppingList(item.index)}
+                        {/* Ingredient name in the center */}
+                        <span style={{ 
+                          flex: 1, 
+                          fontSize: '1rem', 
+                          fontWeight: '500', 
+                          color: '#1f2937' 
+                        }}>
+                          {ingredient}
+                        </span>
+                        
+                        {/* Status button(s) on the right */}
+                        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                          {isMissing && (
+                            <button
+                              disabled
                               style={{
-                                marginRight: '0.5rem',
-                                width: '1.25rem',
-                                height: '1.25rem',
-                                cursor: 'pointer'
+                                padding: '0.375rem 0.75rem',
+                                backgroundColor: '#fee2e2',
+                                color: '#991b1b',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                cursor: 'default'
                               }}
-                            />
-                            <span style={{ fontSize: '0.875rem', color: '#374151' }}>Add to Shopping List</span>
-                          </label>
-                          
+                            >
+                              Missing
+                            </button>
+                          )}
                           {isAvailable && (
-                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
-                                checked={selectedToReserve.has(item.index)}
-                                onChange={() => toggleReserve(item.index)}
+                            <>
+                              {quantityText && (
+                                <button
+                                  disabled
+                                  style={{
+                                    padding: '0.375rem 0.75rem',
+                                    backgroundColor: '#d1fae5',
+                                    color: '#065f46',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '500',
+                                    cursor: 'default',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {quantityText}
+                                </button>
+                              )}
+                              <button
+                                disabled
                                 style={{
-                                  marginRight: '0.5rem',
-                                  width: '1.25rem',
-                                  height: '1.25rem',
-                                  cursor: 'pointer'
+                                  padding: '0.375rem 0.75rem',
+                                  backgroundColor: '#d1fae5',
+                                  color: '#065f46',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: '500',
+                                  cursor: 'default'
                                 }}
-                              />
-                              <span style={{ fontSize: '0.875rem', color: '#374151' }}>Reserve from My Ingredients</span>
-                            </label>
+                              >
+                                Available
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

@@ -335,75 +335,58 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     }
   }, [isOpen, initialMealType]);
 
-  // Auto-import recipe when URL is entered and dish name is empty
-  useEffect(() => {
-    // Debounce the import to avoid multiple calls while user is typing
-    let timeoutId: ReturnType<typeof setTimeout>;
-    
-    const isValidUrl = (url: string): boolean => {
-      try {
-        new URL(url);
-        return url.startsWith('http://') || url.startsWith('https://');
-      } catch {
-        return false;
-      }
-    };
-
-    // Only import if URL is valid, user is logged in, and we haven't already imported this URL
-    const trimmedUrl = recipeUrl.trim();
-    if (
-      trimmedUrl && 
-      isValidUrl(trimmedUrl) && 
-      user &&
-      (!importedRecipe || importedRecipe.sourceUrl !== trimmedUrl)
-    ) {
-      timeoutId = setTimeout(async () => {
-        setImportingRecipe(true);
-        try {
-          const recipe = await recipeImportService.importRecipe(trimmedUrl);
-          setImportedRecipe(recipe);
-          
-          // Add recipe ingredients to parsed ingredients and auto-select them
-          if (recipe.ingredients && recipe.ingredients.length > 0) {
-            // Use functional updates to avoid dependency issues
-            setParsedIngredients(prevParsed => {
-              const newParsed = recipe.ingredients!
-                .map(ing => ing.trim())
-                .filter(ing => ing.length > 0 && !prevParsed.includes(ing));
-              
-              if (newParsed.length > 0) {
-                // Auto-select all new recipe ingredients
-                setSelectedPastedIngredientIndices(prevSelected => {
-                  const newSelected = new Set(prevSelected);
-                  newParsed.forEach((_, index) => {
-                    newSelected.add(prevParsed.length + index);
-                  });
-                  return newSelected;
-                });
-                
-                return [...prevParsed, ...newParsed];
-              }
-              
-              return prevParsed;
-            });
-          }
-          
-          showToast('Recipe imported successfully', 'success');
-        } catch (error: any) {
-          console.error('Error auto-importing recipe:', error);
-          showToast(error.message || 'Failed to import recipe. Please try again.', 'error');
-        } finally {
-          setImportingRecipe(false);
-        }
-      }, 1500); // Wait 1.5 seconds after user stops typing
+  // Helper function to validate URL
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return url.startsWith('http://') || url.startsWith('https://');
+    } catch {
+      return false;
     }
+  };
 
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+  // Handle Get Ingredients button click
+  const handleGetIngredients = async () => {
+    const trimmedUrl = recipeUrl.trim();
+    
+    if (!trimmedUrl) {
+      showToast('Please enter a recipe URL', 'warning');
+      return;
+    }
+    
+    if (!isValidUrl(trimmedUrl)) {
+      showToast('Please enter a valid URL', 'error');
+      return;
+    }
+    
+    if (!user) {
+      showToast('Please log in to import recipes', 'error');
+      return;
+    }
+    
+    setImportingRecipe(true);
+    try {
+      const recipe = await recipeImportService.importRecipe(trimmedUrl);
+      setImportedRecipe(recipe);
+      
+      // Open SaveDishModal with imported ingredients
+      if (recipe.ingredients && recipe.ingredients.length > 0) {
+        // Ensure we have a meal type selected
+        if (!selectedMealType) {
+          showToast('Please select a meal type first', 'warning');
+          return;
+        }
+        setShowSaveDishModal(true);
+      } else {
+        showToast('No ingredients found in recipe', 'warning');
       }
-    };
-  }, [recipeUrl, user, importedRecipe]);
+    } catch (error: any) {
+      console.error('Error importing recipe:', error);
+      showToast(error.message || 'Failed to import recipe. Please try again.', 'error');
+    } finally {
+      setImportingRecipe(false);
+    }
+  };
 
   // Ensure Google exists as a favorite website
   const ensureGoogleFavorite = async () => {
@@ -1220,25 +1203,31 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                             color: '#1f2937'
                           }}
                         />
+                        <button
+                          onClick={handleGetIngredients}
+                          disabled={!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())}
+                          style={{
+                            marginTop: '0.75rem',
+                            width: '100%',
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? '#9ca3af' : '#002B4D',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '1rem',
+                            fontWeight: '500',
+                            cursor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {importingRecipe ? 'Importing...' : 'Get Ingredients'}
+                        </button>
                         {importingRecipe && (
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic' }}>
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic', textAlign: 'center' }}>
                             Importing recipe...
                           </p>
                         )}
-                        {importedRecipe && !importingRecipe && (
-                          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px' }}>
-                            <p style={{ margin: 0, fontSize: '0.875rem', color: '#166534', fontWeight: '500' }}>
-                              ✓ Recipe imported: {importedRecipe.title}
-                            </p>
-                            {importedRecipe.ingredients && importedRecipe.ingredients.length > 0 && (
-                              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#15803d' }}>
-                                {importedRecipe.ingredients.length} ingredient{importedRecipe.ingredients.length !== 1 ? 's' : ''} added
-                              </p>
-                            )}
-                          </div>
-                        )}
                         <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                          Paste a recipe URL to automatically import the recipe title and ingredients.
+                          Paste a recipe URL and click "Get Ingredients" to import the recipe.
                         </p>
                       </div>
                     </div>
@@ -1330,10 +1319,10 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           isOpen={showSaveDishModal}
           onClose={() => setShowSaveDishModal(false)}
           onSave={handleSaveMeal}
-          ingredients={combinedIngredients}
+          ingredients={importedRecipe?.ingredients || combinedIngredients}
           selectedDate={selectedDate}
           mealType={selectedMealType}
-          recipeUrl={recipeUrl}
+          recipeUrl={importedRecipe?.sourceUrl || recipeUrl}
           importedRecipeTitle={importedRecipe?.title || null}
         />
       )}
