@@ -7,7 +7,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { foodItemService, shoppingListService, shoppingListsService, mealPlanningService, recipeImportService } from '../../services';
-import type { MealType, PlannedMeal, Dish } from '../../types';
+import type { MealType, Dish } from '../../types';
 import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays, startOfWeek, isSameDay } from 'date-fns';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
@@ -33,11 +33,6 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: 'dinner', label: 'Dinner' }
 ];
 
-const MEAL_TYPE_LABELS: Record<MealType, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner'
-};
 
 export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   isOpen,

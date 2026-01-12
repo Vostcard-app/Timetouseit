@@ -54,6 +54,7 @@ export type {
   ScheduleAmendment,
   MealProfile,
   MealSchedule,
+  Dish,
   PlannedMeal,
   MealPlan,
   MealSuggestion,

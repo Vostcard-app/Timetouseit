@@ -24,12 +24,6 @@ interface MealDetailModalProps {
   onMealDeleted?: () => void; // Deprecated: use onDishDeleted
 }
 
-const MEAL_TYPE_LABELS: Record<MealType, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner'
-};
-
 /**
  * Smart truncate text at word boundary with ellipsis
  * Finds the last space before maxLength and truncates there
@@ -100,10 +94,10 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   // Initialize edit state when dish changes
   useEffect(() => {
     if (currentDish) {
-      setEditedMealName(currentDish.dishName);
+      setEditedMealName(currentDish?.dishName || '');
       setEditedDate(format(meal.date, 'yyyy-MM-dd'));
       setEditedMealType(meal.mealType);
-      setEditedIngredients(currentDish.recipeIngredients || []);
+      setEditedIngredients(currentDish?.recipeIngredients || []);
       setSelectedIngredientIndices(new Set()); // Reset selections
       setIsPreparing(false); // Reset preparing state
     }
@@ -120,11 +114,11 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   const handleCancelEdit = () => {
     setIsEditing(false);
     // Reset to original values
-    if (meal) {
-      setEditedMealName(meal.recipeTitle || meal.mealName);
+    if (currentDish && meal) {
+      setEditedMealName(currentDish.dishName);
       setEditedDate(format(meal.date, 'yyyy-MM-dd'));
       setEditedMealType(meal.mealType);
-      setEditedIngredients(meal.recipeIngredients || meal.suggestedIngredients || []);
+      setEditedIngredients(currentDish.recipeIngredients || []);
     }
   };
 
@@ -365,7 +359,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
     // Enter preparing mode - show ingredient selection
     setIsPreparing(true);
     // Pre-select all ingredients by default
-    const allIndices = new Set(ingredients.map((_, index) => index));
+    const allIndices = new Set(ingredients.map((_ingredient: string, index: number) => index));
     setSelectedIngredientIndices(allIndices);
   };
 
@@ -383,7 +377,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
     setPreparing(true);
     try {
       // Get checked ingredients
-      const checkedIngredients = ingredients.filter((_, index) => 
+      const checkedIngredients = ingredients.filter((_ingredient: string, index: number) => 
         selectedIngredientIndices.has(index)
       );
 
@@ -395,7 +389,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
 
         for (const shoppingItem of claimedShoppingItems) {
           // Check if this shopping list item matches any checked ingredient
-          const matchesCheckedIngredient = checkedIngredients.some(ingredient =>
+          const matchesCheckedIngredient = checkedIngredients.some((ingredient: string) =>
             fuzzyMatchIngredientToItem(ingredient, shoppingItem.name)
           );
           if (matchesCheckedIngredient) {
@@ -416,7 +410,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
 
         for (const item of claimedItems) {
           // Check if this item matches any checked ingredient
-          const matchesCheckedIngredient = checkedIngredients.some(ingredient =>
+          const matchesCheckedIngredient = checkedIngredients.some((ingredient: string) =>
             fuzzyMatchIngredientToItem(ingredient, item.name)
           );
           

@@ -34,7 +34,6 @@ const PlannedMealCalendar: React.FC = () => {
   const [selectedMealType, setSelectedMealType] = useState<MealType | null>(null);
   const [showDishList, setShowDishList] = useState(false);
   const [showIngredientPicker, setShowIngredientPicker] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<PlannedMeal | null>(null);
   const [selectedDish, setSelectedDish] = useState<{ dish: any; meal: PlannedMeal } | null>(null);
   const [showMealDetailModal, setShowMealDetailModal] = useState(false);
 

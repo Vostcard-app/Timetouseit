@@ -28,7 +28,6 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
   onClose,
   selectedDate,
   selectedMealType,
-  selectedIngredients = [],
   initialRecipeUrl
 }) => {
   const [user] = useAuthState(auth);
@@ -148,20 +147,11 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         id: `recipe-${Date.now()}`,
         date: selectedDate,
         mealType: selectedMealType,
-        mealName: importedRecipe.title,
         finishBy: '18:00', // Default, can be updated later
-        suggestedIngredients: selectedIngredients.length > 0 ? selectedIngredients : importedRecipe.ingredients,
-        usesBestBySoonItems: [],
         confirmed: false,
-        shoppingListItems: [],
         skipped: false,
         isLeftover: false,
-        recipeTitle: importedRecipe.title,
-        recipeIngredients: importedRecipe.ingredients,
-        recipeSourceUrl: importedRecipe.sourceUrl,
-        recipeSourceDomain: importedRecipe.sourceDomain,
-        recipeImageUrl: importedRecipe.imageUrl,
-        reservedQuantities
+        dishes: []
       };
 
       // Get or create meal plan for this week

@@ -299,15 +299,12 @@ export const mealPlanningService = {
           id: `meal-${index}-${Date.now()}`,
           date: new Date(suggestion.date),
           mealType: suggestion.mealType,
-          mealName: suggestion.mealName,
           finishBy,
           startCookingAt,
-          suggestedIngredients: suggestion.suggestedIngredients,
-          usesBestBySoonItems: suggestion.usesBestBySoonItems,
           confirmed: false,
-          shoppingListItems: [],
           skipped: false,
-          isLeftover: false
+          isLeftover: false,
+          dishes: []
         };
       });
 
@@ -672,15 +669,12 @@ export const mealPlanningService = {
           id: `meal-${Date.now()}-${index}`,
           date: new Date(suggestion.date),
           mealType: suggestion.mealType,
-          mealName: suggestion.mealName,
           finishBy,
           startCookingAt,
-          suggestedIngredients: suggestion.suggestedIngredients,
-          usesBestBySoonItems: suggestion.usesBestBySoonItems,
           confirmed: false,
-          shoppingListItems: [],
           skipped: false,
-          isLeftover: false
+          isLeftover: false,
+          dishes: []
         };
       });
 
@@ -753,7 +747,12 @@ export const mealPlanningService = {
       plan.meals
         .filter(meal => meal.confirmed && !meal.skipped)
         .forEach(meal => {
-          meal.usesBestBySoonItems.forEach(itemId => reservedItemIds.add(itemId));
+          // Legacy support: check dishes for claimed items
+          meal.dishes?.forEach(dish => {
+            dish.claimedItemIds?.forEach(itemId => reservedItemIds.add(itemId));
+          });
+          // Legacy: also check meal-level claimedItemIds
+          meal.claimedItemIds?.forEach(itemId => reservedItemIds.add(itemId));
         });
 
       // Return all items (reserved items are still available, just tracked)
@@ -793,7 +792,14 @@ export const mealPlanningService = {
 
         // Find when this item is planned to be used
         const plannedUse = plan.meals
-          .filter(meal => meal.usesBestBySoonItems.includes(item.id) && !meal.skipped)
+          .filter(meal => {
+            if (meal.skipped) return false;
+            // Check dishes for claimed items
+            const claimedInDish = meal.dishes?.some(dish => dish.claimedItemIds?.includes(item.id));
+            // Legacy: also check meal-level claimedItemIds
+            const claimedInMeal = meal.claimedItemIds?.includes(item.id);
+            return claimedInDish || claimedInMeal;
+          })
           .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
 
         if (!plannedUse) {

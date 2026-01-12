@@ -88,8 +88,6 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
     setSaving(true);
     try {
       const mealId = `custom-${Date.now()}`;
-      // Use custom meal name or default to meal type label
-      const finalMealName = mealName.trim() || mealTypeLabels[selectedMealType];
 
       // Calculate reserved quantities for this meal
       const reservedQuantities = recipeImportService.calculateMealReservedQuantities(
@@ -102,21 +100,11 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
         id: mealId,
         date: selectedDate,
         mealType: selectedMealType,
-        mealName: finalMealName,
         finishBy: '18:00', // Default, can be updated later
-        suggestedIngredients: ingredients,
-        usesBestBySoonItems: [],
         confirmed: false,
-        shoppingListItems: [],
         skipped: false,
         isLeftover: false,
-        recipeTitle: finalMealName,
-        recipeIngredients: ingredients,
-        // No recipeSourceUrl - this is a custom meal
-        recipeSourceUrl: null,
-        recipeSourceDomain: null,
-        recipeImageUrl: null,
-        reservedQuantities
+        dishes: []
       };
 
       // Get or create meal plan for this week

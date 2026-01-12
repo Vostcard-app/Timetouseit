@@ -26,9 +26,9 @@ export const musgravesService = {
       const shoppingItems = new Set<string>();
       
       mealPlan.meals.forEach(meal => {
-        meal.shoppingListItems.forEach(item => shoppingItems.add(item));
+        meal.shoppingListItems?.forEach(item => shoppingItems.add(item));
         // Also add ingredients that aren't in inventory
-        meal.suggestedIngredients.forEach(ingredient => {
+        meal.suggestedIngredients?.forEach(ingredient => {
           // Check if ingredient is already covered by expiring items
           // This would need to check actual item names - simplified for now
           const isCovered = false;
