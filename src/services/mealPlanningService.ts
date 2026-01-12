@@ -998,22 +998,61 @@ export const mealPlanningService = {
     try {
       const mealPlan = await this.getMealPlanForMeal(userId, mealId);
       if (!mealPlan) {
+        console.error(`[removeDishFromMeal] Meal plan not found for mealId: ${mealId}`);
         throw new Error('Meal plan not found');
       }
 
       const mealIndex = mealPlan.meals.findIndex(m => m.id === mealId);
       if (mealIndex < 0) {
-        throw new Error('Meal not found');
+        console.error(`[removeDishFromMeal] Meal not found in plan. mealId: ${mealId}, planId: ${mealPlan.id}`);
+        throw new Error('Meal not found in meal plan');
       }
 
       const meal = mealPlan.meals[mealIndex];
-      const updatedDishes = (meal.dishes || []).filter(d => d.id !== dishId);
+      
+      // Ensure meal is migrated (has dishes array)
+      const migratedMeal = migrateLegacyMeal(meal);
+      
+      // Log dish information for debugging
+      console.log(`[removeDishFromMeal] Looking for dishId: ${dishId}`);
+      console.log(`[removeDishFromMeal] Meal ID: ${meal.id}, Date: ${meal.date}, Type: ${meal.mealType}`);
+      console.log(`[removeDishFromMeal] Meal has ${migratedMeal.dishes?.length || 0} dishes`);
+      console.log(`[removeDishFromMeal] Dish IDs:`, migratedMeal.dishes?.map(d => d.id) || []);
+      console.log(`[removeDishFromMeal] Was legacy meal:`, !meal.dishes || meal.dishes.length === 0);
+      
+      // Check if dish exists
+      const dishExists = migratedMeal.dishes?.some(d => d.id === dishId);
+      if (!dishExists) {
+        // Special case: if this is a legacy meal and we're trying to delete the migrated dish
+        // (which has ID meal.id + '-dish-0'), and the meal doesn't have dishes in Firestore yet,
+        // we should delete the entire meal instead
+        if (!meal.dishes || meal.dishes.length === 0) {
+          // This is a legacy meal that hasn't been saved with dishes array yet
+          // If we're trying to delete the migrated dish (meal.id + '-dish-0'), remove the entire meal
+          if (dishId === meal.id + '-dish-0') {
+            console.log(`[removeDishFromMeal] Legacy meal detected, removing entire meal`);
+            const updatedMeals = mealPlan.meals.filter(m => m.id !== mealId);
+            mealPlan.meals = updatedMeals;
+            await this.updateMealPlan(mealPlan.id, { meals: mealPlan.meals });
+            console.log(`[removeDishFromMeal] Successfully removed legacy meal ${mealId}`);
+            return;
+          }
+        }
+        
+        console.error(`[removeDishFromMeal] Dish not found. dishId: ${dishId}, available dish IDs:`, migratedMeal.dishes?.map(d => d.id) || []);
+        throw new Error(`Dish with ID ${dishId} not found in meal. Available dish IDs: ${migratedMeal.dishes?.map(d => d.id).join(', ') || 'none'}`);
+      }
+
+      const updatedDishes = (migratedMeal.dishes || []).filter(d => d.id !== dishId);
+      
+      // If this was the last dish, we could optionally delete the meal, but for now, just update with remaining dishes
       mealPlan.meals[mealIndex] = {
-        ...meal,
+        ...migratedMeal,
         dishes: updatedDishes
       };
 
       await this.updateMealPlan(mealPlan.id, { meals: mealPlan.meals });
+      console.log(`[removeDishFromMeal] Successfully removed dish ${dishId} from meal ${mealId}`);
     } catch (error) {
       logServiceError('removeDishFromMeal', 'mealPlans', error, { userId, mealId, dishId });
       throw toServiceError(error, 'mealPlans');

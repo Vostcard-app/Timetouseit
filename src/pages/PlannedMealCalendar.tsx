@@ -3,7 +3,7 @@
  * Displays calendar with planned meals and allows day taps to open ingredient picker
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { mealPlanningService } from '../services';
@@ -40,69 +40,93 @@ const PlannedMealCalendar: React.FC = () => {
   const [showIngredientPicker, setShowIngredientPicker] = useState(false);
   const [selectedDish, setSelectedDish] = useState<{ dish: any; meal: PlannedMeal } | null>(null);
   const [showMealDetailModal, setShowMealDetailModal] = useState(false);
+  const unsubscribeRef = useRef<Map<string, () => void>>(new Map());
+  const loadedWeeksRef = useRef<Set<string>>(new Set());
 
-  // Load meal plans for current month
+  // Subscribe to meal plans for current month (real-time updates)
   useEffect(() => {
     if (!user) {
       setLoading(false);
       return;
     }
 
-    const loadMealPlans = async () => {
-      try {
-        setLoading(true);
-        // Load meal plans for the current month (4 weeks)
-        const today = startOfDay(new Date());
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        
-        const plans: MealPlan[] = [];
-        
-        // Get meal plans for each week in the month
-        let weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-        while (weekStart <= monthEnd) {
-          const plan = await mealPlanningService.getMealPlan(user.uid, weekStart);
-          if (plan) {
-            plans.push(plan);
-          }
-          weekStart = addDays(weekStart, 7);
-        }
-        
-        setMealPlans(plans);
-      } catch (error) {
-        console.error('Error loading meal plans:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    
+    // Reset loaded weeks tracking for new month
+    loadedWeeksRef.current.clear();
+    
+    // Calculate month boundaries based on currentDate (the month being viewed)
+    const viewDate = startOfDay(currentDate);
+    const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+    
+    // Get all week starts in the month
+    const weekStarts: Date[] = [];
+    let weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    while (weekStart <= monthEnd) {
+      weekStarts.push(new Date(weekStart));
+      weekStart = addDays(weekStart, 7);
+    }
 
-    loadMealPlans();
+    // Set up subscriptions for each week
+    const unsubscribes = new Map<string, () => void>();
+    const totalWeeks = weekStarts.length;
+
+    weekStarts.forEach(weekStartDate => {
+      const weekKey = weekStartDate.getTime().toString();
+      
+      const unsubscribe = mealPlanningService.subscribeToMealPlan(
+        user.uid,
+        weekStartDate,
+        (plan: MealPlan | null) => {
+          setMealPlans(prevPlans => {
+            // Remove old plan for this week if it exists
+            const filtered = prevPlans.filter(p => {
+              const planWeekStart = startOfWeek(p.weekStartDate, { weekStartsOn: 0 });
+              return planWeekStart.getTime() !== weekStartDate.getTime();
+            });
+            
+            // Add new plan if it exists
+            if (plan) {
+              return [...filtered, plan];
+            }
+            
+            return filtered;
+          });
+          
+          // Track initial load for this week (only count once per week)
+          if (!loadedWeeksRef.current.has(weekKey)) {
+            loadedWeeksRef.current.add(weekKey);
+            if (loadedWeeksRef.current.size === totalWeeks) {
+              setLoading(false);
+            }
+          }
+        }
+      );
+      
+      unsubscribes.set(weekKey, unsubscribe);
+    });
+
+    // Store unsubscribe functions
+    unsubscribeRef.current = unsubscribes;
+
+    // Cleanup function
+    return () => {
+      unsubscribes.forEach(unsubscribe => unsubscribe());
+      unsubscribes.clear();
+      loadedWeeksRef.current.clear();
+    };
   }, [user, currentDate]);
 
-  // Refresh meal plans (called after deletion)
+  // Refresh meal plans (kept as fallback, but subscriptions handle updates automatically)
   const refreshMealPlans = async () => {
+    // Subscriptions handle real-time updates, but we can keep this as a fallback
+    // if needed for manual refresh scenarios
     if (!user) return;
     
-    try {
-      const today = startOfDay(new Date());
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      
-      const plans: MealPlan[] = [];
-      
-      let weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-      while (weekStart <= monthEnd) {
-        const plan = await mealPlanningService.getMealPlan(user.uid, weekStart);
-        if (plan) {
-          plans.push(plan);
-        }
-        weekStart = addDays(weekStart, 7);
-      }
-      
-      setMealPlans(plans);
-    } catch (error) {
-      console.error('Error refreshing meal plans:', error);
-    }
+    // Force re-subscription by updating currentDate slightly
+    // This will trigger the useEffect to re-subscribe
+    setCurrentDate(new Date());
   };
 
   // Migrate legacy meal to new dishes structure

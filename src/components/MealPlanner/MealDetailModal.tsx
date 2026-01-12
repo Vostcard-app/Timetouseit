@@ -61,19 +61,24 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   const [preparing, setPreparing] = useState(false);
 
   // Use dish data if available, otherwise fall back to legacy meal data
-  const currentDish = dish || (meal ? {
-    id: meal.id,
-    dishName: meal.mealName || '',
-    recipeTitle: meal.recipeTitle || null,
-    recipeIngredients: meal.recipeIngredients || meal.suggestedIngredients || [],
-    recipeSourceUrl: meal.recipeSourceUrl || null,
-    recipeSourceDomain: meal.recipeSourceDomain || null,
-    recipeImageUrl: meal.recipeImageUrl || null,
-    reservedQuantities: meal.reservedQuantities,
-    claimedItemIds: meal.claimedItemIds,
-    claimedShoppingListItemIds: meal.claimedShoppingListItemIds,
-    completed: meal.completed
-  } : null);
+  // For legacy meals, check if they've been migrated (have dishes array)
+  const currentDish = dish || (meal ? (
+    // If meal has dishes array, use the first dish (migrated meal)
+    meal.dishes && meal.dishes.length > 0 ? meal.dishes[0] : {
+      // Legacy meal - create dish object with migrated ID format
+      id: meal.id + '-dish-0', // Use migrated dish ID format
+      dishName: meal.mealName || '',
+      recipeTitle: meal.recipeTitle || null,
+      recipeIngredients: meal.recipeIngredients || meal.suggestedIngredients || [],
+      recipeSourceUrl: meal.recipeSourceUrl || null,
+      recipeSourceDomain: meal.recipeSourceDomain || null,
+      recipeImageUrl: meal.recipeImageUrl || null,
+      reservedQuantities: meal.reservedQuantities,
+      claimedItemIds: meal.claimedItemIds,
+      claimedShoppingListItemIds: meal.claimedShoppingListItemIds,
+      completed: meal.completed
+    }
+  ) : null);
   
   const ingredients = currentDish?.recipeIngredients || [];
 
@@ -329,30 +334,55 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       return;
     }
 
+    if (!currentDish || !currentDish.id) {
+      console.error('[handleDelete] currentDish is missing or has no ID', { currentDish, meal });
+      showToast('Unable to delete: dish information is missing', 'error');
+      return;
+    }
+
     if (!window.confirm(`Are you sure you want to delete "${currentDish.dishName}"? This will also remove associated ingredients from your shopping list.`)) {
       return;
     }
 
     setDeleting(true);
     try {
-      if (!currentDish || !meal) {
-        throw new Error('Dish or meal not found');
-      }
+      console.log('[handleDelete] Attempting to delete dish', {
+        dishId: currentDish.id,
+        dishName: currentDish.dishName,
+        mealId: meal.id,
+        mealDate: meal.date,
+        mealType: meal.mealType,
+        hasDishes: meal.dishes?.length || 0
+      });
 
       // Delete all shopping list items associated with this dish
-      await shoppingListService.deleteShoppingListItemsByMealId(user.uid, currentDish.id);
+      try {
+        await shoppingListService.deleteShoppingListItemsByMealId(user.uid, currentDish.id);
+        console.log('[handleDelete] Shopping list items deleted');
+      } catch (shoppingListError) {
+        console.warn('[handleDelete] Error deleting shopping list items (continuing anyway):', shoppingListError);
+        // Continue with dish deletion even if shopping list deletion fails
+      }
 
       // Remove the dish from the meal
       await mealPlanningService.removeDishFromMeal(user.uid, meal.id, currentDish.id);
+      console.log('[handleDelete] Dish removed from meal successfully');
 
       // If this was the last dish, we could optionally delete the meal, but for now we'll keep it
       showToast('Dish deleted successfully', 'success');
       onDishDeleted?.(); // Refresh calendar
       onMealDeleted?.(); // Legacy support
       onClose();
-    } catch (error) {
-      console.error('Error deleting dish:', error);
-      showToast('Failed to delete dish. Please try again.', 'error');
+    } catch (error: any) {
+      console.error('[handleDelete] Error deleting dish:', error);
+      const errorMessage = error?.message || 'Unknown error occurred';
+      console.error('[handleDelete] Error details:', {
+        errorMessage,
+        dishId: currentDish.id,
+        mealId: meal.id,
+        error
+      });
+      showToast(`Failed to delete dish: ${errorMessage}`, 'error');
       setDeleting(false);
     }
   };
