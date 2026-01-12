@@ -418,10 +418,16 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     const loadFavorites = async () => {
       try {
         setLoadingFavorites(true);
-        const sites = await recipeSiteService.getEnabledRecipeSites();
-        setFavoriteWebsites(sites);
+        // Get all sites and filter for enabled ones (more reliable than ordering by enabled)
+        const allSites = await recipeSiteService.getRecipeSites();
+        const enabledSites = allSites.filter(site => site.enabled === true);
+        // Sort by label
+        enabledSites.sort((a, b) => a.label.localeCompare(b.label));
+        setFavoriteWebsites(enabledSites);
+        console.log('[IngredientPickerModal] Loaded favorite websites:', enabledSites.length, enabledSites);
       } catch (error) {
         console.error('Error loading favorite websites:', error);
+        showToast('Failed to load favorite websites', 'error');
       } finally {
         setLoadingFavorites(false);
       }
@@ -1069,6 +1075,19 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                         {loadingFavorites && (
                           <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
                             Loading favorite websites...
+                          </p>
+                        )}
+                        {!loadingFavorites && favoriteWebsites.length === 0 && (
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#dc2626' }}>
+                            No favorite websites found. Add favorites at{' '}
+                            <a 
+                              href="/favorite-websites" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ color: '#002B4D', textDecoration: 'underline' }}
+                            >
+                              Favorite Websites
+                            </a>
                           </p>
                         )}
                       </div>
