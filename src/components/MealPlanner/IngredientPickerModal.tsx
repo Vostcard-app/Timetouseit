@@ -921,7 +921,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                       fontSize: '0.875rem'
                     }}
                   >
-                    Paste Ingredients
+                    Add Ingredients
                   </button>
                   <button
                     onClick={() => setActiveTab('recipeUrl')}
@@ -1309,13 +1309,13 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                   {activeTab === 'pasteIngredients' && (
                     <div>
                       <label htmlFor="pastedIngredients" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                        Paste Ingredients
+                        Add Ingredients
                       </label>
                       <textarea
                         id="pastedIngredients"
                         value={pastedIngredients}
                         onChange={(e) => setPastedIngredients(e.target.value)}
-                        placeholder="Paste ingredients here, one per line or separated by commas...&#10;Example:&#10;2 cups flour&#10;1 cup sugar&#10;3 eggs"
+                        placeholder="Paste or type ingredients here, one per line or separated by commas...&#10;Example:&#10;2 cups flour&#10;1 cup sugar&#10;3 eggs"
                         style={{
                           width: '100%',
                           padding: '0.75rem',
