@@ -229,17 +229,13 @@ const Shop: React.FC = () => {
       .slice(0, 5); // Limit to 5 items
   }, [previouslyUsedItems, newItemName]);
 
-  // Get FoodKeeper suggestions based on search query (only if no previously used items match)
+  // Get FoodKeeper suggestions based on search query
   const foodKeeperSuggestions = useMemo(() => {
     if (!newItemName.trim()) {
       return [];
     }
-    // Only show FoodKeeper suggestions if there are no previously used items matching
-    if (filteredPreviouslyUsedItems.length > 0) {
-      return [];
-    }
     return findFoodItems(newItemName.trim(), 5); // Limit to 5 suggestions
-  }, [newItemName, filteredPreviouslyUsedItems]);
+  }, [newItemName]);
 
   // Merge crossed-off items and previously used items into one unified list
   type MergedItem = {
@@ -689,40 +685,44 @@ const Shop: React.FC = () => {
                   }}
                 >
                   {/* Previously used items */}
-                  {filteredPreviouslyUsedItems.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setNewItemName(item.name);
-                        setShowDropdown(false);
-                        setInputFocused(false);
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                      }}
-                      style={{
-                        padding: '0.75rem 1rem',
-                        borderBottom: '1px solid #f3f4f6',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                        backgroundColor: '#ffffff'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f9fafb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#ffffff';
-                      }}
-                    >
-                      <div style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937' }}>
-                        {item.name}
-                      </div>
-                    </div>
-                  ))}
+                  {filteredPreviouslyUsedItems.length > 0 && (
+                    <>
+                      {filteredPreviouslyUsedItems.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setNewItemName(item.name);
+                            setShowDropdown(false);
+                            setInputFocused(false);
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                          }}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            borderBottom: '1px solid #f3f4f6',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s',
+                            backgroundColor: '#ffffff'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#ffffff';
+                          }}
+                        >
+                          <div style={{ fontSize: '1rem', fontWeight: '500', color: '#1f2937' }}>
+                            {item.name}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                   
-                  {/* FoodKeeper suggestions (only shown if no previously used items) */}
+                  {/* FoodKeeper suggestions */}
                   {foodKeeperSuggestions.length > 0 && (
                     <>
                       {filteredPreviouslyUsedItems.length > 0 && (
