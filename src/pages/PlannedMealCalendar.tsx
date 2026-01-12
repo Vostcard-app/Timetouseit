@@ -188,7 +188,12 @@ const PlannedMealCalendar: React.FC = () => {
   // Get meals for a specific day
   const getMealsForDay = (date: Date): PlannedMeal[] => {
     const normalizedDate = startOfDay(date);
-    return allPlannedMeals.filter(meal => isSameDay(meal.date, normalizedDate));
+    return allPlannedMeals.filter(meal => {
+      // Only include meals for this date that have at least one dish
+      const isSameDate = isSameDay(meal.date, normalizedDate);
+      const hasDishes = meal.dishes && meal.dishes.length > 0;
+      return isSameDate && hasDishes;
+    });
   };
 
   // Get meal for a specific day and meal type
@@ -426,10 +431,13 @@ const PlannedMealCalendar: React.FC = () => {
                 {/* Meal Indicators */}
                 {dayMeals.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    {dayMeals.slice(0, 3).map((meal, mealIndex) => {
-                      const dishCount = meal.dishes?.length || 0;
-                      const hasCompletedDishes = meal.dishes?.some(d => d.completed) || false;
-                      return (
+                    {dayMeals
+                      .filter(meal => meal.dishes && meal.dishes.length > 0) // Safety check: only show meals with dishes
+                      .slice(0, 3)
+                      .map((meal, mealIndex) => {
+                        const dishCount = meal.dishes?.length || 0;
+                        const hasCompletedDishes = meal.dishes?.some(d => d.completed) || false;
+                        return (
                         <div
                           key={mealIndex}
                           onClick={(e) => handleMealIndicatorClick(normalizedDay, meal.mealType, e)}
