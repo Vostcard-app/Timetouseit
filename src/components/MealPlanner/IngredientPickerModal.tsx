@@ -6,13 +6,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
-import { foodItemService, shoppingListService, shoppingListsService, mealPlanningService, recipeImportService } from '../../services';
+import { foodItemService, shoppingListService, shoppingListsService, mealPlanningService, recipeImportService, recipeSiteService } from '../../services';
 import type { MealType, Dish } from '../../types';
 import type { RecipeImportResult } from '../../types/recipeImport';
+import type { RecipeSite } from '../../types/recipeImport';
 import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays, startOfWeek, isSameDay } from 'date-fns';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
+import { GoogleSearchModal } from './GoogleSearchModal';
 import { showToast } from '../Toast';
 
 interface IngredientPickerModalProps {
@@ -55,6 +57,11 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [importingRecipe, setImportingRecipe] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
+  const [favoriteWebsites, setFavoriteWebsites] = useState<RecipeSite[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+  const [selectedFavoriteSite, setSelectedFavoriteSite] = useState<RecipeSite | null>(null);
+  const [selectedSearchIngredients, setSelectedSearchIngredients] = useState<Set<string>>(new Set());
+  const [showGoogleSearchModal, setShowGoogleSearchModal] = useState(false);
 
   // Parse pasted ingredients when text changes
   useEffect(() => {
@@ -277,6 +284,47 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     setSelectedCombinedIndices(newSelected);
   };
 
+  // Toggle search ingredient selection (max 3)
+  const toggleSearchIngredient = (ingredient: string) => {
+    const newSelected = new Set(selectedSearchIngredients);
+    if (newSelected.has(ingredient)) {
+      newSelected.delete(ingredient);
+    } else {
+      if (newSelected.size >= 3) {
+        showToast('You can only select up to 3 ingredients for search', 'warning');
+        return;
+      }
+      newSelected.add(ingredient);
+    }
+    setSelectedSearchIngredients(newSelected);
+  };
+
+  // Handle favorite website selection
+  const handleFavoriteSiteSelect = (site: RecipeSite) => {
+    setSelectedFavoriteSite(site);
+    setRecipeUrl(site.baseUrl);
+  };
+
+  // Handle View button click
+  const handleViewFavoriteSite = () => {
+    if (selectedFavoriteSite) {
+      window.open(selectedFavoriteSite.baseUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Handle Google search button click
+  const handleGoogleSearch = () => {
+    if (selectedSearchIngredients.size === 0) {
+      showToast('Please select at least one ingredient to search', 'warning');
+      return;
+    }
+    if (selectedSearchIngredients.size > 3) {
+      showToast('Please select no more than 3 ingredients', 'warning');
+      return;
+    }
+    setShowGoogleSearchModal(true);
+  };
+
   // Set initial meal type if provided
   useEffect(() => {
     if (isOpen && initialMealType) {
@@ -360,6 +408,28 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     };
   }, [recipeUrl, dishName, user, importedRecipe]);
 
+  // Load favorite websites when modal opens
+  useEffect(() => {
+    if (!isOpen || !user) {
+      setFavoriteWebsites([]);
+      return;
+    }
+
+    const loadFavorites = async () => {
+      try {
+        setLoadingFavorites(true);
+        const sites = await recipeSiteService.getEnabledRecipeSites();
+        setFavoriteWebsites(sites);
+      } catch (error) {
+        console.error('Error loading favorite websites:', error);
+      } finally {
+        setLoadingFavorites(false);
+      }
+    };
+
+    loadFavorites();
+  }, [isOpen, user]);
+
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -374,6 +444,9 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       setSelectedCombinedIndices(new Set());
       setImportedRecipe(null);
       setImportingRecipe(false);
+      setSelectedFavoriteSite(null);
+      setSelectedSearchIngredients(new Set());
+      setShowGoogleSearchModal(false);
     }
   }, [isOpen]);
 
@@ -758,22 +831,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     My Ingredients
                   </button>
                   <button
-                    onClick={() => setActiveTab('recipeUrl')}
-                    style={{
-                      flex: 1,
-                      padding: '1rem',
-                      border: 'none',
-                      backgroundColor: activeTab === 'recipeUrl' ? '#ffffff' : 'transparent',
-                      borderBottom: activeTab === 'recipeUrl' ? '2px solid #002B4D' : 'none',
-                      color: activeTab === 'recipeUrl' ? '#002B4D' : '#6b7280',
-                      fontWeight: activeTab === 'recipeUrl' ? '600' : '400',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Recipe URL
-                  </button>
-                  <button
                     onClick={() => setActiveTab('pasteIngredients')}
                     style={{
                       flex: 1,
@@ -788,6 +845,22 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     }}
                   >
                     Paste Ingredients
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('recipeUrl')}
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      border: 'none',
+                      backgroundColor: activeTab === 'recipeUrl' ? '#ffffff' : 'transparent',
+                      borderBottom: activeTab === 'recipeUrl' ? '2px solid #002B4D' : 'none',
+                      color: activeTab === 'recipeUrl' ? '#002B4D' : '#6b7280',
+                      fontWeight: activeTab === 'recipeUrl' ? '600' : '400',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Recipe URL
                   </button>
                 </div>
 
@@ -961,46 +1034,168 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
 
                   {activeTab === 'recipeUrl' && (
                     <div>
-                      <label htmlFor="recipeUrl" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                        Recipe URL (optional)
-                      </label>
-                      <input
-                        id="recipeUrl"
-                        type="url"
-                        value={recipeUrl}
-                        onChange={(e) => setRecipeUrl(e.target.value)}
-                        placeholder="https://example.com/recipe"
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '1rem',
-                          color: '#1f2937'
-                        }}
-                      />
-                      {importingRecipe && (
-                        <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic' }}>
-                          Importing recipe...
-                        </p>
-                      )}
-                      {importedRecipe && !importingRecipe && (
-                        <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px' }}>
-                          <p style={{ margin: 0, fontSize: '0.875rem', color: '#166534', fontWeight: '500' }}>
-                            ✓ Recipe imported: {importedRecipe.title}
+                      {/* Favorite Websites Dropdown */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <label htmlFor="favoriteWebsite" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+                          Select Favorite Website
+                        </label>
+                        <select
+                          id="favoriteWebsite"
+                          value={selectedFavoriteSite?.id || ''}
+                          onChange={(e) => {
+                            const site = favoriteWebsites.find(s => s.id === e.target.value);
+                            if (site) {
+                              handleFavoriteSiteSelect(site);
+                            }
+                          }}
+                          disabled={loadingFavorites}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            fontSize: '1rem',
+                            color: '#1f2937',
+                            backgroundColor: loadingFavorites ? '#f3f4f6' : '#ffffff'
+                          }}
+                        >
+                          <option value="">Choose a favorite website...</option>
+                          {favoriteWebsites.map(site => (
+                            <option key={site.id} value={site.id}>
+                              {site.label}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingFavorites && (
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                            Loading favorite websites...
                           </p>
-                          {importedRecipe.ingredients && importedRecipe.ingredients.length > 0 && (
-                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#15803d' }}>
-                              {importedRecipe.ingredients.length} ingredient{importedRecipe.ingredients.length !== 1 ? 's' : ''} added
-                            </p>
-                          )}
+                        )}
+                      </div>
+
+                      {/* View Button */}
+                      {selectedFavoriteSite && (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                          <button
+                            onClick={handleViewFavoriteSite}
+                            style={{
+                              padding: '0.75rem 1.5rem',
+                              backgroundColor: '#002B4D',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '1rem',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              width: '100%'
+                            }}
+                          >
+                            View {selectedFavoriteSite.label}
+                          </button>
                         </div>
                       )}
-                      <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                        {!dishName.trim() 
-                          ? 'Enter a recipe URL to automatically import the recipe title and ingredients.'
-                          : 'Enter a recipe URL to save with your meal. This will be stored for reference.'}
-                      </p>
+
+                      {/* Check up to 3 items to search */}
+                      {combinedIngredients.length > 0 && (
+                        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                          <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
+                            Check up to 3 items to search ({selectedSearchIngredients.size} of 3 selected)
+                          </h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                            {combinedIngredients.map((ingredient, index) => (
+                              <label
+                                key={index}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '0.5rem',
+                                  cursor: selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient) ? 'not-allowed' : 'pointer',
+                                  borderRadius: '4px',
+                                  backgroundColor: selectedSearchIngredients.has(ingredient) ? '#f0f8ff' : 'transparent',
+                                  opacity: selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient) ? 0.5 : 1
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSearchIngredients.has(ingredient)}
+                                  onChange={() => toggleSearchIngredient(ingredient)}
+                                  disabled={selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient)}
+                                  style={{
+                                    marginRight: '0.75rem',
+                                    width: '1.25rem',
+                                    height: '1.25rem',
+                                    cursor: selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient) ? 'not-allowed' : 'pointer'
+                                  }}
+                                />
+                                <span style={{ flex: 1, fontSize: '0.875rem' }}>{ingredient}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Search with Google Button */}
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <button
+                          onClick={handleGoogleSearch}
+                          disabled={selectedSearchIngredients.size === 0 || selectedSearchIngredients.size > 3}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: (selectedSearchIngredients.size === 0 || selectedSearchIngredients.size > 3) ? '#9ca3af' : '#002B4D',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '1rem',
+                            fontWeight: '500',
+                            cursor: (selectedSearchIngredients.size === 0 || selectedSearchIngredients.size > 3) ? 'not-allowed' : 'pointer',
+                            width: '100%'
+                          }}
+                        >
+                          Search with Google
+                        </button>
+                      </div>
+
+                      {/* Recipe URL Paste Field */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label htmlFor="recipeUrl" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
+                          Paste Recipe URL
+                        </label>
+                        <input
+                          id="recipeUrl"
+                          type="url"
+                          value={recipeUrl}
+                          onChange={(e) => setRecipeUrl(e.target.value)}
+                          placeholder="https://example.com/recipe"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            fontSize: '1rem',
+                            color: '#1f2937'
+                          }}
+                        />
+                        {importingRecipe && (
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic' }}>
+                            Importing recipe...
+                          </p>
+                        )}
+                        {importedRecipe && !importingRecipe && (
+                          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px' }}>
+                            <p style={{ margin: 0, fontSize: '0.875rem', color: '#166534', fontWeight: '500' }}>
+                              ✓ Recipe imported: {importedRecipe.title}
+                            </p>
+                            {importedRecipe.ingredients && importedRecipe.ingredients.length > 0 && (
+                              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#15803d' }}>
+                                {importedRecipe.ingredients.length} ingredient{importedRecipe.ingredients.length !== 1 ? 's' : ''} added
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                          Paste a recipe URL to automatically import the recipe title and ingredients.
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -1047,7 +1242,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                   )}
                 </div>
 
-                {/* Unified Meal Ingredients List */}
+                {/* Create Dish Section */}
                 {combinedIngredients.length > 0 && (
                   <div style={{
                     marginTop: '2rem',
@@ -1057,7 +1252,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     border: '1px solid #e5e7eb'
                   }}>
                     <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600', color: '#1f2937' }}>
-                      Meal Ingredients List
+                      Create Dish
                     </h3>
 
                     {/* Combined Ingredients with Checkboxes */}
@@ -1142,6 +1337,13 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Google Search Modal */}
+      <GoogleSearchModal
+        isOpen={showGoogleSearchModal}
+        onClose={() => setShowGoogleSearchModal(false)}
+        ingredients={Array.from(selectedSearchIngredients)}
+      />
     </>
   );
 };
