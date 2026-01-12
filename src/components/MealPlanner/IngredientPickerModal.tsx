@@ -16,6 +16,7 @@ import { useIngredientAvailability } from '../../hooks/useIngredientAvailability
 import { IngredientChecklist } from './IngredientChecklist';
 import { GoogleSearchModal } from './GoogleSearchModal';
 import { GoogleSearchRecipeModal } from './GoogleSearchRecipeModal';
+import { SaveDishModal } from './SaveDishModal';
 import { showToast } from '../Toast';
 
 interface IngredientPickerModalProps {
@@ -54,7 +55,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [pastedIngredients, setPastedIngredients] = useState('');
   const [parsedIngredients, setParsedIngredients] = useState<string[]>([]);
   const [selectedPastedIngredientIndices, setSelectedPastedIngredientIndices] = useState<Set<number>>(new Set());
-  const [dishName, setDishName] = useState('');
   const [saving, setSaving] = useState(false);
   const [importingRecipe, setImportingRecipe] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
@@ -64,6 +64,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [selectedSearchIngredients, setSelectedSearchIngredients] = useState<Set<string>>(new Set());
   const [showGoogleSearchModal, setShowGoogleSearchModal] = useState(false);
   const [showGoogleSearchRecipeModal, setShowGoogleSearchRecipeModal] = useState(false);
+  const [showSaveDishModal, setShowSaveDishModal] = useState(false);
 
   // Parse pasted ingredients when text changes
   useEffect(() => {
@@ -245,46 +246,14 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     return Array.from(new Set(combined));
   }, [selectedIngredients, ingredients, selectedPastedIngredientIndices, parsedIngredients]);
 
-  // Use ingredient availability hook for combined ingredients
+  // Use ingredient availability hook for combined ingredients (for SaveDishModal)
   const {
     pantryItems,
-    shoppingListItems,
-    ingredientStatuses: combinedIngredientStatuses,
-    loading: loadingCombinedIngredients,
-    userShoppingLists,
-    targetListId,
-    setTargetListId
+    shoppingListItems
   } = useIngredientAvailability(
     combinedIngredients,
     { isOpen: isOpen && combinedIngredients.length > 0 && selectedMealType !== null }
   );
-
-  // Selected indices for combined ingredients list
-  const [selectedCombinedIndices, setSelectedCombinedIndices] = useState<Set<number>>(new Set());
-
-  // Set default selections for combined ingredients (unavailable items selected by default)
-  useEffect(() => {
-    if (combinedIngredients.length === 0 || combinedIngredientStatuses.length === 0) return;
-    if (selectedCombinedIndices.size > 0) return; // Respect user's manual selections
-    
-    const unavailableIndices = combinedIngredientStatuses
-      .filter(item => item.status === 'missing' || item.status === 'partial')
-      .map(item => item.index);
-    
-    if (unavailableIndices.length > 0) {
-      setSelectedCombinedIndices(new Set(unavailableIndices));
-    }
-  }, [combinedIngredientStatuses.length, combinedIngredients.length]);
-
-  const toggleCombinedIngredient = (index: number) => {
-    const newSelected = new Set(selectedCombinedIndices);
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
-    } else {
-      newSelected.add(index);
-    }
-    setSelectedCombinedIndices(newSelected);
-  };
 
   // Toggle search ingredient selection (max 3)
   const toggleSearchIngredient = (ingredient: string) => {
@@ -350,11 +319,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       });
     }
     
-    // Set dish name if provided
-    if (importedDishName && importedDishName.trim()) {
-      setDishName(importedDishName);
-    }
-    
     // Set recipe URL and imported recipe
     if (recipe.sourceUrl) {
       setRecipeUrl(recipe.sourceUrl);
@@ -383,11 +347,10 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       }
     };
 
-    // Only import if URL is valid, dish name is empty, user is logged in, and we haven't already imported this URL
+    // Only import if URL is valid, user is logged in, and we haven't already imported this URL
     const trimmedUrl = recipeUrl.trim();
     if (
       trimmedUrl && 
-      !dishName.trim() && 
       isValidUrl(trimmedUrl) && 
       user &&
       (!importedRecipe || importedRecipe.sourceUrl !== trimmedUrl)
@@ -397,11 +360,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
         try {
           const recipe = await recipeImportService.importRecipe(trimmedUrl);
           setImportedRecipe(recipe);
-          
-          // Set dish name from recipe title
-          if (recipe.title) {
-            setDishName(recipe.title);
-          }
           
           // Add recipe ingredients to parsed ingredients and auto-select them
           if (recipe.ingredients && recipe.ingredients.length > 0) {
@@ -431,7 +389,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           showToast('Recipe imported successfully', 'success');
         } catch (error: any) {
           console.error('Error auto-importing recipe:', error);
-          showToast(error.message || 'Failed to import recipe. You can still enter a dish name manually.', 'error');
+          showToast(error.message || 'Failed to import recipe. Please try again.', 'error');
         } finally {
           setImportingRecipe(false);
         }
@@ -443,7 +401,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [recipeUrl, dishName, user, importedRecipe]);
+  }, [recipeUrl, user, importedRecipe]);
 
   // Ensure Google exists as a favorite website
   const ensureGoogleFavorite = async () => {
@@ -516,14 +474,13 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       setPastedIngredients('');
       setParsedIngredients([]);
       setSelectedPastedIngredientIndices(new Set());
-      setDishName('');
-      setSelectedCombinedIndices(new Set());
       setImportedRecipe(null);
       setImportingRecipe(false);
       setSelectedFavoriteSite(null);
       setSelectedSearchIngredients(new Set());
       setShowGoogleSearchModal(false);
       setShowGoogleSearchRecipeModal(false);
+      setShowSaveDishModal(false);
     }
   }, [isOpen]);
 
@@ -559,40 +516,30 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     setSelectedIngredients(newSelected);
   };
 
-  const handleSaveMeal = async () => {
+  const handleSaveMeal = async (data: {
+    dishName: string;
+    ingredients: string[];
+    ingredientsToReserve: string[];
+    ingredientsForShoppingList: string[];
+    additionalIngredients: string[];
+    targetListId: string;
+  }) => {
     if (!user || !selectedMealType) {
       showToast('Please select a meal type', 'error');
-      return;
-    }
-
-    if (combinedIngredients.length === 0) {
-      showToast('Please add at least one ingredient', 'error');
-      return;
-    }
-
-    if (selectedCombinedIndices.size > 0 && !targetListId) {
-      showToast('Please select a shopping list to add ingredients', 'error');
-      return;
-    }
-
-    if (!dishName.trim()) {
-      showToast('Please enter a dish name', 'error');
       return;
     }
 
     setSaving(true);
     try {
       const dishId = `dish-${Date.now()}`;
-      const finalDishName = dishName.trim();
+      const finalDishName = data.dishName;
 
-      // Get checked ingredients from combined list
-      const checkedIngredients = Array.from(selectedCombinedIndices)
-        .map(index => combinedIngredients[index])
-        .filter(Boolean);
+      // Combine all ingredients (original + additional)
+      const allIngredients = data.ingredients;
 
-      // Calculate reserved quantities for this dish
+      // Calculate reserved quantities for this dish (only for ingredients to reserve)
       const reservedQuantities = recipeImportService.calculateMealReservedQuantities(
-        combinedIngredients,
+        data.ingredientsToReserve,
         pantryItems
       );
 
@@ -626,32 +573,32 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
         };
       }
 
-      // Claim items from dashboard/pantry for this dish (using dishId as mealId)
+      // Claim items from dashboard/pantry for this dish (only ingredients to reserve)
       const claimedItemIds = await recipeImportService.claimItemsForMeal(
         user.uid,
         dishId,
-        combinedIngredients,
+        data.ingredientsToReserve,
         pantryItems,
         reservedQuantities
       );
 
-      // Claim existing shopping list items for this dish (using dishId as mealId)
+      // Claim existing shopping list items for this dish (only ingredients to reserve)
       const claimedShoppingListItemIds = await recipeImportService.claimShoppingListItemsForMeal(
         user.uid,
         dishId,
-        combinedIngredients,
+        data.ingredientsToReserve,
         shoppingListItems
       );
 
-      // Add checked ingredients (missing items) to shopping list
-      const itemsToAdd = checkedIngredients;
+      // Add ingredients to shopping list (only selected ones)
+      const itemsToAdd = data.ingredientsForShoppingList;
       const newlyAddedItemIds: string[] = [];
       
-      if (itemsToAdd.length > 0 && targetListId) {
+      if (itemsToAdd.length > 0 && data.targetListId) {
         for (const ingredient of itemsToAdd) {
           const itemId = await shoppingListService.addShoppingListItem(
             user.uid,
-            targetListId,
+            data.targetListId,
             ingredient,
             false,
             'meal_plan',
@@ -669,7 +616,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
         id: dishId,
         dishName: finalDishName,
         recipeTitle: finalDishName,
-        recipeIngredients: combinedIngredients,
+        recipeIngredients: allIngredients,
         recipeSourceUrl: recipeUrl || null,
         recipeSourceDomain: recipeUrl ? (() => {
           try {
@@ -829,20 +776,26 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                       {MEAL_TYPES.find(m => m.value === selectedMealType)?.label}
                     </h3>
                     <button
-                      onClick={handleSaveMeal}
-                      disabled={saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0}
+                      onClick={() => {
+                        if (combinedIngredients.length === 0) {
+                          showToast('Please add at least one ingredient', 'warning');
+                          return;
+                        }
+                        setShowSaveDishModal(true);
+                      }}
+                      disabled={saving || combinedIngredients.length === 0}
                       style={{
                         padding: '0.75rem 1.5rem',
-                        backgroundColor: saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0 ? '#9ca3af' : '#002B4D',
+                        backgroundColor: saving || combinedIngredients.length === 0 ? '#9ca3af' : '#002B4D',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
                         fontSize: '1rem',
                         fontWeight: '500',
-                        cursor: saving || !dishName.trim() || (selectedCombinedIndices.size > 0 && !targetListId) || combinedIngredients.length === 0 ? 'not-allowed' : 'pointer'
+                        cursor: saving || combinedIngredients.length === 0 ? 'not-allowed' : 'pointer'
                       }}
                     >
-                      {saving ? 'Saving...' : `Create Dish${selectedCombinedIndices.size > 0 ? ` & Add ${selectedCombinedIndices.size} to List` : ''}`}
+                      Create Dish
                     </button>
                   </div>
                   <button
@@ -859,29 +812,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                   >
                     Back
                   </button>
-                </div>
-
-                {/* Name your Dish Field */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label htmlFor="dishName" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                    Name your Dish
-                  </label>
-                  <input
-                    id="dishName"
-                    type="text"
-                    value={dishName}
-                    onChange={(e) => setDishName(e.target.value)}
-                    placeholder="e.g., Homemade Tortilla Soup"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '1rem',
-                      color: '#1f2937',
-                      boxSizing: 'border-box'
-                    }}
-                  />
                 </div>
 
                 {/* Tab Headers */}
@@ -1349,75 +1279,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                   )}
                 </div>
 
-                {/* Create Dish Section */}
-                {combinedIngredients.length > 0 && (
-                  <div style={{
-                    marginTop: '2rem',
-                    padding: '1.5rem',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem', fontWeight: '600', color: '#1f2937' }}>
-                      Create Dish
-                    </h3>
-
-                    {/* Combined Ingredients with Checkboxes */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-                          Ingredients ({combinedIngredients.length})
-                        </h4>
-                        {combinedIngredientStatuses.length > 0 && (
-                          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                            <span style={{ color: '#059669', marginRight: '0.5rem' }}>
-                              In Dashboard: {combinedIngredientStatuses.filter(item => item.status === 'available' || item.status === 'partial').length}
-                            </span>
-                            <span style={{ color: '#dc2626' }}>
-                              Missing: {combinedIngredientStatuses.filter(item => item.status === 'missing').length}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {loadingCombinedIngredients ? (
-                        <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>Checking ingredient availability...</p>
-                      ) : (
-                        <IngredientChecklist
-                          ingredientStatuses={combinedIngredientStatuses}
-                          selectedIngredientIndices={selectedCombinedIndices}
-                          onToggleIngredient={toggleCombinedIngredient}
-                        />
-                      )}
-                    </div>
-
-                    {/* Shopping List Selection */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.875rem' }}>
-                        Add selected to:
-                      </label>
-                      <select
-                        value={targetListId || ''}
-                        onChange={(e) => setTargetListId(e.target.value)}
-                        disabled={loadingCombinedIngredients}
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '1rem',
-                          backgroundColor: loadingCombinedIngredients ? '#f3f4f6' : '#ffffff'
-                        }}
-                      >
-                        <option value="">Do not add to list</option>
-                        {userShoppingLists.map(list => (
-                          <option key={list.id} value={list.id}>
-                            {list.name} {list.isDefault ? '(Default)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
 
                 {/* Cancel Button */}
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
@@ -1461,6 +1322,20 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
           : combinedIngredients.slice(0, 3)}
         onRecipeImported={handleRecipeImported}
       />
+
+      {/* Save Dish Modal */}
+      {selectedMealType && (
+        <SaveDishModal
+          isOpen={showSaveDishModal}
+          onClose={() => setShowSaveDishModal(false)}
+          onSave={handleSaveMeal}
+          ingredients={combinedIngredients}
+          selectedDate={selectedDate}
+          mealType={selectedMealType}
+          recipeUrl={recipeUrl}
+          importedRecipeTitle={importedRecipe?.title || null}
+        />
+      )}
     </>
   );
 };
