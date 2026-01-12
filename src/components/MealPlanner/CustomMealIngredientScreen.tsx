@@ -8,7 +8,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { recipeImportService, mealPlanningService, shoppingListService } from '../../services';
-import type { MealType, PlannedMeal } from '../../types';
+import type { MealType, Dish } from '../../types';
+import { isSameDay, startOfWeek } from 'date-fns';
 import { showToast } from '../Toast';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
@@ -85,31 +86,24 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
       return;
     }
 
+    if (!mealName.trim()) {
+      showToast('Please enter a dish name', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
-      const mealId = `custom-${Date.now()}`;
+      const dishId = `dish-${Date.now()}`;
+      const finalDishName = mealName.trim();
 
-      // Calculate reserved quantities for this meal
+      // Calculate reserved quantities for this dish
       const reservedQuantities = recipeImportService.calculateMealReservedQuantities(
         ingredients,
         pantryItems
       );
 
-      // Create a planned meal from the custom ingredients
-      const plannedMeal: PlannedMeal = {
-        id: mealId,
-        date: selectedDate,
-        mealType: selectedMealType,
-        finishBy: '18:00', // Default, can be updated later
-        confirmed: false,
-        skipped: false,
-        isLeftover: false,
-        dishes: []
-      };
-
       // Get or create meal plan for this week
-      const weekStart = new Date(selectedDate);
-      weekStart.setDate(selectedDate.getDate() - selectedDate.getDay()); // Start of week (Sunday)
+      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
       weekStart.setHours(0, 0, 0, 0);
 
       let mealPlan = await mealPlanningService.getMealPlan(user.uid, weekStart);
@@ -118,19 +112,38 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
         mealPlan = await mealPlanningService.createMealPlan(user.uid, weekStart, []);
       }
 
-      // Claim items from dashboard/pantry for this meal
+      // Get or create PlannedMeal for this date and meal type
+      let plannedMeal = mealPlan.meals.find(
+        m => isSameDay(m.date, selectedDate) && m.mealType === selectedMealType
+      );
+
+      if (!plannedMeal) {
+        const mealId = `meal-${Date.now()}`;
+        plannedMeal = {
+          id: mealId,
+          date: selectedDate,
+          mealType: selectedMealType,
+          finishBy: '18:00',
+          confirmed: false,
+          skipped: false,
+          isLeftover: false,
+          dishes: []
+        };
+      }
+
+      // Claim items from dashboard/pantry for this dish
       const claimedItemIds = await recipeImportService.claimItemsForMeal(
         user.uid,
-        mealId,
+        dishId,
         ingredients,
         pantryItems,
         reservedQuantities
       );
 
-      // Claim existing shopping list items for this meal
+      // Claim existing shopping list items for this dish
       const claimedShoppingListItemIds = await recipeImportService.claimShoppingListItemsForMeal(
         user.uid,
-        mealId,
+        dishId,
         ingredients,
         shoppingListItems
       );
@@ -149,7 +162,7 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
             ingredient,
             false,
             'custom_meal',
-            mealId
+            dishId
           );
           newlyAddedItemIds.push(itemId);
         }
@@ -158,18 +171,39 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
       // Combine claimed and newly added shopping list item IDs
       const allClaimedShoppingListItemIds = [...claimedShoppingListItemIds, ...newlyAddedItemIds];
 
-      // Update meal with claimed item IDs
-      plannedMeal.claimedItemIds = claimedItemIds;
-      plannedMeal.claimedShoppingListItemIds = allClaimedShoppingListItemIds;
+      // Create the dish
+      const dish: Dish = {
+        id: dishId,
+        dishName: finalDishName,
+        recipeTitle: finalDishName,
+        recipeIngredients: ingredients,
+        recipeSourceUrl: null,
+        recipeSourceDomain: null,
+        recipeImageUrl: null,
+        reservedQuantities,
+        claimedItemIds,
+        claimedShoppingListItemIds: allClaimedShoppingListItemIds,
+        completed: false
+      };
 
-      // Add the custom meal to the plan
-      const updatedMeals = [...mealPlan.meals, plannedMeal];
-      await mealPlanningService.updateMealPlan(mealPlan.id, { meals: updatedMeals });
+      // Add dish to PlannedMeal
+      const updatedDishes = [...(plannedMeal.dishes || []), dish];
+      plannedMeal.dishes = updatedDishes;
+
+      // Update or add PlannedMeal to meal plan
+      const mealIndex = mealPlan.meals.findIndex(m => m.id === plannedMeal!.id);
+      if (mealIndex >= 0) {
+        mealPlan.meals[mealIndex] = plannedMeal;
+      } else {
+        mealPlan.meals.push(plannedMeal);
+      }
+
+      await mealPlanningService.updateMealPlan(mealPlan.id, { meals: mealPlan.meals });
 
       if (itemsToAdd.length > 0) {
-        showToast(`Custom meal saved and ${itemsToAdd.length} ingredient(s) added to shopping list!`, 'success');
+        showToast(`Dish saved and ${itemsToAdd.length} ingredient(s) added to shopping list!`, 'success');
       } else {
-        showToast('Custom meal saved to meal planner successfully!', 'success');
+        showToast('Dish saved to meal planner successfully!', 'success');
       }
 
       onClose(); // Close the modal after saving
@@ -246,7 +280,7 @@ export const CustomMealIngredientScreen: React.FC<CustomMealIngredientScreenProp
               {/* Meal Name Input */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937' }}>
-                  Meal Name
+                  Dish Name
                 </label>
                 <input
                   type="text"

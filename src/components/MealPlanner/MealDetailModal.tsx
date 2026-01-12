@@ -9,7 +9,7 @@ import { auth } from '../../firebase/firebaseConfig';
 import { mealPlanningService, shoppingListService, foodItemService, recipeImportService } from '../../services';
 import type { PlannedMeal, MealType, Dish } from '../../types';
 import { showToast } from '../Toast';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
 import { fuzzyMatchIngredientToItem } from '../../utils/fuzzyIngredientMatcher';
@@ -128,13 +128,13 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!user || !meal) {
-      showToast('Please log in to edit meals', 'error');
+    if (!user || !meal || !currentDish) {
+      showToast('Please log in to edit dishes', 'error');
       return;
     }
 
     if (!editedMealName.trim()) {
-      showToast('Meal name is required', 'error');
+      showToast('Dish name is required', 'error');
       return;
     }
 
@@ -151,8 +151,8 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
         pantryItems
       );
 
-      // Get current shopping list items for this meal
-      const currentShoppingListItems = shoppingListItems.filter(item => item.mealId === meal.id);
+      // Get current shopping list items for this dish
+      const currentShoppingListItems = shoppingListItems.filter(item => item.mealId === currentDish.id);
       
       // Two-way sync: Update shopping list based on ingredient changes
       if (targetListId) {
@@ -184,8 +184,8 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
             targetListId,
             ingredient,
             false,
-            'meal_edit',
-            meal.id
+            'dish_edit',
+            currentDish.id
           );
         }
         
@@ -213,25 +213,25 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
         }
       }
       
-      // Update usedByMeals for matching items
+      // Update usedByMeals for matching items (using dish.id)
       for (const itemId of matchingItemIds) {
         const item = pantryItems.find(p => p.id === itemId);
         if (item) {
           const currentUsedByMeals = item.usedByMeals || [];
-          const updatedUsedByMeals = currentUsedByMeals.includes(meal.id)
+          const updatedUsedByMeals = currentUsedByMeals.includes(currentDish.id)
             ? currentUsedByMeals
-            : [...currentUsedByMeals, meal.id];
+            : [...currentUsedByMeals, currentDish.id];
           await foodItemService.updateFoodItemUsedByMeals(user.uid, itemId, updatedUsedByMeals);
         }
       }
       
-      // Remove mealId from items that no longer match
+      // Remove dishId from items that no longer match
       const allItemIds = pantryItems.map(item => item.id);
       for (const itemId of allItemIds) {
         if (!matchingItemIds.includes(itemId)) {
           const item = pantryItems.find(p => p.id === itemId);
-          if (item && item.usedByMeals?.includes(meal.id)) {
-            const updatedUsedByMeals = item.usedByMeals.filter(id => id !== meal.id);
+          if (item && item.usedByMeals?.includes(currentDish.id)) {
+            const updatedUsedByMeals = item.usedByMeals.filter(id => id !== currentDish.id);
             await foodItemService.updateFoodItemUsedByMeals(user.uid, itemId, updatedUsedByMeals);
           }
         }
@@ -262,45 +262,60 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       // Check if date changed to a different week
       const weekChanged = oldWeekStart.getTime() !== newWeekStart.getTime();
 
-      // Create updated meal object
-      const updatedMeal = {
-        ...meal,
-        mealName: editedMealName.trim(),
-        recipeTitle: meal.recipeSourceUrl ? editedMealName.trim() : undefined,
-        date: newDate,
-        mealType: editedMealType,
+      // Update the dish
+      const updatedDish: Partial<Dish> = {
+        dishName: editedMealName.trim(),
+        recipeTitle: currentDish.recipeSourceUrl ? editedMealName.trim() : currentDish.recipeTitle,
         recipeIngredients: parsedIngredients,
-        suggestedIngredients: parsedIngredients,
         reservedQuantities: newReservedQuantities
       };
 
-      if (weekChanged) {
-        // Remove meal from old week's meal plan
-        const oldMeals = oldMealPlan.meals.filter(m => m.id !== meal.id);
-        await mealPlanningService.updateMealPlan(oldMealPlan.id, { meals: oldMeals });
+      // If meal type or date changed, we need to move the dish to a different meal
+      if (weekChanged || editedMealType !== meal.mealType) {
+        // Remove dish from old meal
+        await mealPlanningService.removeDishFromMeal(user.uid, meal.id, currentDish.id);
 
         // Get or create new week's meal plan
         let newMealPlan = await mealPlanningService.getMealPlan(user.uid, newWeekStart);
         
         if (!newMealPlan) {
-          // Create a new empty meal plan for the new week
           newMealPlan = await mealPlanningService.createEmptyMealPlan(user.uid, newWeekStart);
         }
-        
-        // Add meal to new week's meal plan (whether it existed or was just created)
-        const newMeals = [...newMealPlan.meals, updatedMeal];
-        await mealPlanningService.updateMealPlan(newMealPlan.id, { meals: newMeals });
-      } else {
-        // Same week - just update the meal in place
-        const updatedMeals = oldMealPlan.meals.map(m => 
-          m.id === meal.id ? updatedMeal : m
+
+        // Get or create PlannedMeal for new date and meal type
+        let newPlannedMeal = newMealPlan.meals.find(
+          m => isSameDay(m.date, newDate) && m.mealType === editedMealType
         );
-        await mealPlanningService.updateMealPlan(oldMealPlan.id, { meals: updatedMeals });
+
+        if (!newPlannedMeal) {
+          const newMealId = `meal-${Date.now()}`;
+          newPlannedMeal = {
+            id: newMealId,
+            date: newDate,
+            mealType: editedMealType,
+            finishBy: meal.finishBy,
+            confirmed: meal.confirmed,
+            skipped: meal.skipped,
+            isLeftover: meal.isLeftover,
+            dishes: []
+          };
+        }
+
+        // Add updated dish to new meal
+        const updatedDishFull: Dish = {
+          ...currentDish,
+          ...updatedDish
+        };
+        await mealPlanningService.addDishToMeal(user.uid, newPlannedMeal.id, updatedDishFull);
+      } else {
+        // Same meal - just update the dish
+        await mealPlanningService.updateDishInMeal(user.uid, meal.id, currentDish.id, updatedDish);
       }
 
-      showToast('Meal updated successfully', 'success');
+      showToast('Dish updated successfully', 'success');
       setIsEditing(false);
-      onMealDeleted?.(); // Refresh calendar
+      onDishDeleted?.(); // Refresh calendar
+      onMealDeleted?.(); // Legacy support
     } catch (error) {
       console.error('Error updating meal:', error);
       showToast('Failed to update meal. Please try again.', 'error');

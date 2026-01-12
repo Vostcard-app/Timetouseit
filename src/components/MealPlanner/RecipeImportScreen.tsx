@@ -9,7 +9,8 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { recipeImportService, mealPlanningService, shoppingListService } from '../../services';
 import type { RecipeImportResult } from '../../types/recipeImport';
-import type { MealType, PlannedMeal } from '../../types';
+import type { MealType, Dish } from '../../types';
+import { isSameDay, startOfWeek } from 'date-fns';
 import { showToast } from '../Toast';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
@@ -142,43 +143,50 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         pantryItems
       );
 
-      // Create a planned meal from the recipe
-      const plannedMeal: PlannedMeal = {
-        id: `recipe-${Date.now()}`,
-        date: selectedDate,
-        mealType: selectedMealType,
-        finishBy: '18:00', // Default, can be updated later
-        confirmed: false,
-        skipped: false,
-        isLeftover: false,
-        dishes: []
-      };
+      const dishId = `dish-${Date.now()}`;
 
       // Get or create meal plan for this week
-      const weekStart = new Date(selectedDate);
-      weekStart.setDate(selectedDate.getDate() - selectedDate.getDay()); // Start of week (Sunday)
+      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
       weekStart.setHours(0, 0, 0, 0);
 
       let mealPlan = await mealPlanningService.getMealPlan(user.uid, weekStart);
       
       if (!mealPlan) {
-        // Create new meal plan with just this recipe meal
         mealPlan = await mealPlanningService.createMealPlan(user.uid, weekStart, []);
       }
 
-      // Claim items from dashboard/pantry for this meal
+      // Get or create PlannedMeal for this date and meal type
+      let plannedMeal = mealPlan.meals.find(
+        m => isSameDay(m.date, selectedDate) && m.mealType === selectedMealType
+      );
+
+      if (!plannedMeal) {
+        const mealId = `meal-${Date.now()}`;
+        plannedMeal = {
+          id: mealId,
+          date: selectedDate,
+          mealType: selectedMealType,
+          finishBy: '18:00',
+          confirmed: false,
+          skipped: false,
+          isLeftover: false,
+          dishes: []
+        };
+      }
+
+      // Claim items from dashboard/pantry for this dish
       const claimedItemIds = await recipeImportService.claimItemsForMeal(
         user.uid,
-        plannedMeal.id,
+        dishId,
         importedRecipe.ingredients,
         pantryItems,
         reservedQuantities
       );
 
-      // Claim existing shopping list items for this meal
+      // Claim existing shopping list items for this dish
       const claimedShoppingListItemIds = await recipeImportService.claimShoppingListItemsForMeal(
         user.uid,
-        plannedMeal.id,
+        dishId,
         importedRecipe.ingredients,
         shoppingListItems
       );
@@ -197,7 +205,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
             ingredient,
             false,
             'recipe_import',
-            plannedMeal.id
+            dishId
           );
           newlyAddedItemIds.push(itemId);
         }
@@ -206,13 +214,34 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
       // Combine claimed and newly added shopping list item IDs
       const allClaimedShoppingListItemIds = [...claimedShoppingListItemIds, ...newlyAddedItemIds];
 
-      // Update meal with claimed item IDs
-      plannedMeal.claimedItemIds = claimedItemIds;
-      plannedMeal.claimedShoppingListItemIds = allClaimedShoppingListItemIds;
+      // Create the dish
+      const dish: Dish = {
+        id: dishId,
+        dishName: importedRecipe.title,
+        recipeTitle: importedRecipe.title,
+        recipeIngredients: importedRecipe.ingredients,
+        recipeSourceUrl: importedRecipe.sourceUrl || null,
+        recipeSourceDomain: importedRecipe.sourceDomain || null,
+        recipeImageUrl: importedRecipe.imageUrl || null,
+        reservedQuantities,
+        claimedItemIds,
+        claimedShoppingListItemIds: allClaimedShoppingListItemIds,
+        completed: false
+      };
 
-      // Add the recipe meal to the plan
-      const updatedMeals = [...mealPlan.meals, plannedMeal];
-      await mealPlanningService.updateMealPlan(mealPlan.id, { meals: updatedMeals });
+      // Add dish to PlannedMeal
+      const updatedDishes = [...(plannedMeal.dishes || []), dish];
+      plannedMeal.dishes = updatedDishes;
+
+      // Update or add PlannedMeal to meal plan
+      const mealIndex = mealPlan.meals.findIndex(m => m.id === plannedMeal!.id);
+      if (mealIndex >= 0) {
+        mealPlan.meals[mealIndex] = plannedMeal;
+      } else {
+        mealPlan.meals.push(plannedMeal);
+      }
+
+      await mealPlanningService.updateMealPlan(mealPlan.id, { meals: mealPlan.meals });
 
       if (selectedItems.length > 0) {
         showToast(`Recipe saved and ${selectedItems.length} ingredient(s) added to shopping list!`, 'success');

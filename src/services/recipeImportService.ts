@@ -273,10 +273,65 @@ export const recipeImportService = {
     const reservedMap: Record<string, number> = {};
     
     plannedMeals.forEach(meal => {
-      // Use recipeIngredients if available, otherwise suggestedIngredients
-      const ingredients = meal.recipeIngredients || meal.suggestedIngredients || [];
+      // Process dishes first (new structure)
+      if (meal.dishes && meal.dishes.length > 0) {
+        meal.dishes.forEach(dish => {
+          const ingredients = dish.recipeIngredients || [];
+          
+          ingredients.forEach(ingredient => {
+            const parsed = parseIngredientQuantity(ingredient);
+            if (parsed.quantity === null) return; // Skip ingredients without quantities
+            
+            const normalizedItemName = normalizeItemName(parsed.itemName);
+            const neededQty = parsed.quantity;
+            
+            // Find matching pantry items
+            const matchingItems = pantryItems.filter(item => {
+              const normalizedPantryName = normalizeItemName(item.name);
+              const pantryWords = normalizedPantryName.split(/\s+/);
+              const ingredientWords = normalizedItemName.split(/\s+/);
+              
+              // Exact match
+              if (normalizedItemName === normalizedPantryName) return true;
+              
+              // Substring match
+              if (normalizedItemName.includes(normalizedPantryName) || normalizedPantryName.includes(normalizedItemName)) {
+                return true;
+              }
+              
+              // Word overlap
+              const matchingWords = pantryWords.filter(word => 
+                word.length > 2 && ingredientWords.some(ingWord => 
+                  ingWord.includes(word) || word.includes(ingWord)
+                )
+              );
+              
+              return matchingWords.length >= Math.min(2, pantryWords.length);
+            });
+            
+            // Reserve quantity from matching pantry items
+            let remainingNeeded = neededQty;
+            matchingItems.forEach(item => {
+              if (remainingNeeded <= 0) return;
+              
+              const pantryQty = item.quantity || 1;
+              const normalizedPantryName = normalizeItemName(item.name);
+              const alreadyReserved = reservedMap[normalizedPantryName] || 0;
+              const available = Math.max(0, pantryQty - alreadyReserved);
+              
+              if (available > 0) {
+                const toReserve = Math.min(remainingNeeded, available);
+                reservedMap[normalizedPantryName] = (reservedMap[normalizedPantryName] || 0) + toReserve;
+                remainingNeeded -= toReserve;
+              }
+            });
+          });
+        });
+      }
       
-      ingredients.forEach(ingredient => {
+      // Legacy support: also process meal-level ingredients
+      const legacyIngredients = meal.recipeIngredients || meal.suggestedIngredients || [];
+      legacyIngredients.forEach(ingredient => {
         const parsed = parseIngredientQuantity(ingredient);
         if (parsed.quantity === null) return; // Skip ingredients without quantities
         
