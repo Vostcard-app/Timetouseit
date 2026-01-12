@@ -75,7 +75,7 @@ const Privacy: React.FC = () => {
               We use the information we collect to:
             </p>
             <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
-              <li>Provide and maintain the TossItTime service</li>
+              <li>Provide and maintain the TimeToUseIt service</li>
               <li>Send you expiration reminders and notifications</li>
               <li>Improve our service and user experience</li>
               <li>Respond to your inquiries and support requests</li>
@@ -129,7 +129,7 @@ const Privacy: React.FC = () => {
               7. Children's Privacy
             </h2>
             <p style={{ marginBottom: '1rem' }}>
-              TossItTime is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
+              TimeToUseIt is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
             </p>
           </section>
 

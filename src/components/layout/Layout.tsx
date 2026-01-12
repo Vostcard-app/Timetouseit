@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Link to="/shop" style={{ textDecoration: 'none', color: 'inherit' }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>
-              TossItTime
+              TimeToUseIt
             </h1>
           </Link>
         </div>

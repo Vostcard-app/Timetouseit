@@ -4,7 +4,7 @@
 
 // Storage Keys
 export const STORAGE_KEYS = {
-  LAST_SHOPPING_LIST_ID: 'tossittime:lastShoppingListId',
+  LAST_SHOPPING_LIST_ID: 'timetouseit:lastShoppingListId',
 } as const;
 
 // Default Values

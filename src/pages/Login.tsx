@@ -259,8 +259,8 @@ const Login: React.FC = () => {
           marginBottom: '1.5rem'
         }}>
           <img
-            src="/logo.png"
-            alt="TossItTime Logo"
+            src="/timetouseit logo.jpg"
+            alt="TimeToUseIt Logo"
             style={{
               maxWidth: '200px',
               width: '100%',

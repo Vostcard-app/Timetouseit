@@ -57,7 +57,7 @@ const Terms: React.FC = () => {
               1. Introduction
             </h2>
             <p style={{ marginBottom: '1rem' }}>
-              Welcome to TossItTime. These Terms and Conditions ("Terms") govern your use of our food expiration tracking service. By accessing or using TossItTime, you agree to be bound by these Terms.
+              Welcome to TimeToUseIt. These Terms and Conditions ("Terms") govern your use of our food best by date tracking service. By accessing or using TimeToUseIt, you agree to be bound by these Terms.
             </p>
           </section>
 
@@ -66,7 +66,7 @@ const Terms: React.FC = () => {
               2. User Agreement
             </h2>
             <p style={{ marginBottom: '1rem' }}>
-              By creating an account and using TossItTime, you agree to:
+              By creating an account and using TimeToUseIt, you agree to:
             </p>
             <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
               <li>Provide accurate and complete information when registering</li>
@@ -81,7 +81,7 @@ const Terms: React.FC = () => {
               3. Use of Service
             </h2>
             <p style={{ marginBottom: '1rem' }}>
-              TossItTime is designed to help you track food expiration dates. You are responsible for:
+              TimeToUseIt is designed to help you track food best by dates. You are responsible for:
             </p>
             <ul style={{ marginLeft: '1.5rem', marginBottom: '1rem' }}>
               <li>Accurately entering food item information</li>
@@ -89,7 +89,7 @@ const Terms: React.FC = () => {
               <li>Making your own decisions about food safety</li>
             </ul>
             <p style={{ marginBottom: '1rem' }}>
-              TossItTime provides suggestions and reminders, but you are solely responsible for food safety decisions.
+              TimeToUseIt provides suggestions and reminders, but you are solely responsible for food safety decisions.
             </p>
           </section>
 
@@ -107,7 +107,7 @@ const Terms: React.FC = () => {
               5. Limitation of Liability
             </h2>
             <p style={{ marginBottom: '1rem' }}>
-              TossItTime is provided "as is" without warranties of any kind. We are not liable for any damages resulting from your use of the service, including but not limited to food safety issues.
+              TimeToUseIt is provided "as is" without warranties of any kind. We are not liable for any damages resulting from your use of the service, including but not limited to food safety issues.
             </p>
           </section>
 

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 interface BannerProps {
   /** Whether to show the home icon. Defaults to true. Set to false for Shop page. */
   showHomeIcon?: boolean;
-  /** Whether to show the TossItTime text/logo. Defaults to true. */
+  /** Whether to show the TimeToUseIt text/logo. Defaults to true. */
   showLogo?: boolean;
   /** Handler for hamburger menu button click */
   onMenuClick: () => void;
@@ -15,7 +15,7 @@ interface BannerProps {
 /**
  * Banner Component
  * Standardized banner header used across all pages.
- * Includes home icon (conditionally), TossItTime text, and hamburger menu button.
+ * Includes home icon (conditionally), TimeToUseIt text, and hamburger menu button.
  * 
  * @example
  * ```tsx
@@ -81,7 +81,7 @@ const Banner: React.FC<BannerProps> = ({
           )}
           {showLogo && (
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
-              TossItTime
+              TimeToUseIt
             </h1>
           )}
         </div>

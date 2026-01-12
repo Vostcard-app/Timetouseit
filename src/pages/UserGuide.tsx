@@ -46,7 +46,7 @@ const UserGuide: React.FC = () => {
               Getting Started
             </h2>
             <p style={{ marginBottom: '1rem' }}>
-              Welcome to TossItTime! This guide will help you get the most out of the app to track your food items and reduce waste.
+              Welcome to TimeToUseIt! This guide will help you get the most out of the app to track your food items and reduce waste.
             </p>
           </section>
 

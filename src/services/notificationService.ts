@@ -54,7 +54,7 @@ export const notificationService = {
         ? `${item.name} is best by today!`
         : `${item.name} is best by in ${daysUntilBestBy} day${daysUntilBestBy === 1 ? '' : 's'}`;
 
-      new Notification('TossItTime Reminder', {
+      new Notification('TimeToUseIt Reminder', {
         body: message,
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',

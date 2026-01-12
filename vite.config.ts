@@ -11,11 +11,11 @@ export default defineConfig({
       devOptions: {
         enabled: false, // Disable service worker in dev mode to prevent caching issues
       },
-      includeAssets: ['icons/*.png', 'vite.svg', 'logo.png'],
+      includeAssets: ['icons/*.png', 'vite.svg', 'timetouseit logo.jpg'],
       manifest: {
-        name: 'TossItTime - Food Expiration Tracker',
-        short_name: 'TossItTime',
-        description: 'Track your food expiration dates and get reminders before it\'s toss it time',
+        name: 'TimeToUseIt - Food Best By Date Tracker',
+        short_name: 'TimeToUseIt',
+        description: 'Track your food best by dates and get reminders before it\'s time to use it',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
@@ -47,7 +47,7 @@ export default defineConfig({
         dir: 'ltr'
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,webp}', 'logo.png'],
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,webp}', 'timetouseit logo.jpg'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [

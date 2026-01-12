@@ -3,8 +3,8 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { analyticsService } from '../services/analyticsService';
 
-const SESSION_STORAGE_KEY = 'tossittime_last_session';
-const LAST_ACTIVE_KEY = 'tossittime_last_active';
+const SESSION_STORAGE_KEY = 'timetouseit_last_session';
+const LAST_ACTIVE_KEY = 'timetouseit_last_active';
 
 /**
  * Hook to track user sessions and retention metrics
@@ -40,18 +40,18 @@ export const useSessionTracking = () => {
 
         // Track weekly active user (if not tracked today)
         const today = new Date().toDateString();
-        const lastWauDate = localStorage.getItem('tossittime_last_wau_date');
+        const lastWauDate = localStorage.getItem('timetouseit_last_wau_date');
         if (lastWauDate !== today) {
           await analyticsService.trackRetention(user.uid, 'weekly_active_user', {});
-          localStorage.setItem('tossittime_last_wau_date', today);
+          localStorage.setItem('timetouseit_last_wau_date', today);
         }
 
         // Track monthly active user (if not tracked this month)
         const thisMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-        const lastMauMonth = localStorage.getItem('tossittime_last_mau_month');
+        const lastMauMonth = localStorage.getItem('timetouseit_last_mau_month');
         if (lastMauMonth !== thisMonth) {
           await analyticsService.trackRetention(user.uid, 'monthly_active_user', {});
-          localStorage.setItem('tossittime_last_mau_month', thisMonth);
+          localStorage.setItem('timetouseit_last_mau_month', thisMonth);
         }
 
         // Update last session time

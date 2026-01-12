@@ -33,8 +33,8 @@ const getPlatform = (): Platform => {
 const getSessionId = (): string => {
   if (typeof window === 'undefined') return '';
   
-  const storageKey = 'tossittime_session_id';
-  const sessionTimestampKey = 'tossittime_session_timestamp';
+  const storageKey = 'timetouseit_session_id';
+  const sessionTimestampKey = 'timetouseit_session_timestamp';
   const sessionTimeout = 30 * 60 * 1000; // 30 minutes
   
   const existingSessionId = sessionStorage.getItem(storageKey);

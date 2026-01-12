@@ -9,18 +9,18 @@ export interface ExpirationCredits {
   updatedAt: number;
 }
 
-interface TossittimeDB extends DBSchema {
+interface TimeToUseItDB extends DBSchema {
   expiration_credits: {
     key: string;
     value: ExpirationCredits;
   };
 }
 
-let dbPromise: Promise<IDBPDatabase<TossittimeDB>>;
+let dbPromise: Promise<IDBPDatabase<TimeToUseItDB>>;
 
 export function getDB() {
   if (!dbPromise) {
-    dbPromise = openDB<TossittimeDB>('tossittime', 1, {
+    dbPromise = openDB<TimeToUseItDB>('timetouseit', 1, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           db.createObjectStore('expiration_credits', { keyPath: 'id' });
