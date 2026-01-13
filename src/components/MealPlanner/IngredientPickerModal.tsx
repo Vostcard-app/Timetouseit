@@ -163,7 +163,9 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             source: 'bestBySoon',
             bestByDate: item.bestByDate || item.thawDate || null,
             category: (item.category as FoodCategory) || detectCategory(item.name),
-            originalItemId: item.id
+            // Only set originalItemId for perishable items (not dry/canned)
+            // This ensures the edit icon only appears on perishable items
+            originalItemId: !isDryCannedItem(item) ? item.id : undefined
           });
         });
 
@@ -912,22 +914,6 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     My Ingredients
                   </button>
                   <button
-                    onClick={() => setActiveTab('pasteIngredients')}
-                    style={{
-                      flex: 1,
-                      padding: '1rem',
-                      border: 'none',
-                      backgroundColor: activeTab === 'pasteIngredients' ? '#ffffff' : 'transparent',
-                      borderBottom: activeTab === 'pasteIngredients' ? '2px solid #002B4D' : 'none',
-                      color: activeTab === 'pasteIngredients' ? '#002B4D' : '#6b7280',
-                      fontWeight: activeTab === 'pasteIngredients' ? '600' : '400',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Add Ingredients
-                  </button>
-                  <button
                     onClick={() => setActiveTab('recipeUrl')}
                     style={{
                       flex: 1,
@@ -942,6 +928,22 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                     }}
                   >
                     Recipe URL
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('pasteIngredients')}
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      border: 'none',
+                      backgroundColor: activeTab === 'pasteIngredients' ? '#ffffff' : 'transparent',
+                      borderBottom: activeTab === 'pasteIngredients' ? '2px solid #002B4D' : 'none',
+                      color: activeTab === 'pasteIngredients' ? '#002B4D' : '#6b7280',
+                      fontWeight: activeTab === 'pasteIngredients' ? '600' : '400',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Add Ingredients
                   </button>
                 </div>
 
@@ -1022,7 +1024,71 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                                         cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer'
                                       }}
                                     />
-                                    <span style={{ flex: 1, fontSize: '1rem' }}>{ingredient.name}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '0.5rem' }}>
+                                      <span style={{ flex: 1, fontSize: '1rem' }}>{ingredient.name}</span>
+                                      {ingredient.originalItemId && (
+                                        <div style={{ position: 'relative' }}>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setEditingCategoryItemId(editingCategoryItemId === ingredient.id ? null : ingredient.id);
+                                            }}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              padding: '0.25rem',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              color: '#6b7280'
+                                            }}
+                                            title="Edit category"
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                          </button>
+                                          {editingCategoryItemId === ingredient.id && (
+                                            <div style={{
+                                              position: 'absolute',
+                                              right: 0,
+                                              top: '100%',
+                                              marginTop: '0.25rem',
+                                              backgroundColor: '#ffffff',
+                                              border: '1px solid #d1d5db',
+                                              borderRadius: '6px',
+                                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                              zIndex: 1000,
+                                              minWidth: '150px'
+                                            }}>
+                                              <select
+                                                value={ingredient.category || 'Other'}
+                                                onChange={(e) => handleCategoryChange(ingredient.id, e.target.value as FoodCategory)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onBlur={() => setEditingCategoryItemId(null)}
+                                                style={{
+                                                  width: '100%',
+                                                  padding: '0.5rem 0.75rem',
+                                                  backgroundColor: '#ffffff',
+                                                  color: '#1f2937',
+                                                  border: 'none',
+                                                  borderRadius: '6px',
+                                                  fontSize: '0.875rem',
+                                                  fontWeight: '500',
+                                                  cursor: 'pointer'
+                                                }}
+                                                autoFocus
+                                              >
+                                                {categoryOptions.map(cat => (
+                                                  <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   </label>
                                 ))}
                               </div>
