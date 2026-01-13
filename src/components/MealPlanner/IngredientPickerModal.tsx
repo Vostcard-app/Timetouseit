@@ -12,7 +12,7 @@ import type { RecipeImportResult } from '../../types/recipeImport';
 import type { RecipeSite } from '../../types/recipeImport';
 import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays, startOfWeek, isSameDay } from 'date-fns';
-import { detectCategory } from '../../utils/categoryUtils';
+import { detectCategory, type FoodCategory } from '../../utils/categoryUtils';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
 import { GoogleSearchRecipeModal } from './GoogleSearchRecipeModal';
@@ -32,6 +32,7 @@ interface IngredientItem {
   source: 'bestBySoon' | 'shopList' | 'perishable' | 'dryCanned';
   bestByDate?: Date | null; // For sorting by best by date
   category?: 'Proteins' | 'Vegetables' | 'Fruits' | 'Dairy' | 'Leftovers' | 'Other';
+  originalItemId?: string; // Original FoodItem ID for perishable items (for category updates)
 }
 
 const MEAL_TYPES: { value: MealType; label: string }[] = [
@@ -64,6 +65,8 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
   const [favoriteWebsites, setFavoriteWebsites] = useState<RecipeSite[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [editingCategoryItemId, setEditingCategoryItemId] = useState<string | null>(null);
+  const categoryOptions: FoodCategory[] = ['Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Leftovers', 'Other'];
   const [selectedFavoriteSite, setSelectedFavoriteSite] = useState<RecipeSite | null>(null);
   const [selectedSearchIngredients, setSelectedSearchIngredients] = useState<Set<string>>(new Set());
   const [showGoogleSearchRecipeModal, setShowGoogleSearchRecipeModal] = useState(false);
@@ -190,7 +193,8 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             name: item.name,
             source: 'perishable',
             bestByDate: item.bestByDate || item.thawDate || null,
-            category: detectCategory(item.name)
+            category: (item.category as FoodCategory) || detectCategory(item.name),
+            originalItemId: item.id
           });
         });
 
@@ -479,6 +483,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       setShowGoogleSearchRecipeModal(false);
       setShowSaveDishModal(false);
       setCategoryFilter('all'); // Reset category filter when modal closes
+      setEditingCategoryItemId(null); // Close any open category edit dropdowns
     }
   }, [isOpen]);
 
@@ -540,6 +545,33 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     }
     
     setSelectedIngredients(newSelected);
+  };
+
+  const handleCategoryChange = async (ingredientId: string, newCategory: FoodCategory) => {
+    if (!user) return;
+
+    const ingredient = ingredients.find(ing => ing.id === ingredientId);
+    if (!ingredient || !ingredient.originalItemId) return;
+
+    try {
+      // Update the FoodItem in Firestore
+      await foodItemService.updateFoodItem(ingredient.originalItemId, {
+        category: newCategory
+      });
+
+      // Update the local ingredient's category
+      setIngredients(prev => prev.map(ing => 
+        ing.id === ingredientId ? { ...ing, category: newCategory } : ing
+      ));
+
+      // Close the edit dropdown
+      setEditingCategoryItemId(null);
+      
+      showToast('Category updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      showToast('Failed to update category. Please try again.', 'error');
+    }
   };
 
   const handleSaveMeal = async (data: {
@@ -1013,7 +1045,71 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                                         cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer'
                                       }}
                                     />
-                                    <span style={{ flex: 1, fontSize: '1rem' }}>{ingredient.name}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '0.5rem' }}>
+                                      <span style={{ flex: 1, fontSize: '1rem' }}>{ingredient.name}</span>
+                                      {ingredient.originalItemId && (
+                                        <div style={{ position: 'relative' }}>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setEditingCategoryItemId(editingCategoryItemId === ingredient.id ? null : ingredient.id);
+                                            }}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              padding: '0.25rem',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              color: '#6b7280'
+                                            }}
+                                            title="Edit category"
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                          </button>
+                                          {editingCategoryItemId === ingredient.id && (
+                                            <div style={{
+                                              position: 'absolute',
+                                              right: 0,
+                                              top: '100%',
+                                              marginTop: '0.25rem',
+                                              backgroundColor: '#ffffff',
+                                              border: '1px solid #d1d5db',
+                                              borderRadius: '6px',
+                                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                              zIndex: 1000,
+                                              minWidth: '150px'
+                                            }}>
+                                              <select
+                                                value={ingredient.category || 'Other'}
+                                                onChange={(e) => handleCategoryChange(ingredient.id, e.target.value as FoodCategory)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onBlur={() => setEditingCategoryItemId(null)}
+                                                style={{
+                                                  width: '100%',
+                                                  padding: '0.5rem 0.75rem',
+                                                  backgroundColor: '#ffffff',
+                                                  color: '#1f2937',
+                                                  border: 'none',
+                                                  borderRadius: '6px',
+                                                  fontSize: '0.875rem',
+                                                  fontWeight: '500',
+                                                  cursor: 'pointer'
+                                                }}
+                                                autoFocus
+                                              >
+                                                {categoryOptions.map(cat => (
+                                                  <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   </label>
                                 ))}
                               </div>

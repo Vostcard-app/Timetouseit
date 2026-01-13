@@ -16,6 +16,7 @@ import { analyticsService } from '../services/analyticsService';
 
 import { capitalizeItemName } from '../utils/formatting';
 import { isDryCannedItem } from '../utils/storageUtils';
+import { detectCategory } from '../utils/categoryUtils';
 
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -210,7 +211,17 @@ const AddItem: React.FC = () => {
       if (scannedBarcode || data.barcode) {
         itemData.barcode = scannedBarcode || data.barcode;
       }
-      if (data.category) itemData.category = data.category;
+      // Auto-detect category if not provided, or use provided category
+      // If editing an item and it already has a category, preserve it unless user explicitly changes it
+      if (data.category) {
+        itemData.category = data.category;
+      } else if (editingItem && editingItem.category) {
+        // Preserve existing category when editing
+        itemData.category = editingItem.category;
+      } else {
+        // Auto-detect category from item name for new items
+        itemData.category = detectCategory(capitalizedName);
+      }
       if (data.notes) itemData.notes = data.notes;
       if (photoUrl) itemData.photoUrl = photoUrl;
       if (data.isFrozen !== undefined) itemData.isFrozen = data.isFrozen;
