@@ -161,7 +161,9 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             id: `bestBySoon-${item.id}`,
             name: item.name,
             source: 'bestBySoon',
-            bestByDate: item.bestByDate || item.thawDate || null
+            bestByDate: item.bestByDate || item.thawDate || null,
+            category: (item.category as FoodCategory) || detectCategory(item.name),
+            originalItemId: item.id
           });
         });
 
@@ -516,9 +518,19 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       groups[ingredient.source].push(ingredient);
     });
 
-    // Filter perishable items by category if filter is set
+    // Filter perishable items (both bestBySoon and perishable groups) by category if filter is set
+    let filteredBestBySoon = groups.bestBySoon;
     let filteredPerishable = groups.perishable;
+    
     if (categoryFilter !== 'all') {
+      // Filter "Use Soon" items (these are also perishable items)
+      filteredBestBySoon = groups.bestBySoon.filter(item => {
+        // Use stored category if available, otherwise auto-detect
+        const itemCategory = item.category || detectCategory(item.name);
+        return itemCategory === categoryFilter;
+      });
+      
+      // Filter regular perishable items
       filteredPerishable = groups.perishable.filter(item => {
         // Use stored category if available, otherwise auto-detect
         const itemCategory = item.category || detectCategory(item.name);
@@ -528,7 +540,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
 
     // Sort each group by best by date (earliest first)
     return {
-      bestBySoon: sortIngredientsByDate(groups.bestBySoon),
+      bestBySoon: sortIngredientsByDate(filteredBestBySoon),
       shopList: groups.shopList, // Shop list items don't have dates, keep current order
       perishable: sortIngredientsByDate(filteredPerishable),
       dryCanned: sortIngredientsByDate(groups.dryCanned)
