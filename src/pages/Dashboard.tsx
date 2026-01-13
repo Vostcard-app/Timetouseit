@@ -97,11 +97,23 @@ const Dashboard: React.FC = () => {
       ? storageFiltered 
       : storageFiltered.filter(item => item.status === filter);
     
-    // Group into "About to Expire" and "Everything else"
+    // Separate items used by meals from items not used by meals
+    const planned: FoodItem[] = [];
+    const notPlanned: FoodItem[] = [];
+    
+    statusFiltered.forEach(item => {
+      if (item.usedByMeals && item.usedByMeals.length > 0) {
+        planned.push(item);
+      } else {
+        notPlanned.push(item);
+      }
+    });
+    
+    // Group not-planned items into "About to Expire" and "Everything else"
     const aboutToExpire: FoodItem[] = [];
     const everythingElse: FoodItem[] = [];
     
-    statusFiltered.forEach(item => {
+    notPlanned.forEach(item => {
       if (item.status === 'bestBySoon') {
         aboutToExpire.push(item);
       } else {
@@ -112,7 +124,8 @@ const Dashboard: React.FC = () => {
     // Sort each group by best by date
     return {
       aboutToExpire: sortByDate(aboutToExpire),
-      everythingElse: sortByDate(everythingElse)
+      everythingElse: sortByDate(everythingElse),
+      planned: sortByDate(planned)
     };
   }, [storageTab, itemsByStorageType, filter]);
 
@@ -475,7 +488,7 @@ const Dashboard: React.FC = () => {
         </button>
       </div>
 
-      {groupedAndFilteredItems.aboutToExpire.length === 0 && groupedAndFilteredItems.everythingElse.length === 0 ? (
+      {groupedAndFilteredItems.aboutToExpire.length === 0 && groupedAndFilteredItems.everythingElse.length === 0 && groupedAndFilteredItems.planned.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
           <p style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
             {filter === 'all' 
@@ -562,6 +575,36 @@ const Dashboard: React.FC = () => {
                 </div>
               )}
               {groupedAndFilteredItems.everythingElse.map((item) => (
+                <SwipeableListItem
+                  key={item.id}
+                  item={item}
+                  onDelete={() => handleDelete(item.id)}
+                  onClick={() => handleItemClick(item)}
+                  onFreeze={() => handleFreezeItem(item)}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Planned Section */}
+          {groupedAndFilteredItems.planned.length > 0 && (
+            <>
+              <div style={{ 
+                marginTop: groupedAndFilteredItems.aboutToExpire.length > 0 || groupedAndFilteredItems.everythingElse.length > 0 ? '1.5rem' : '1rem', 
+                marginBottom: '0.75rem', 
+                padding: '0.5rem 0',
+                borderBottom: '2px solid #6366f1'
+              }}>
+                <h3 style={{ 
+                  margin: 0, 
+                  fontSize: '1.125rem', 
+                  fontWeight: '600', 
+                  color: '#1f2937' 
+                }}>
+                  Planned
+                </h3>
+              </div>
+              {groupedAndFilteredItems.planned.map((item) => (
                 <SwipeableListItem
                   key={item.id}
                   item={item}
