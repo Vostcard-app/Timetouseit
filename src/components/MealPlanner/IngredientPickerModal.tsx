@@ -519,7 +519,11 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     // Filter perishable items by category if filter is set
     let filteredPerishable = groups.perishable;
     if (categoryFilter !== 'all') {
-      filteredPerishable = groups.perishable.filter(item => item.category === categoryFilter);
+      filteredPerishable = groups.perishable.filter(item => {
+        // Use stored category if available, otherwise auto-detect
+        const itemCategory = item.category || detectCategory(item.name);
+        return itemCategory === categoryFilter;
+      });
     }
 
     // Sort each group by best by date (earliest first)

@@ -104,7 +104,8 @@ const Dashboard: React.FC = () => {
     let categoryFiltered = statusFiltered;
     if (storageTab === 'perishable' && categoryFilter !== 'all') {
       categoryFiltered = statusFiltered.filter(item => {
-        const itemCategory = detectCategory(item.name);
+        // Use stored category if available, otherwise auto-detect
+        const itemCategory = (item.category as FoodCategory) || detectCategory(item.name);
         return itemCategory === categoryFilter;
       });
     }
