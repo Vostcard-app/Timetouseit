@@ -17,6 +17,7 @@ export interface ShoppingListItem {
   name: string;
   createdAt: Date;
   crossedOff?: boolean;
+  quantity?: number; // Quantity of the item (defaults to 1)
   // Recipe import tracking
   source?: string; // e.g., "recipe_import"
   mealId?: string; // Link to planned meal

@@ -80,9 +80,10 @@ export const shoppingListService = {
     name: string, 
     crossedOff?: boolean,
     source?: string,
-    mealId?: string
+    mealId?: string,
+    quantity?: number
   ): Promise<string> {
-    logServiceOperation('addShoppingListItem', 'shoppingList', { userId, listId, name, source, mealId });
+    logServiceOperation('addShoppingListItem', 'shoppingList', { userId, listId, name, source, mealId, quantity });
     
     try {
       const cleanData = cleanFirestoreData({
@@ -92,7 +93,8 @@ export const shoppingListService = {
         createdAt: Timestamp.now(),
         ...(crossedOff !== undefined && { crossedOff }),
         ...(source && { source }),
-        ...(mealId && { mealId })
+        ...(mealId && { mealId }),
+        ...(quantity !== undefined && { quantity })
       });
       
       const docRef = await addDoc(collection(db, 'shoppingList'), cleanData);

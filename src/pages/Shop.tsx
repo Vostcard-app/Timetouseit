@@ -29,6 +29,8 @@ const Shop: React.FC = () => {
   const [showAddListToast, setShowAddListToast] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [userItems, setUserItems] = useState<UserItem[]>([]);
+  const [editingQuantityItemId, setEditingQuantityItemId] = useState<string | null>(null);
+  const [editingQuantityValue, setEditingQuantityValue] = useState<string>('');
   const lastUsedListIdRef = useRef<string | null>(null);
   const settingsLoadedRef = useRef(false);
 
@@ -297,7 +299,7 @@ const Shop: React.FC = () => {
 
     try {
       const capitalizedName = capitalizeItemName(itemName);
-      await shoppingListService.addShoppingListItem(user.uid, selectedListId, capitalizedName);
+      await shoppingListService.addShoppingListItem(user.uid, selectedListId, capitalizedName, false, undefined, undefined, 1);
       // Update lastUsed for the userItem
       const userItem = userItems.find(ui => ui.name.toLowerCase() === itemName.toLowerCase());
       if (userItem) {
@@ -351,6 +353,55 @@ const Shop: React.FC = () => {
     }
   };
 
+  const handleQuantityClick = (item: ShoppingListItem) => {
+    setEditingQuantityItemId(item.id);
+    setEditingQuantityValue((item.quantity || 1).toString());
+  };
+
+  const handleQuantityChange = async (item: ShoppingListItem, newQuantity: number) => {
+    if (!user) return;
+    
+    if (newQuantity < 1) {
+      alert('Quantity must be at least 1');
+      return;
+    }
+
+    try {
+      await shoppingListService.updateShoppingListItem(user.uid, item.id, { quantity: newQuantity });
+      setEditingQuantityItemId(null);
+      setEditingQuantityValue('');
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      alert('Failed to update quantity. Please try again.');
+    }
+  };
+
+  const handleQuantityInputBlur = (item: ShoppingListItem) => {
+    const quantity = parseInt(editingQuantityValue, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      setEditingQuantityItemId(null);
+      setEditingQuantityValue('');
+      return;
+    }
+    handleQuantityChange(item, quantity);
+  };
+
+  const handleQuantityInputKeyDown = (e: React.KeyboardEvent, item: ShoppingListItem) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const quantity = parseInt(editingQuantityValue, 10);
+      if (isNaN(quantity) || quantity < 1) {
+        setEditingQuantityItemId(null);
+        setEditingQuantityValue('');
+        return;
+      }
+      handleQuantityChange(item, quantity);
+    } else if (e.key === 'Escape') {
+      setEditingQuantityItemId(null);
+      setEditingQuantityValue('');
+    }
+  };
+
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -385,7 +436,7 @@ const Shop: React.FC = () => {
 
     try {
       const capitalizedName = capitalizeItemName(newItemName);
-      await shoppingListService.addShoppingListItem(user.uid, listIdToUse, capitalizedName);
+      await shoppingListService.addShoppingListItem(user.uid, listIdToUse, capitalizedName, false, undefined, undefined, 1);
       
       // Create/update UserItem to ensure item is in master list
       try {
@@ -962,8 +1013,52 @@ const Shop: React.FC = () => {
                                 userSelect: 'none'
                   }}
                 >
-                              <div style={{ fontSize: '1.25rem', fontWeight: '500', color: '#1f2937' }}>
-                    {item.name}
+                              <div style={{ fontSize: '1.25rem', fontWeight: '500', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {editingQuantityItemId === item.id ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={editingQuantityValue}
+                        onChange={(e) => setEditingQuantityValue(e.target.value)}
+                        onBlur={() => handleQuantityInputBlur(item)}
+                        onKeyDown={(e) => handleQuantityInputKeyDown(e, item)}
+                        autoFocus
+                        style={{
+                          width: '50px',
+                          padding: '0.25rem 0.5rem',
+                          border: '2px solid #002B4D',
+                          borderRadius: '4px',
+                          fontSize: '1.25rem',
+                          fontWeight: '600',
+                          textAlign: 'center',
+                          outline: 'none'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuantityClick(item);
+                        }}
+                        style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '600',
+                          color: '#002B4D',
+                          cursor: 'pointer',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          backgroundColor: '#f0f8ff',
+                          minWidth: '40px',
+                          textAlign: 'center',
+                          display: 'inline-block'
+                        }}
+                        title="Tap to edit quantity"
+                      >
+                        {item.quantity || 1}
+                      </span>
+                    )}
+                    <span>{item.name}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
@@ -1314,9 +1409,19 @@ const Shop: React.FC = () => {
                                         fontSize: '1.25rem', 
                                         fontWeight: '500', 
                                         color: '#1f2937',
-                                        textDecoration: 'line-through'
+                                        textDecoration: 'line-through',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
                                       }}>
-                                        {mergedItem.name}
+                                        <span style={{
+                                          fontSize: '1.25rem',
+                                          fontWeight: '600',
+                                          color: '#6b7280'
+                                        }}>
+                                          {mergedItem.shoppingListItem?.quantity || 1}
+                                        </span>
+                                        <span>{mergedItem.name}</span>
                   </div>
                     </div>
                   </div>
