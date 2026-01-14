@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useFoodItems } from '../hooks/useFoodItems';
-import { foodItemService } from '../services';
+import { foodItemService, mealPlanningService } from '../services';
 import { formatDate } from '../utils/dateUtils';
 import { notRecommendedToFreeze } from '../data/freezeGuidelines';
 import SwipeableListItem from '../components/ui/SwipeableListItem';
@@ -15,6 +15,7 @@ import { analyticsService } from '../services/analyticsService';
 import { isDryCannedItem } from '../utils/storageUtils';
 import { getStatusLabel } from '../utils/statusUtils';
 import { detectCategory, type FoodCategory } from '../utils/categoryUtils';
+import type { PlannedMeal } from '../types';
 
 type FilterType = 'all' | 'bestBySoon' | 'pastBestBy';
 type StorageTabType = 'perishable' | 'dryCanned';
@@ -30,6 +31,7 @@ const Dashboard: React.FC = () => {
   const [showIndexWarning, setShowIndexWarning] = useState(false);
   const [showFreezeWarning, setShowFreezeWarning] = useState(false);
   const [pendingFreezeItem, setPendingFreezeItem] = useState<FoodItem | null>(null);
+  const [plannedMeals, setPlannedMeals] = useState<PlannedMeal[]>([]);
   const navigate = useNavigate();
 
   // Debug: Track state changes
@@ -49,6 +51,26 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(checkIndexWarning, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Load planned meals to check if items are reserved
+  useEffect(() => {
+    if (!user) {
+      setPlannedMeals([]);
+      return;
+    }
+
+    const loadPlannedMeals = async () => {
+      try {
+        const meals = await mealPlanningService.loadAllPlannedMealsForMonth(user.uid);
+        setPlannedMeals(meals);
+      } catch (error) {
+        console.error('Error loading planned meals:', error);
+        setPlannedMeals([]);
+      }
+    };
+
+    loadPlannedMeals();
+  }, [user]);
 
 
   // Filter items by storage type (perishable vs dry/canned)
@@ -88,6 +110,27 @@ const Dashboard: React.FC = () => {
     });
   };
 
+  // Helper function to check if item is reserved (by usedByMeals or by meal plan)
+  const isItemReserved = useCallback((item: FoodItem): boolean => {
+    // Check usedByMeals field first
+    if (item.usedByMeals && item.usedByMeals.length > 0) {
+      return true;
+    }
+    
+    // Fallback: Check if item is claimed by any dish in planned meals
+    for (const meal of plannedMeals) {
+      if (meal.dishes) {
+        for (const dish of meal.dishes) {
+          if (dish.claimedItemIds && dish.claimedItemIds.includes(item.id)) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }, [plannedMeals]);
+
   // Combine storage tab filter with status filter and group by expiration status
   const groupedAndFilteredItems = useMemo(() => {
     // First filter by storage type
@@ -115,7 +158,7 @@ const Dashboard: React.FC = () => {
     const notPlanned: FoodItem[] = [];
     
     categoryFiltered.forEach(item => {
-      if (item.usedByMeals && item.usedByMeals.length > 0) {
+      if (isItemReserved(item)) {
         planned.push(item);
       } else {
         notPlanned.push(item);
@@ -140,7 +183,7 @@ const Dashboard: React.FC = () => {
       everythingElse: sortByDate(everythingElse),
       planned: sortByDate(planned)
     };
-  }, [storageTab, itemsByStorageType, filter, categoryFilter]);
+  }, [storageTab, itemsByStorageType, filter, categoryFilter, plannedMeals, isItemReserved]);
 
   const handleDelete = useCallback(async (itemId: string) => {
     // Track engagement: core_action_used (toss)
@@ -597,6 +640,7 @@ const Dashboard: React.FC = () => {
                   onDelete={() => handleDelete(item.id)}
                   onClick={() => handleItemClick(item)}
                   onFreeze={() => handleFreezeItem(item)}
+                  isReserved={isItemReserved(item)}
                 />
               ))}
             </>
@@ -629,6 +673,7 @@ const Dashboard: React.FC = () => {
                   onDelete={() => handleDelete(item.id)}
                   onClick={() => handleItemClick(item)}
                   onFreeze={() => handleFreezeItem(item)}
+                  isReserved={isItemReserved(item)}
                 />
               ))}
             </>
@@ -659,6 +704,7 @@ const Dashboard: React.FC = () => {
                   onDelete={() => handleDelete(item.id)}
                   onClick={() => handleItemClick(item)}
                   onFreeze={() => handleFreezeItem(item)}
+                  isReserved={isItemReserved(item)}
                 />
               ))}
             </>

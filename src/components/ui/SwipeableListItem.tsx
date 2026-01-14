@@ -25,12 +25,14 @@ interface SwipeableListItemProps {
   onClick?: () => void;
   /** Callback when freeze button is clicked */
   onFreeze?: () => void;
+  /** Optional: explicitly mark item as reserved (overrides usedByMeals check) */
+  isReserved?: boolean;
 }
 
 /**
  * SwipeableListItem component with swipe-to-delete functionality
  */
-const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, onDelete, onClick, onFreeze }) => {
+const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, onDelete, onClick, onFreeze, isReserved }) => {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -399,7 +401,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
       <div
         style={{
           position: 'relative',
-          backgroundColor: (item.usedByMeals && item.usedByMeals.length > 0) ? '#f3f4f6' : '#ffffff',
+          backgroundColor: (isReserved !== undefined ? isReserved : (item.usedByMeals && item.usedByMeals.length > 0)) ? '#f3f4f6' : '#ffffff',
           padding: '0.5rem 1rem',
           borderRadius: '8px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
