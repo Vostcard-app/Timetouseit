@@ -140,6 +140,30 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             setLoading(true);
             const allIngredients: IngredientItem[] = [];
 
+            // Load planned meals to check if items are reserved
+            const plannedMeals = await mealPlanningService.loadAllPlannedMealsForMonth(user.uid);
+            
+            // Helper function to check if item is reserved (by usedByMeals or by meal plan)
+            const isItemReserved = (item: { id: string; usedByMeals?: string[] }): boolean => {
+              // Check usedByMeals field first
+              if (item.usedByMeals && item.usedByMeals.length > 0) {
+                return true;
+              }
+              
+              // Fallback: Check if item is claimed by any dish in planned meals
+              for (const meal of plannedMeals) {
+                if (meal.dishes) {
+                  for (const dish of meal.dishes) {
+                    if (dish.claimedItemIds && dish.claimedItemIds.includes(item.id)) {
+                      return true;
+                    }
+                  }
+                }
+              }
+              
+              return false;
+            };
+
             // 1. Load best by soon items (next 14 days)
         const allFoodItems = await foodItemService.getFoodItems(user.uid);
         const now = new Date();
@@ -162,7 +186,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             // Only set originalItemId for perishable items (not dry/canned)
             // This ensures the edit icon only appears on perishable items
             originalItemId: !isDryCannedItem(item) ? item.id : undefined,
-            isReserved: !!(item.usedByMeals && item.usedByMeals.length > 0)
+            isReserved: isItemReserved(item)
           });
         });
 
@@ -197,7 +221,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             bestByDate: item.bestByDate || item.thawDate || null,
             category: (item.category as FoodCategory) || detectCategory(item.name),
             originalItemId: item.id,
-            isReserved: !!(item.usedByMeals && item.usedByMeals.length > 0)
+            isReserved: isItemReserved(item)
           });
         });
 
@@ -211,7 +235,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             name: item.name,
             source: 'dryCanned',
             bestByDate: item.bestByDate || item.thawDate || null,
-            isReserved: !!(item.usedByMeals && item.usedByMeals.length > 0)
+            isReserved: isItemReserved(item)
           });
         });
 
