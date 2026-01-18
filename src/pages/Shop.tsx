@@ -31,6 +31,8 @@ const Shop: React.FC = () => {
   const [userItems, setUserItems] = useState<UserItem[]>([]);
   const [editingQuantityItemId, setEditingQuantityItemId] = useState<string | null>(null);
   const [editingQuantityValue, setEditingQuantityValue] = useState<string>('');
+  const [editingNameItemId, setEditingNameItemId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState<string>('');
   const lastUsedListIdRef = useRef<string | null>(null);
   const settingsLoadedRef = useRef(false);
 
@@ -354,6 +356,11 @@ const Shop: React.FC = () => {
   };
 
   const handleQuantityClick = (item: ShoppingListItem) => {
+    // Cancel name editing if active
+    if (editingNameItemId === item.id) {
+      setEditingNameItemId(null);
+      setEditingNameValue('');
+    }
     setEditingQuantityItemId(item.id);
     setEditingQuantityValue((item.quantity || 1).toString());
   };
@@ -402,6 +409,61 @@ const Shop: React.FC = () => {
     }
   };
 
+  const handleNameClick = (item: ShoppingListItem) => {
+    // Cancel quantity editing if active
+    if (editingQuantityItemId === item.id) {
+      setEditingQuantityItemId(null);
+      setEditingQuantityValue('');
+    }
+    setEditingNameItemId(item.id);
+    setEditingNameValue(item.name);
+  };
+
+  const handleNameChange = async (item: ShoppingListItem, newName: string) => {
+    if (!user) return;
+    
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      alert('Item name cannot be empty');
+      return;
+    }
+
+    try {
+      const capitalizedName = capitalizeItemName(trimmedName);
+      await shoppingListService.updateShoppingListItemName(item.id, capitalizedName);
+      setEditingNameItemId(null);
+      setEditingNameValue('');
+    } catch (error) {
+      console.error('Error updating item name:', error);
+      alert('Failed to update item name. Please try again.');
+    }
+  };
+
+  const handleNameInputBlur = (item: ShoppingListItem) => {
+    const trimmedName = editingNameValue.trim();
+    if (!trimmedName) {
+      setEditingNameItemId(null);
+      setEditingNameValue('');
+      return;
+    }
+    handleNameChange(item, trimmedName);
+  };
+
+  const handleNameInputKeyDown = (e: React.KeyboardEvent, item: ShoppingListItem) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmedName = editingNameValue.trim();
+      if (!trimmedName) {
+        setEditingNameItemId(null);
+        setEditingNameValue('');
+        return;
+      }
+      handleNameChange(item, trimmedName);
+    } else if (e.key === 'Escape') {
+      setEditingNameItemId(null);
+      setEditingNameValue('');
+    }
+  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1058,7 +1120,49 @@ const Shop: React.FC = () => {
                         {item.quantity || 1}
                       </span>
                     )}
-                    <span>{item.name}</span>
+                    {editingNameItemId === item.id ? (
+                      <input
+                        type="text"
+                        value={editingNameValue}
+                        onChange={(e) => setEditingNameValue(e.target.value)}
+                        onBlur={() => handleNameInputBlur(item)}
+                        onKeyDown={(e) => handleNameInputKeyDown(e, item)}
+                        autoFocus
+                        style={{
+                          flex: 1,
+                          padding: '0.25rem 0.5rem',
+                          border: '2px solid #002B4D',
+                          borderRadius: '4px',
+                          fontSize: '1.25rem',
+                          fontWeight: '500',
+                          outline: 'none',
+                          minWidth: '150px'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNameClick(item);
+                        }}
+                        style={{
+                          cursor: 'pointer',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        title="Tap to edit name"
+                      >
+                        {item.name}
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button

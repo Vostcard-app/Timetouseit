@@ -20,13 +20,19 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       },
       onRegistered(registration: ServiceWorkerRegistration | undefined) {
         console.log('📦 Service worker registered')
-        // Check for updates periodically (every hour)
+        // Check for updates more frequently (every 5 minutes) and on every page load
         if (registration) {
+          // Check immediately on registration
+          registration.update().catch((err: Error) => {
+            console.warn('⚠️ Failed to check for updates:', err)
+          })
+          
+          // Check periodically (every 5 minutes)
           setInterval(() => {
             registration.update().catch((err: Error) => {
               console.warn('⚠️ Failed to check for updates:', err)
             })
-          }, 60 * 60 * 1000) // 1 hour
+          }, 5 * 60 * 1000) // 5 minutes instead of 1 hour
         }
       },
       immediate: true
