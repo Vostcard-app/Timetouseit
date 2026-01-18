@@ -41,6 +41,8 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
   const [targetListId, setTargetListId] = useState<string | null>(null);
   const [userShoppingLists, setUserShoppingLists] = useState<any[]>([]);
+  const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
+  const [editedIngredients, setEditedIngredients] = useState<Map<number, string>>(new Map());
 
   // Load pantry items (dashboard items)
   useEffect(() => {
@@ -97,16 +99,7 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
     });
   }, [ingredients, pantryItems]);
 
-  // Set default selections (only missing items selected by default)
-  useEffect(() => {
-    if (loading || selectedIngredients.size > 0) return;
-
-    const missingIndices = ingredientStatuses
-      .filter(item => item.status === 'missing')
-      .map(item => item.index);
-    
-    setSelectedIngredients(new Set(missingIndices));
-  }, [ingredientStatuses, loading]);
+  // No auto-selection - user must explicitly choose ingredients
 
   const toggleIngredient = (index: number) => {
     const newSelected = new Set(selectedIngredients);
@@ -118,6 +111,44 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
     setSelectedIngredients(newSelected);
   };
 
+  const startEditing = (index: number) => {
+    setEditingIngredientIndex(index);
+    // Initialize edited value if not already set
+    if (!editedIngredients.has(index)) {
+      const newEdited = new Map(editedIngredients);
+      newEdited.set(index, ingredients[index]);
+      setEditedIngredients(newEdited);
+    }
+  };
+
+  const saveEdit = (index: number) => {
+    setEditingIngredientIndex(null);
+  };
+
+  const cancelEdit = (index: number) => {
+    setEditingIngredientIndex(null);
+    // Optionally remove the edited value to revert to original
+    const newEdited = new Map(editedIngredients);
+    newEdited.delete(index);
+    setEditedIngredients(newEdited);
+  };
+
+  const updateEditedIngredient = (index: number, value: string) => {
+    const newEdited = new Map(editedIngredients);
+    newEdited.set(index, value);
+    setEditedIngredients(newEdited);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(index);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit(index);
+    }
+  };
+
   const handleAddToShoppingList = async () => {
     if (!user || !targetListId) {
       showToast('Please select a shopping list', 'error');
@@ -125,7 +156,10 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
     }
 
     const selectedItems = Array.from(selectedIngredients)
-      .map(index => ingredients[index])
+      .map(index => {
+        // Use edited ingredient if available, otherwise use original
+        return editedIngredients.get(index) || ingredients[index];
+      })
       .filter(Boolean);
 
     if (selectedItems.length === 0) {
@@ -282,6 +316,7 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
                   type="checkbox"
                   checked={selectedIngredients.has(index)}
                   onChange={() => toggleIngredient(index)}
+                  onClick={(e) => e.stopPropagation()}
                   style={{
                     marginRight: '0.75rem',
                     width: '1.25rem',
@@ -289,7 +324,50 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
                     cursor: 'pointer'
                   }}
                 />
-                <span style={{ flex: 1, fontSize: '1rem', color: '#1f2937' }}>{ingredient}</span>
+                {editingIngredientIndex === index ? (
+                  <input
+                    type="text"
+                    value={editedIngredients.get(index) || ingredient}
+                    onChange={(e) => updateEditedIngredient(index, e.target.value)}
+                    onBlur={() => saveEdit(index)}
+                    onKeyDown={(e) => handleEditKeyDown(e, index)}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      border: '2px solid #002B4D',
+                      borderRadius: '4px',
+                      fontSize: '1rem',
+                      outline: 'none',
+                      marginRight: '0.5rem'
+                    }}
+                  />
+                ) : (
+                  <span 
+                    style={{ 
+                      flex: 1, 
+                      fontSize: '1rem', 
+                      color: '#1f2937',
+                      cursor: 'text',
+                      padding: '0.25rem',
+                      borderRadius: '4px'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(index);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                    title="Click to edit"
+                  >
+                    {editedIngredients.get(index) || ingredient}
+                  </span>
+                )}
                 {isAvailable && count > 0 && (
                   <span
                     style={{

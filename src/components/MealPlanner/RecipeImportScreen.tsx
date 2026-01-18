@@ -39,6 +39,8 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedIngredientIndices, setSelectedIngredientIndices] = useState<Set<number>>(new Set());
+  const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
+  const [editedIngredients, setEditedIngredients] = useState<Map<number, string>>(new Map());
 
   // Use the custom hook for ingredient availability
   const {
@@ -80,16 +82,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
     }
   }, [isOpen, initialRecipeUrl, user, importedRecipe]);
 
-  // Set default selections (only missing items selected by default)
-  useEffect(() => {
-    if (!importedRecipe || selectedIngredientIndices.size > 0 || ingredientStatuses.length === 0) return;
-
-    const missingIndices = ingredientStatuses
-      .filter(item => item.status === 'missing')
-      .map(item => item.index);
-    
-    setSelectedIngredientIndices(new Set(missingIndices));
-  }, [ingredientStatuses, importedRecipe, selectedIngredientIndices.size]);
+  // No auto-selection - user must explicitly choose ingredients
 
   const handleImportFromUrl = async () => {
     if (!urlInput.trim()) {
@@ -124,6 +117,44 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
       newSelected.add(index);
     }
     setSelectedIngredientIndices(newSelected);
+  };
+
+  const startEditing = (index: number) => {
+    setEditingIngredientIndex(index);
+    // Initialize edited value if not already set
+    if (!editedIngredients.has(index) && importedRecipe) {
+      const newEdited = new Map(editedIngredients);
+      newEdited.set(index, importedRecipe.ingredients[index]);
+      setEditedIngredients(newEdited);
+    }
+  };
+
+  const saveEdit = (index: number) => {
+    setEditingIngredientIndex(null);
+  };
+
+  const cancelEdit = (index: number) => {
+    setEditingIngredientIndex(null);
+    // Optionally remove the edited value to revert to original
+    const newEdited = new Map(editedIngredients);
+    newEdited.delete(index);
+    setEditedIngredients(newEdited);
+  };
+
+  const updateEditedIngredient = (index: number, value: string) => {
+    const newEdited = new Map(editedIngredients);
+    newEdited.set(index, value);
+    setEditedIngredients(newEdited);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(index);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit(index);
+    }
   };
 
   const handleSaveRecipe = async () => {
@@ -194,8 +225,9 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
       );
 
       // Add selected ingredients to shopping list and track their IDs
+      // Use edited ingredient if available, otherwise use original
       const selectedItems = Array.from(selectedIngredientIndices)
-        .map(index => importedRecipe.ingredients[index])
+        .map(index => editedIngredients.get(index) || importedRecipe.ingredients[index])
         .filter(Boolean);
 
       const newlyAddedItemIds: string[] = [];
@@ -470,6 +502,13 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
                     ingredientStatuses={ingredientStatuses}
                     selectedIngredientIndices={selectedIngredientIndices}
                     onToggleIngredient={toggleIngredient}
+                    editingIngredientIndex={editingIngredientIndex}
+                    editedIngredients={editedIngredients}
+                    onStartEditing={startEditing}
+                    onSaveEdit={saveEdit}
+                    onCancelEdit={cancelEdit}
+                    onUpdateEditedIngredient={updateEditedIngredient}
+                    onEditKeyDown={handleEditKeyDown}
                   />
                 </div>
               </div>

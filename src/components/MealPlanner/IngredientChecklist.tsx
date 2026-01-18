@@ -10,12 +10,26 @@ interface IngredientChecklistProps {
   ingredientStatuses: IngredientStatus[];
   selectedIngredientIndices: Set<number>;
   onToggleIngredient: (index: number) => void;
+  editingIngredientIndex?: number | null;
+  editedIngredients?: Map<number, string>;
+  onStartEditing?: (index: number) => void;
+  onSaveEdit?: (index: number) => void;
+  onCancelEdit?: (index: number) => void;
+  onUpdateEditedIngredient?: (index: number, value: string) => void;
+  onEditKeyDown?: (e: React.KeyboardEvent, index: number) => void;
 }
 
 export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
   ingredientStatuses,
   selectedIngredientIndices,
-  onToggleIngredient
+  onToggleIngredient,
+  editingIngredientIndex = null,
+  editedIngredients = new Map(),
+  onStartEditing,
+  onSaveEdit,
+  onCancelEdit,
+  onUpdateEditedIngredient,
+  onEditKeyDown
 }) => {
   if (ingredientStatuses.length === 0) {
     return (
@@ -68,6 +82,7 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
               type="checkbox"
               checked={selectedIngredientIndices.has(index)}
               onChange={() => onToggleIngredient(index)}
+              onClick={(e) => e.stopPropagation()}
               style={{
                 marginRight: '0.75rem',
                 width: '1.25rem',
@@ -75,7 +90,56 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
                 cursor: 'pointer'
               }}
             />
-            <span style={{ flex: 1, fontSize: '0.875rem', color: '#1f2937' }}>{ingredient}</span>
+            {editingIngredientIndex === index && onStartEditing && onUpdateEditedIngredient && onSaveEdit && onEditKeyDown ? (
+              <input
+                type="text"
+                value={editedIngredients.get(index) || ingredient}
+                onChange={(e) => onUpdateEditedIngredient(index, e.target.value)}
+                onBlur={() => onSaveEdit(index)}
+                onKeyDown={(e) => onEditKeyDown(e, index)}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem',
+                  border: '2px solid #002B4D',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  marginRight: '0.5rem'
+                }}
+              />
+            ) : (
+              <span 
+                style={{ 
+                  flex: 1, 
+                  fontSize: '0.875rem', 
+                  color: '#1f2937',
+                  cursor: onStartEditing ? 'text' : 'default',
+                  padding: '0.25rem',
+                  borderRadius: '4px'
+                }}
+                onClick={(e) => {
+                  if (onStartEditing) {
+                    e.stopPropagation();
+                    onStartEditing(index);
+                  }
+                }}
+                onMouseEnter={(e) => {
+                  if (onStartEditing) {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (onStartEditing) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+                title={onStartEditing ? "Click to edit" : undefined}
+              >
+                {editedIngredients.get(index) || ingredient}
+              </span>
+            )}
             {isAvailable && count > 0 && (
               <span
                 style={{
