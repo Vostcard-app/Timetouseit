@@ -460,14 +460,10 @@ const PlannedMealCalendar: React.FC = () => {
     }
   };
 
-  // Generate calendar days for current month
+  // Generate calendar days for current week
   const calendarDays = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = startOfWeek(firstDay, { weekStartsOn: 0 });
-    const endDate = endOfWeek(lastDay, { weekStartsOn: 0 });
+    const startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+    const endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
     
     const days: Date[] = [];
     let current = startDate;
@@ -478,13 +474,13 @@ const PlannedMealCalendar: React.FC = () => {
     return days;
   }, [currentDate]);
 
-  // Navigate months
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  // Navigate weeks
+  const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     if (direction === 'prev') {
-      newDate.setMonth(newDate.getMonth() - 1);
+      newDate.setDate(newDate.getDate() - 7);
     } else {
-      newDate.setMonth(newDate.getMonth() + 1);
+      newDate.setDate(newDate.getDate() + 7);
     }
     setCurrentDate(newDate);
   };
@@ -513,10 +509,10 @@ const PlannedMealCalendar: React.FC = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
         <h2 style={{ marginBottom: '1rem' }}>Planned Meal Calendar</h2>
         
-        {/* Month Navigation */}
+        {/* Week Navigation */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <button
-            onClick={() => navigateMonth('prev')}
+            onClick={() => navigateWeek('prev')}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: '#f3f4f6',
@@ -527,11 +523,11 @@ const PlannedMealCalendar: React.FC = () => {
               fontSize: '1rem'
             }}
           >
-            ← Previous
+            ← Previous Week
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-              {format(currentDate, 'MMMM yyyy')}
+              {format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'MMMM d')} - {format(endOfWeek(currentDate, { weekStartsOn: 0 }), 'd, yyyy')}
             </h3>
             <button
               onClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
@@ -550,7 +546,7 @@ const PlannedMealCalendar: React.FC = () => {
             </button>
           </div>
           <button
-            onClick={() => navigateMonth('next')}
+            onClick={() => navigateWeek('next')}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: '#f3f4f6',
@@ -561,7 +557,7 @@ const PlannedMealCalendar: React.FC = () => {
               fontSize: '1rem'
             }}
           >
-            Next →
+            Next Week →
           </button>
         </div>
 
@@ -596,7 +592,6 @@ const PlannedMealCalendar: React.FC = () => {
           {calendarDays.map((day, index) => {
             const normalizedDay = startOfDay(day);
             const dayMeals = getMealsForDay(normalizedDay);
-            const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isToday = isSameDay(normalizedDay, startOfDay(new Date()));
             
             // Check if this day is a valid drop target for each meal type
@@ -634,7 +629,7 @@ const PlannedMealCalendar: React.FC = () => {
                   padding: '0.5rem',
                   border: isDropTarget ? '2px solid #10b981' : (isInvalidDrop ? '2px solid #ef4444' : '1px solid #e5e7eb'),
                   borderRadius: '4px',
-                  backgroundColor: isDropTarget ? '#f0fdf4' : (isInvalidDrop ? '#fef2f2' : (isToday ? '#f0f8ff' : (isCurrentMonth ? '#ffffff' : '#f9fafb'))),
+                  backgroundColor: isDropTarget ? '#f0fdf4' : (isInvalidDrop ? '#fef2f2' : (isToday ? '#f0f8ff' : '#ffffff')),
                   cursor: isDragging ? (isDropTarget ? 'copy' : (isInvalidDrop ? 'not-allowed' : 'pointer')) : 'pointer',
                   transition: 'all 0.2s',
                   position: 'relative'
@@ -647,7 +642,7 @@ const PlannedMealCalendar: React.FC = () => {
                 }}
                 onMouseLeave={(e) => {
                   if (!isDragging) {
-                    e.currentTarget.style.backgroundColor = isToday ? '#f0f8ff' : (isCurrentMonth ? '#ffffff' : '#f9fafb');
+                    e.currentTarget.style.backgroundColor = isToday ? '#f0f8ff' : '#ffffff';
                     e.currentTarget.style.borderColor = '#e5e7eb';
                   }
                 }}
@@ -655,68 +650,78 @@ const PlannedMealCalendar: React.FC = () => {
                 <div style={{
                   fontSize: '0.875rem',
                   fontWeight: isToday ? '700' : '500',
-                  color: isCurrentMonth ? '#1f2937' : '#9ca3af',
+                  color: '#1f2937',
                   marginBottom: '0.25rem'
                 }}>
                   {format(day, 'd')}
                 </div>
                 
                 {/* Meal Indicators */}
-                {dayMeals.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    {dayMeals
-                      .filter(meal => meal.dishes && meal.dishes.length > 0) // Safety check: only show meals with dishes
-                      .slice(0, 3)
-                      .map((meal, mealIndex) => {
-                        const dishCount = meal.dishes?.length || 0;
-                        const hasCompletedDishes = meal.dishes?.some(d => d.completed) || false;
+                {dayMeals.length > 0 && (() => {
+                  // Flatten all dishes from all meals for this day
+                  const allDishes: Array<{ dish: Dish; meal: PlannedMeal }> = [];
+                  dayMeals.forEach(meal => {
+                    if (meal.dishes && meal.dishes.length > 0) {
+                      meal.dishes.forEach(dish => {
+                        allDishes.push({ dish, meal });
+                      });
+                    }
+                  });
+                  
+                  // Limit to first 5 dishes to avoid overcrowding
+                  const dishesToShow = allDishes.slice(0, 5);
+                  
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {dishesToShow.map(({ dish, meal }, dishIndex) => {
                         const isBeingDragged = isDragging && draggedMeal?.meal.id === meal.id && isSameDay(draggedMeal.sourceDate, normalizedDay);
                         return (
-                        <div
-                          key={mealIndex}
-                          draggable={true}
-                          onDragStart={(e) => handleDragStart(meal, normalizedDay, e)}
-                          onDragEnd={handleDragEnd}
-                          onClick={(e) => {
-                            if (!isDragging) {
-                              handleMealIndicatorClick(normalizedDay, meal.mealType, e);
-                            }
-                          }}
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: hasCompletedDishes ? '#9ca3af' : '#002B4D',
-                            color: '#ffffff',
-                            borderRadius: '4px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                            opacity: isBeingDragged ? 0.3 : (hasCompletedDishes ? 0.6 : 1),
-                            cursor: isDragging ? 'grabbing' : 'grab',
-                            userSelect: 'none'
-                          }}
-                          title={`${MEAL_TYPE_ABBREVIATIONS[meal.mealType]}: ${dishCount} dish${dishCount !== 1 ? 'es' : ''} - Drag to move`}
-                        >
-                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                            {MEAL_TYPE_ABBREVIATIONS[meal.mealType]} {dishCount > 0 && `(${dishCount})`}
-                          </span>
+                          <div
+                            key={`${meal.id}-${dish.id}-${dishIndex}`}
+                            draggable={true}
+                            onDragStart={(e) => handleDragStart(meal, normalizedDay, e)}
+                            onDragEnd={handleDragEnd}
+                            onClick={(e) => {
+                              if (!isDragging) {
+                                handleMealIndicatorClick(normalizedDay, meal.mealType, e);
+                              }
+                            }}
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '0.25rem 0.5rem',
+                              backgroundColor: dish.completed ? '#9ca3af' : '#002B4D',
+                              color: '#ffffff',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              opacity: isBeingDragged ? 0.3 : (dish.completed ? 0.6 : 1),
+                              cursor: isDragging ? 'grabbing' : 'grab',
+                              userSelect: 'none'
+                            }}
+                            title={`${MEAL_TYPE_ABBREVIATIONS[meal.mealType]}: ${dish.dishName} - Drag to move`}
+                          >
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
+                              {MEAL_TYPE_ABBREVIATIONS[meal.mealType]}: {dish.dishName}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {allDishes.length > 5 && (
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#6b7280',
+                          fontStyle: 'italic'
+                        }}>
+                          +{allDishes.length - 5} more
                         </div>
-                      );
-                    })}
-                    {dayMeals.length > 3 && (
-                      <div style={{
-                        fontSize: '0.75rem',
-                        color: '#6b7280',
-                        fontStyle: 'italic'
-                      }}>
-                        +{dayMeals.length - 3} more
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })()}
                 
                 {/* Drop zone indicators for empty meal types */}
                 {isDragging && draggedMeal && (
