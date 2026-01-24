@@ -75,6 +75,11 @@ const PlannedMealCalendar: React.FC = () => {
 
   // Subscribe to meal plans for current month (real-time updates)
   useEffect(() => {
+    // Wait for premium status to be determined
+    if (isPremium === null) {
+      return;
+    }
+
     if (!user || !isPremium) {
       setLoading(false);
       return;
@@ -102,6 +107,18 @@ const PlannedMealCalendar: React.FC = () => {
     const unsubscribes = new Map<string, () => void>();
     const totalWeeks = weekStarts.length;
 
+    // If no weeks to load, set loading to false immediately
+    if (totalWeeks === 0) {
+      setLoading(false);
+      return;
+    }
+
+    // Safety timeout to ensure loading doesn't stay true forever
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Meal plan loading timeout - setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
     weekStarts.forEach(weekStartDate => {
       const weekKey = weekStartDate.getTime().toString();
       
@@ -128,6 +145,7 @@ const PlannedMealCalendar: React.FC = () => {
           if (!loadedWeeksRef.current.has(weekKey)) {
             loadedWeeksRef.current.add(weekKey);
             if (loadedWeeksRef.current.size === totalWeeks) {
+              clearTimeout(loadingTimeout);
               setLoading(false);
             }
           }
@@ -142,11 +160,12 @@ const PlannedMealCalendar: React.FC = () => {
 
     // Cleanup function
     return () => {
+      clearTimeout(loadingTimeout);
       unsubscribes.forEach(unsubscribe => unsubscribe());
       unsubscribes.clear();
       loadedWeeksRef.current.clear();
     };
-  }, [user, currentDate]);
+  }, [user, currentDate, isPremium]);
 
   // Refresh meal plans (kept as fallback, but subscriptions handle updates automatically)
   const refreshMealPlans = async () => {
