@@ -17,6 +17,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { adminService } from '../../services/adminService';
+import { userSettingsService } from '../../services/userSettingsService';
 
 interface HamburgerMenuProps {
   /** Whether the menu is currently open */
@@ -32,6 +33,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [user] = useAuthState(auth);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [showOtherApps, setShowOtherApps] = useState(false);
 
   // Check admin status
@@ -43,6 +45,17 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
       }
     };
     checkAdmin();
+  }, [user]);
+
+  // Check premium status
+  useEffect(() => {
+    const checkPremium = async () => {
+      if (user) {
+        const premiumStatus = await userSettingsService.isPremiumUser(user.uid);
+        setIsPremium(premiumStatus);
+      }
+    };
+    checkPremium();
   }, [user]);
 
   // Close menu on escape key
@@ -71,6 +84,16 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
   const handleLinkClick = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const handleMealPlannerClick = (e: React.MouseEvent) => {
+    if (!isPremium) {
+      e.preventDefault();
+      navigate('/settings');
+      onClose();
+    } else {
+      handleLinkClick('/planned-meal-calendar');
+    }
   };
 
   if (!isOpen) return null;
@@ -184,7 +207,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
           </Link>
           <Link
             to="/planned-meal-calendar"
-            onClick={() => handleLinkClick('/planned-meal-calendar')}
+            onClick={handleMealPlannerClick}
             style={{
               display: 'flex',
               padding: '1rem 1.5rem',
@@ -195,7 +218,8 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               transition: 'background-color 0.2s',
               borderLeft: '3px solid transparent',
               minHeight: '44px',
-              alignItems: 'center'
+              alignItems: 'center',
+              justifyContent: 'space-between'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#f3f4f6';
@@ -216,7 +240,19 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               }, 200);
             }}
           >
-            Meal Planner
+            <span>Meal Planner</span>
+            {isPremium && (
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                backgroundColor: '#10b981',
+                color: 'white',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                fontWeight: '600'
+              }}>
+                PREMIUM
+              </span>
+            )}
           </Link>
           <Link
             to="/favorite-websites"

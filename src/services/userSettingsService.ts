@@ -71,6 +71,14 @@ export const userSettingsService = {
         lastUsedShoppingListId: listId
       });
     }
+  },
+
+  /**
+   * Check if user has premium subscription
+   */
+  async isPremiumUser(userId: string): Promise<boolean> {
+    const settings = await this.getUserSettings(userId);
+    return settings?.isPremium === true;
   }
 };
 

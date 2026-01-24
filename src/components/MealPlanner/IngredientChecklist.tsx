@@ -39,13 +39,28 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
 
   return (
     <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '0.5rem' }}>
-      {ingredientStatuses.map(({ ingredient, index, status, count, availableQuantity, neededQuantity }) => {
+      {ingredientStatuses.map(({ ingredient, index, status, count, availableQuantity, neededQuantity, isReserved }) => {
         const isAvailable = status === 'available' || status === 'partial';
-        const backgroundColor = isAvailable 
-          ? (selectedIngredientIndices.has(index) ? '#d1fae5' : '#ecfdf5')
-          : (selectedIngredientIndices.has(index) ? '#fee2e2' : '#fef2f2');
-        const borderColor = isAvailable ? '#10b981' : '#ef4444';
-        const badgeBg = isAvailable ? '#10b981' : '#ef4444';
+        const isReservedStatus = status === 'reserved' || isReserved === true;
+        
+        // Determine colors: green for available, grey for reserved, red for missing
+        let backgroundColor, borderColor, badgeBg, badgeText;
+        if (isReservedStatus) {
+          backgroundColor = selectedIngredientIndices.has(index) ? '#d1d5db' : '#f3f4f6';
+          borderColor = '#9ca3af';
+          badgeBg = '#9ca3af';
+          badgeText = 'Reserved';
+        } else if (isAvailable) {
+          backgroundColor = selectedIngredientIndices.has(index) ? '#d1fae5' : '#ecfdf5';
+          borderColor = '#10b981';
+          badgeBg = '#10b981';
+          badgeText = status === 'partial' ? 'Partial' : 'Available';
+        } else {
+          backgroundColor = selectedIngredientIndices.has(index) ? '#fee2e2' : '#fef2f2';
+          borderColor = '#ef4444';
+          badgeBg = '#ef4444';
+          badgeText = 'Missing';
+        }
 
         return (
           <label
@@ -62,14 +77,18 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
               transition: 'background-color 0.2s'
             }}
             onMouseEnter={(e) => {
-              if (isAvailable) {
+              if (isReservedStatus) {
+                e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#9ca3af' : '#e5e7eb';
+              } else if (isAvailable) {
                 e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#a7f3d0' : '#d1fae5';
               } else {
                 e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#fecaca' : '#fee2e2';
               }
             }}
             onMouseLeave={(e) => {
-              if (isAvailable) {
+              if (isReservedStatus) {
+                e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#d1d5db' : '#f3f4f6';
+              } else if (isAvailable) {
                 e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#d1fae5' : '#ecfdf5';
               } else {
                 e.currentTarget.style.backgroundColor = selectedIngredientIndices.has(index) ? '#fee2e2' : '#fef2f2';
@@ -138,7 +157,7 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
                 {editedIngredients.get(index) || ingredient}
               </span>
             )}
-            {isAvailable && count > 0 && (
+            {count > 0 && (isAvailable || isReservedStatus) && (
               <span
                 style={{
                   fontSize: '0.75rem',
@@ -150,7 +169,9 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
                   marginRight: '0.5rem'
                 }}
               >
-                {neededQuantity !== null && availableQuantity !== undefined
+                {isReservedStatus
+                  ? `${count} reserved`
+                  : neededQuantity !== null && availableQuantity !== undefined
                   ? `${availableQuantity} available (need ${neededQuantity})`
                   : `${count} in dashboard`}
               </span>
@@ -165,7 +186,7 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
                 color: '#ffffff'
               }}
             >
-              {status === 'available' ? 'Available' : status === 'partial' ? 'Partial' : 'Missing'}
+              {badgeText}
             </span>
           </label>
         );

@@ -10,6 +10,7 @@ export interface UserSettings {
   notificationsEnabled: boolean;
   defaultCategory?: string;
   lastUsedShoppingListId?: string;
+  isPremium?: boolean; // Premium subscription status
 }
 
 export interface UserItem {

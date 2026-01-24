@@ -18,11 +18,12 @@ import type { FoodItem, ShoppingListItem } from '../types';
 export interface IngredientStatus {
   ingredient: string;
   index: number;
-  status: 'available' | 'missing' | 'partial';
+  status: 'available' | 'missing' | 'partial' | 'reserved';
   matchingItems: FoodItem[];
   count: number;
   availableQuantity: number;
   neededQuantity: number | null;
+  isReserved?: boolean; // True if items exist but are fully reserved
 }
 
 interface UseIngredientAvailabilityOptions {
@@ -124,14 +125,19 @@ export const useIngredientAvailability = (
         shoppingListItems,
         reservedQuantitiesMap
       );
+      // Check if items are reserved (have matches but no available quantity)
+      const isReserved = matchResult.count > 0 && matchResult.availableQuantity === 0;
+      const status = isReserved ? 'reserved' : matchResult.status;
+      
       return {
         ingredient,
         index,
-        status: matchResult.status,
+        status,
         matchingItems: matchResult.matchingItems,
         count: matchResult.count,
         availableQuantity: matchResult.availableQuantity,
-        neededQuantity: matchResult.neededQuantity
+        neededQuantity: matchResult.neededQuantity,
+        isReserved
       };
     });
   }, [ingredients, pantryItems, shoppingListItems, reservedQuantitiesMap]);

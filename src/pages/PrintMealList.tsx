@@ -348,22 +348,6 @@ const PrintMealList: React.FC = () => {
                           }}>
                             {MEAL_TYPE_LABELS[mealType]} {dish.dishName}
                           </p>
-                          
-                          {/* Ingredients */}
-                          {dish.recipeIngredients && dish.recipeIngredients.length > 0 && (
-                            <ol style={{ 
-                              margin: '0 0 0 1.5rem', 
-                              padding: 0,
-                              fontSize: '1rem',
-                              color: '#374151'
-                            }}>
-                              {dish.recipeIngredients.map((ingredient, index) => (
-                                <li key={index} style={{ marginBottom: '0.25rem' }}>
-                                  {ingredient}
-                                </li>
-                              ))}
-                            </ol>
-                          )}
                         </div>
                       ))
                     ) : (

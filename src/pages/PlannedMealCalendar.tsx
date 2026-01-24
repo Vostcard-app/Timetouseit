@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { mealPlanningService } from '../services';
+import { mealPlanningService, userSettingsService } from '../services';
 import type { MealPlan, PlannedMeal, MealType, Dish } from '../types';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Banner from '../components/layout/Banner';
@@ -41,6 +41,8 @@ const PlannedMealCalendar: React.FC = () => {
   const [showIngredientPicker, setShowIngredientPicker] = useState(false);
   const [selectedDish, setSelectedDish] = useState<{ dish: any; meal: PlannedMeal } | null>(null);
   const [showMealDetailModal, setShowMealDetailModal] = useState(false);
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const unsubscribeRef = useRef<Map<string, () => void>>(new Map());
   const loadedWeeksRef = useRef<Set<string>>(new Set());
   const cleanupDoneRef = useRef<boolean>(false);
@@ -52,9 +54,30 @@ const PlannedMealCalendar: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
 
 
+  // Check premium status
+  useEffect(() => {
+    const checkPremium = async () => {
+      if (!user) {
+        setIsPremium(false);
+        return;
+      }
+      try {
+        const premium = await userSettingsService.isPremiumUser(user.uid);
+        setIsPremium(premium);
+        if (!premium) {
+          setShowUpgradeModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking premium status:', error);
+        setIsPremium(false);
+      }
+    };
+    checkPremium();
+  }, [user]);
+
   // Subscribe to meal plans for current month (real-time updates)
   useEffect(() => {
-    if (!user) {
+    if (!user || !isPremium) {
       setLoading(false);
       return;
     }
@@ -493,7 +516,64 @@ const PlannedMealCalendar: React.FC = () => {
     );
   }
 
-  if (loading) {
+  // Show upgrade modal if not premium
+  if (isPremium === false) {
+    return (
+      <>
+        <Banner showHomeIcon={true} showLogo={false} onMenuClick={() => setMenuOpen(true)} />
+        <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+        <div style={{ 
+          padding: '3rem 2rem', 
+          textAlign: 'center',
+          maxWidth: '600px',
+          margin: '0 auto'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '2rem',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
+            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+              Meal Planner - Premium Feature
+            </h2>
+            <p style={{ margin: '0 0 1.5rem 0', color: '#6b7280', fontSize: '1rem' }}>
+              Unlock AI-powered meal planning with automatic ingredient extraction from recipe URLs. 
+              Get smart ingredient lists with quantities, and automatically add items to your shopping list.
+            </p>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.125rem', fontWeight: '600', color: '#1f2937' }}>
+                Premium Features:
+              </h3>
+              <ul style={{ textAlign: 'left', margin: 0, paddingLeft: '1.5rem', color: '#6b7280' }}>
+                <li>AI-powered recipe ingredient extraction</li>
+                <li>Automatic quantity and amount parsing</li>
+                <li>Smart shopping list integration</li>
+                <li>Meal planning calendar</li>
+              </ul>
+            </div>
+            <button
+              onClick={() => navigate('/settings')}
+              style={{
+                padding: '0.75rem 2rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Upgrade to Premium
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (loading || isPremium === null) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <p>Loading planned meals...</p>

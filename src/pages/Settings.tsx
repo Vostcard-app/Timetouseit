@@ -15,7 +15,8 @@ const Settings: React.FC = () => {
   const [settings, setSettings] = useState<UserSettings>({
     userId: user?.uid || '',
     reminderDays: 7,
-    notificationsEnabled: false
+    notificationsEnabled: false,
+    isPremium: false
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,7 +34,8 @@ const Settings: React.FC = () => {
           setSettings({
             userId: user.uid,
             reminderDays: 7,
-            notificationsEnabled: false
+            notificationsEnabled: false,
+            isPremium: false
           });
         }
       } catch (error) {
@@ -133,6 +135,66 @@ const Settings: React.FC = () => {
           <p style={{ margin: '0 0 1rem 0', color: '#6b7280' }}>
             Signed in as: {user.email}
           </p>
+          
+          {/* Premium Status */}
+          <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: settings.isPremium ? '#ecfdf5' : '#fef3c7', borderRadius: '8px', border: `1px solid ${settings.isPremium ? '#10b981' : '#f59e0b'}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: '#1f2937' }}>
+                  {settings.isPremium ? '✓ Premium Member' : 'Free Plan'}
+                </p>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                  {settings.isPremium 
+                    ? 'You have access to all premium features including AI-powered meal planning'
+                    : 'Upgrade to unlock AI-powered meal planning and ingredient extraction'}
+                </p>
+              </div>
+              {settings.isPremium && (
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600'
+                }}>
+                  PREMIUM
+                </span>
+              )}
+            </div>
+            {!settings.isPremium && (
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  try {
+                    await userSettingsService.updateUserSettings({
+                      ...settings,
+                      isPremium: true
+                    });
+                    setSettings(prev => ({ ...prev, isPremium: true }));
+                    alert('Upgraded to Premium! You now have access to all premium features.');
+                  } catch (error) {
+                    console.error('Error upgrading:', error);
+                    alert('Failed to upgrade. Please try again.');
+                  }
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#002B4D',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
+                Upgrade to Premium
+              </button>
+            )}
+          </div>
+
           <button
             onClick={handleSignOut}
             style={{

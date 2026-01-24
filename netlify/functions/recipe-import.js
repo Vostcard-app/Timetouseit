@@ -174,7 +174,23 @@ exports.handler = async (event) => {
       recipeData = parseGenericRecipe($, url, sourceDomain);
     }
 
-    // If no structured data found, return 422 with helpful error
+    // If no structured data found, try AI extraction as fallback
+    if (!recipeData || !recipeData.ingredients || recipeData.ingredients.length === 0) {
+      // Try AI extraction as fallback
+      try {
+        if (process.env.OPENAI_API_KEY) {
+          console.log('Scraping failed, trying AI extraction as fallback');
+          const aiRecipeData = await extractRecipeWithAI(url, html);
+          if (aiRecipeData && aiRecipeData.ingredients && aiRecipeData.ingredients.length > 0) {
+            recipeData = aiRecipeData;
+          }
+        }
+      } catch (aiError) {
+        console.error('AI extraction fallback failed:', aiError);
+      }
+    }
+
+    // If still no data, return 422 with helpful error
     if (!recipeData || !recipeData.ingredients || recipeData.ingredients.length === 0) {
       // Log for debugging (visible in Netlify function logs)
       console.error('Recipe import failed:', {
@@ -194,6 +210,45 @@ exports.handler = async (event) => {
           error: 'No structured recipe data found. This recipe may not be in a supported format (JSON-LD or microdata).' 
         })
       };
+    }
+
+    // If we have ingredients but they need quantity parsing, use AI parser
+    if (recipeData.ingredients && recipeData.ingredients.length > 0) {
+      try {
+        // Check if ingredients need parsing (don't have clear quantities)
+        const needsParsing = recipeData.ingredients.some(ing => {
+          const ingStr = typeof ing === 'string' ? ing : String(ing);
+          // Check if ingredient has a clear quantity pattern
+          const hasQuantity = /^[\d\s½¼¾⅓⅔⅛⅜⅝⅞]+/.test(ingStr.trim());
+          return !hasQuantity || ingStr.length > 100; // Also parse if very long (might be description)
+        });
+
+        if (needsParsing && process.env.OPENAI_API_KEY) {
+          console.log('Parsing ingredient quantities with AI');
+          const parsedResult = await parseIngredientQuantities(recipeData.ingredients);
+          if (parsedResult && parsedResult.parsedIngredients && parsedResult.parsedIngredients.length > 0) {
+            // Replace ingredients with parsed versions
+            recipeData.ingredients = parsedResult.parsedIngredients.map(parsed => {
+              // Reconstruct ingredient string with structured data
+              let ingredientStr = '';
+              if (parsed.quantity !== null && parsed.quantity !== undefined) {
+                ingredientStr += parsed.quantity;
+                if (parsed.unit) {
+                  ingredientStr += ` ${parsed.unit}`;
+                }
+                ingredientStr += ' ';
+              }
+              ingredientStr += parsed.name;
+              return ingredientStr;
+            });
+            // Also store structured data for easier access
+            recipeData.parsedIngredients = parsedResult.parsedIngredients;
+          }
+        }
+      } catch (parseError) {
+        console.error('AI ingredient parsing failed, using original ingredients:', parseError);
+        // Continue with original ingredients if parsing fails
+      }
     }
 
     return {
@@ -436,4 +491,163 @@ function isValidIngredient(text) {
   }
   
   return true;
+}
+
+/**
+ * Extract recipe using AI as fallback
+ */
+async function extractRecipeWithAI(url, html) {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+
+  try {
+    // Extract text content from HTML (simplified)
+    const textContent = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 8000); // Limit to avoid token limits
+
+    const prompt = `Extract recipe information from this webpage content. Focus on finding the recipe title and ingredients list.
+
+URL: ${url}
+Content: ${textContent}
+
+Extract:
+1. Recipe title/name
+2. List of ingredients with quantities
+
+Return a JSON object with this structure:
+{
+  "title": "Recipe name",
+  "ingredients": ["2 cups flour", "1 tbsp salt", ...]
+}
+
+Return only valid JSON.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that extracts recipe information from web content. Return only valid JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      return null;
+    }
+
+    const parsed = JSON.parse(content);
+    const sourceDomain = new URL(url).hostname.replace(/^www\./, '');
+
+    return {
+      title: parsed.title || 'Untitled Recipe',
+      ingredients: parsed.ingredients || [],
+      sourceUrl: url,
+      sourceDomain
+    };
+  } catch (error) {
+    console.error('AI recipe extraction error:', error);
+    return null;
+  }
+}
+
+/**
+ * Parse ingredient quantities using AI
+ */
+async function parseIngredientQuantities(ingredients) {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+
+  try {
+    const ingredientStrings = ingredients.map(ing => typeof ing === 'string' ? ing : String(ing));
+    
+    const prompt = `Parse these recipe ingredients and extract the ingredient name, quantity, and unit separately.
+
+Ingredients to parse:
+${ingredientStrings.map((ing, i) => `${i + 1}. ${ing}`).join('\n')}
+
+For each ingredient, extract:
+- name: The ingredient name (e.g., "flour", "olive oil", "chicken breast")
+- quantity: The numeric quantity (e.g., 2, 1.5, 0.5) or null if no quantity specified
+- unit: The unit of measurement (e.g., "cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "piece", "pieces", "clove", "cloves") or null if no unit
+
+Return a JSON object with this structure:
+{
+  "parsedIngredients": [
+    {
+      "name": "ingredient name",
+      "quantity": 2.0,
+      "unit": "cup"
+    }
+  ]
+}
+
+Return only valid JSON.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that parses recipe ingredients. Extract ingredient names, quantities, and units. Return only valid JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      return null;
+    }
+
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('AI ingredient parser error:', error);
+    return null;
+  }
 }

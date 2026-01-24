@@ -12,9 +12,16 @@ export interface RecipeSite {
   updatedAt: Date;
 }
 
+export interface ParsedIngredient {
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+}
+
 export interface RecipeImportResult {
   title: string;
   ingredients: string[];
+  parsedIngredients?: ParsedIngredient[]; // AI-parsed structured ingredient data
   imageUrl?: string;
   sourceUrl: string;
   sourceDomain: string;

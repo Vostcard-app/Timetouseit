@@ -135,7 +135,7 @@ export const recipeImportService = {
     shoppingListItems: ShoppingListItem[] = [],
     reservedQuantitiesMap: Record<string, number> = {}
   ): {
-    status: 'available' | 'missing' | 'partial';
+    status: 'available' | 'missing' | 'partial' | 'reserved';
     matchingItems: FoodItem[];
     count: number;
     availableQuantity: number; // Total available quantity across all matches
@@ -225,6 +225,16 @@ export const recipeImportService = {
     
     // If no quantity specified, treat as available if we have matches
     if (neededQuantity === null) {
+      // If we have matching items but no available quantity, they're reserved
+      if (count > 0 && totalAvailableQuantity === 0) {
+        return {
+          status: 'reserved',
+          matchingItems,
+          count,
+          availableQuantity: 0,
+          neededQuantity: null
+        };
+      }
       return {
         status: totalAvailableQuantity > 0 ? 'available' : 'missing',
         matchingItems,
@@ -249,6 +259,15 @@ export const recipeImportService = {
         matchingItems,
         count,
         availableQuantity: totalAvailableQuantity,
+        neededQuantity
+      };
+    } else if (count > 0) {
+      // We have matching items but they're all reserved
+      return {
+        status: 'reserved',
+        matchingItems,
+        count,
+        availableQuantity: 0,
         neededQuantity
       };
     } else {

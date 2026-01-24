@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { MealType } from '../../types';
+import type { ParsedIngredient } from '../../types/recipeImport';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { parseIngredientQuantity } from '../../utils/ingredientQuantityParser';
 import { showToast } from '../Toast';
@@ -21,6 +22,7 @@ interface SaveDishModalProps {
     targetListId: string;
   }) => Promise<void>;
   ingredients: string[];
+  parsedIngredients?: ParsedIngredient[]; // AI-parsed structured ingredient data
   selectedDate: Date;
   mealType: MealType;
   recipeUrl?: string | null;
@@ -32,6 +34,7 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
   onClose,
   onSave,
   ingredients,
+  parsedIngredients,
   selectedDate: _selectedDate,
   mealType: _mealType,
   recipeUrl: _recipeUrl,
@@ -77,30 +80,30 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
     }
   }, [isOpen, importedRecipeTitle]);
 
-  // Set default selections for shopping list (missing items) - checked by default
+  // Set default selections for shopping list (missing and reserved items) - checked by default
   useEffect(() => {
     if (ingredientStatuses.length === 0) return;
     
-    const missingIndices = ingredientStatuses
-      .filter(item => item.status === 'missing')
+    const missingAndReservedIndices = ingredientStatuses
+      .filter(item => item.status === 'missing' || item.status === 'reserved' || item.isReserved === true)
       .map(item => item.index);
     
-    // Always set missing items to be checked (for shopping list)
-    if (missingIndices.length > 0) {
+    // Always set missing and reserved items to be checked (for shopping list)
+    if (missingAndReservedIndices.length > 0) {
       setSelectedForShoppingList(prev => {
         const newSet = new Set(prev);
-        missingIndices.forEach(idx => newSet.add(idx));
+        missingAndReservedIndices.forEach(idx => newSet.add(idx));
         return newSet;
       });
     }
   }, [ingredientStatuses.length]);
 
-  // Set default selections for reservation (available items) - checked by default
+  // Set default selections for reservation (available items only, not reserved) - checked by default
   useEffect(() => {
     if (ingredientStatuses.length === 0) return;
     
     const availableIndices = ingredientStatuses
-      .filter(item => item.status === 'available' || item.status === 'partial')
+      .filter(item => (item.status === 'available' || item.status === 'partial') && item.status !== 'reserved' && item.isReserved !== true)
       .map(item => item.index);
     
     // Always set available items to be checked (for reservation)
@@ -167,7 +170,25 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
         .filter(Boolean);
 
       const ingredientsForShoppingList = Array.from(selectedForShoppingList)
-        .map(index => allIngredients[index])
+        .map(index => {
+          const ingredient = allIngredients[index];
+          // If we have parsedIngredients, use the structured data
+          if (parsedIngredients && index < parsedIngredients.length) {
+            const parsed = parsedIngredients[index];
+            // Reconstruct ingredient string with quantity for consistency
+            let ingredientStr = '';
+            if (parsed.quantity !== null && parsed.quantity !== undefined) {
+              ingredientStr += parsed.quantity;
+              if (parsed.unit) {
+                ingredientStr += ` ${parsed.unit}`;
+              }
+              ingredientStr += ' ';
+            }
+            ingredientStr += parsed.name;
+            return ingredientStr;
+          }
+          return ingredient;
+        })
         .filter(Boolean);
 
       await onSave({
@@ -320,9 +341,16 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {ingredientStatuses.map((item) => {
                     const ingredient = allIngredients[item.index];
-                    const parsed = parseIngredientQuantity(ingredient);
+                    // Use AI-parsed ingredient if available, otherwise parse manually
+                    const parsedIngredient = parsedIngredients && item.index < parsedIngredients.length
+                      ? parsedIngredients[item.index]
+                      : null;
+                    const parsed = parsedIngredient 
+                      ? { itemName: parsedIngredient.name, quantity: parsedIngredient.quantity }
+                      : parseIngredientQuantity(ingredient);
                     const displayName = parsed.itemName; // Use parsed ingredient name without quantity/unit
                     const isAvailable = item.status === 'available' || item.status === 'partial';
+                    const isReserved = item.status === 'reserved' || item.isReserved === true;
                     const isMissing = item.status === 'missing';
                     const isChecked = selectedForShoppingList.has(item.index) || selectedToReserve.has(item.index);
                     
@@ -340,9 +368,9 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           padding: '0.75rem 1rem',
-                          border: isMissing ? '2px solid #dc2626' : isAvailable ? '2px solid #10b981' : '2px solid #e5e7eb',
+                          border: isMissing ? '2px solid #dc2626' : isReserved ? '2px solid #9ca3af' : isAvailable ? '2px solid #10b981' : '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          backgroundColor: '#ffffff',
+                          backgroundColor: isReserved ? '#f3f4f6' : '#ffffff',
                           gap: '1rem'
                         }}
                       >
@@ -351,7 +379,8 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {
-                            if (isMissing) {
+                            // All ingredients are checkable - user can add any to shopping list
+                            if (isMissing || isReserved) {
                               toggleShoppingList(item.index);
                             } else if (isAvailable) {
                               toggleReserve(item.index);
@@ -377,6 +406,23 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                         
                         {/* Status button(s) on the right */}
                         <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                          {isReserved && (
+                            <button
+                              disabled
+                              style={{
+                                padding: '0.375rem 0.75rem',
+                                backgroundColor: '#f3f4f6',
+                                color: '#6b7280',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                cursor: 'default'
+                              }}
+                            >
+                              Reserved
+                            </button>
+                          )}
                           {isMissing && (
                             <button
                               disabled

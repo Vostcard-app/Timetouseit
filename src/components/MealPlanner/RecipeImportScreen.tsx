@@ -233,22 +233,31 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
       const newlyAddedItemIds: string[] = [];
       if (selectedItems.length > 0) {
         for (const ingredient of selectedItems) {
-          // Parse the ingredient to extract quantity and clean the name
-          const parsed = parseIngredientQuantity(ingredient);
+          // Try to use AI-parsed ingredient data if available
+          const ingredientIndex = importedRecipe.ingredients.indexOf(ingredient);
+          const parsedIngredient = importedRecipe.parsedIngredients && ingredientIndex >= 0 
+            ? importedRecipe.parsedIngredients[ingredientIndex]
+            : null;
           
-          // Clean the item name (remove descriptors and duplicates)
-          const cleanedName = cleanIngredientName(parsed.itemName);
+          let itemName: string;
+          let quantity: number | undefined;
           
-          // Capitalize the cleaned name
-          const capitalizedName = capitalizeItemName(cleanedName);
-          
-          // Use the parsed quantity, defaulting to 1 if no quantity was found
-          const quantity = parsed.quantity ?? 1;
+          if (parsedIngredient) {
+            // Use AI-parsed data
+            itemName = parsedIngredient.name;
+            quantity = parsedIngredient.quantity ?? undefined;
+          } else {
+            // Fallback to manual parsing
+            const parsed = parseIngredientQuantity(ingredient);
+            const cleanedName = cleanIngredientName(parsed.itemName);
+            itemName = capitalizeItemName(cleanedName);
+            quantity = parsed.quantity ?? undefined;
+          }
           
           const itemId = await shoppingListService.addShoppingListItem(
             user.uid,
             targetListId,
-            capitalizedName,
+            itemName,
             false,
             'recipe_import',
             dishId,
