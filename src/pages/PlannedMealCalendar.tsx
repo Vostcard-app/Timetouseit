@@ -16,7 +16,7 @@ import { MealTypeSelectionModal } from '../components/MealPlanner/MealTypeSelect
 import { DayMealsModal } from '../components/MealPlanner/DayMealsModal';
 import { DishListModal } from '../components/MealPlanner/DishListModal';
 import { MealSelectionModal } from '../components/MealPlanner/MealSelectionModal';
-import { addDays, startOfWeek, endOfWeek, format, isSameDay, startOfDay } from 'date-fns';
+import { addDays, startOfWeek, endOfWeek, format, isSameDay, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -32,6 +32,7 @@ const PlannedMealCalendar: React.FC = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState<'week' | 'month'>('week');
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -521,13 +522,31 @@ const PlannedMealCalendar: React.FC = () => {
     return days;
   }, [currentDate]);
 
-  // Navigate weeks
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  // Generate calendar days for current month
+  const monthCalendarDays = useMemo(() => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  }, [currentDate]);
+
+  // Navigate periods (weeks or months)
+  const navigatePeriod = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 7);
+    if (currentView === 'week') {
+      if (direction === 'prev') {
+        newDate.setDate(newDate.getDate() - 7);
+      } else {
+        newDate.setDate(newDate.getDate() + 7);
+      }
     } else {
-      newDate.setDate(newDate.getDate() + 7);
+      // Navigate by month
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
     }
     setCurrentDate(newDate);
   };
@@ -613,10 +632,10 @@ const PlannedMealCalendar: React.FC = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
         <h2 style={{ marginBottom: '1rem' }}>Planned Meal Calendar</h2>
         
-        {/* Week Navigation */}
+        {/* Navigation and View Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <button
-            onClick={() => navigateWeek('prev')}
+            onClick={() => navigatePeriod('prev')}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: '#f3f4f6',
@@ -627,30 +646,64 @@ const PlannedMealCalendar: React.FC = () => {
               fontSize: '1rem'
             }}
           >
-            ← Previous Week
+            ← {currentView === 'week' ? 'Previous Week' : 'Previous Month'}
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-              {format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'MMMM d')} - {format(endOfWeek(currentDate, { weekStartsOn: 0 }), 'd, yyyy')}
+              {currentView === 'week' 
+                ? `${format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'MMMM d')} - ${format(endOfWeek(currentDate, { weekStartsOn: 0 }), 'd, yyyy')}`
+                : format(currentDate, 'MMMM yyyy')}
             </h3>
-            <button
-              onClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#002B4D',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-            >
-              List View
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => setCurrentView('week')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: currentView === 'week' ? '#002B4D' : '#f3f4f6',
+                  color: currentView === 'week' ? 'white' : '#1f2937',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                Week View
+              </button>
+              <button
+                onClick={() => setCurrentView('month')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: currentView === 'month' ? '#002B4D' : '#f3f4f6',
+                  color: currentView === 'month' ? 'white' : '#1f2937',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                Month View
+              </button>
+              <button
+                onClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#002B4D',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                List View
+              </button>
+            </div>
           </div>
           <button
-            onClick={() => navigateWeek('next')}
+            onClick={() => navigatePeriod('next')}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: '#f3f4f6',
@@ -661,7 +714,7 @@ const PlannedMealCalendar: React.FC = () => {
               fontSize: '1rem'
             }}
           >
-            Next Week →
+            {currentView === 'week' ? 'Next Week' : 'Next Month'} →
           </button>
         </div>
 
@@ -693,10 +746,14 @@ const PlannedMealCalendar: React.FC = () => {
           ))}
 
           {/* Calendar Days */}
-          {calendarDays.map((day, index) => {
+          {(currentView === 'week' ? calendarDays : monthCalendarDays).map((day, index) => {
             const normalizedDay = startOfDay(day);
             const dayMeals = getMealsForDay(normalizedDay);
             const isToday = isSameDay(normalizedDay, startOfDay(new Date()));
+            const isCurrentMonth = currentView === 'week' || (
+              normalizedDay.getMonth() === currentDate.getMonth() && 
+              normalizedDay.getFullYear() === currentDate.getFullYear()
+            );
             
             // Check if this day is a valid drop target for each meal type
             const canDropBreakfast = isDragging && draggedMeal && canDropMeal(normalizedDay, 'breakfast');
@@ -729,32 +786,33 @@ const PlannedMealCalendar: React.FC = () => {
                   }
                 }}
                 style={{
-                  minHeight: '100px',
+                  minHeight: currentView === 'week' ? '100px' : '80px',
                   padding: '0.5rem',
                   border: isDropTarget ? '2px solid #10b981' : (isInvalidDrop ? '2px solid #ef4444' : '1px solid #e5e7eb'),
                   borderRadius: '4px',
-                  backgroundColor: isDropTarget ? '#f0fdf4' : (isInvalidDrop ? '#fef2f2' : (isToday ? '#f0f8ff' : '#ffffff')),
+                  backgroundColor: isDropTarget ? '#f0fdf4' : (isInvalidDrop ? '#fef2f2' : (isToday ? '#f0f8ff' : (isCurrentMonth ? '#ffffff' : '#f9fafb'))),
                   cursor: isDragging ? (isDropTarget ? 'copy' : (isInvalidDrop ? 'not-allowed' : 'pointer')) : 'pointer',
                   transition: 'all 0.2s',
-                  position: 'relative'
+                  position: 'relative',
+                  opacity: isCurrentMonth ? 1 : 0.5
                 }}
                 onMouseEnter={(e) => {
                   if (!isDragging) {
-                    e.currentTarget.style.backgroundColor = isToday ? '#e0f2fe' : '#f3f4f6';
+                    e.currentTarget.style.backgroundColor = isToday ? '#e0f2fe' : (isCurrentMonth ? '#f3f4f6' : '#f9fafb');
                     e.currentTarget.style.borderColor = '#002B4D';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isDragging) {
-                    e.currentTarget.style.backgroundColor = isToday ? '#f0f8ff' : '#ffffff';
+                    e.currentTarget.style.backgroundColor = isToday ? '#f0f8ff' : (isCurrentMonth ? '#ffffff' : '#f9fafb');
                     e.currentTarget.style.borderColor = '#e5e7eb';
                   }
                 }}
               >
                 <div style={{
-                  fontSize: '0.875rem',
-                  fontWeight: isToday ? '700' : '500',
-                  color: '#1f2937',
+                  fontSize: currentView === 'week' ? '0.875rem' : '0.75rem',
+                  fontWeight: isToday ? '700' : (isCurrentMonth ? '500' : '400'),
+                  color: isCurrentMonth ? '#1f2937' : '#9ca3af',
                   marginBottom: '0.25rem'
                 }}>
                   {format(day, 'd')}
@@ -796,15 +854,15 @@ const PlannedMealCalendar: React.FC = () => {
                             }}
                             style={{
                               position: 'relative',
-                              width: '28px',
-                              height: '28px',
+                              width: currentView === 'week' ? '28px' : '24px',
+                              height: currentView === 'week' ? '28px' : '24px',
                               borderRadius: '50%',
                               backgroundColor: '#002B4D',
                               color: '#ffffff',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '0.75rem',
+                              fontSize: currentView === 'week' ? '0.75rem' : '0.65rem',
                               fontWeight: '600',
                               cursor: isDragging ? 'default' : 'pointer',
                               userSelect: 'none',
