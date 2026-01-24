@@ -12,6 +12,7 @@ import { analyticsService } from '../services/analyticsService';
 
 import { STORAGE_KEYS } from '../constants';
 import { capitalizeItemName } from '../utils/formatting';
+import { categoryService } from '../services/categoryService';
 
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -523,10 +524,13 @@ const Shop: React.FC = () => {
       
       // Create/update UserItem to ensure item is in master list
       try {
+        // Detect category using AI for Premium users, keyword matching for others
+        const category = await categoryService.detectCategoryWithAI(capitalizedName, user.uid);
+        
         await userItemsService.createOrUpdateUserItem(user.uid, {
           name: capitalizedName,
           expirationLength: 7, // Default, can be edited later
-          category: undefined // Can be set later
+          category: category
         });
       } catch (userItemError) {
         console.error('Error creating UserItem:', userItemError);

@@ -31,6 +31,9 @@ export { generateMealSuggestions, replanMeals } from './openaiService';
 export { recipeImportService } from './recipeImportService';
 export { recipeSiteService } from './recipeSiteService';
 
+// Category service
+export { categoryService } from './categoryService';
+
 // Base utilities and error classes
 export * from './baseService';
 export * from './errors';

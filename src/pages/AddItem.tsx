@@ -17,6 +17,7 @@ import { analyticsService } from '../services/analyticsService';
 import { capitalizeItemName } from '../utils/formatting';
 import { isDryCannedItem } from '../utils/storageUtils';
 import { detectCategory } from '../utils/categoryUtils';
+import { categoryService } from '../services/categoryService';
 
 const AddItem: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -262,12 +263,15 @@ const AddItem: React.FC = () => {
             const addedDate = new Date(); // Use current date for new items
             const expirationLength = differenceInDays(targetDate, addedDate);
             
-            // Get category from FoodKeeper or use form category
+            // Get category from FoodKeeper, form category, or AI detection
             let category = data.category;
             if (!category) {
               const foodKeeperMatches = findFoodItems(capitalizedName, 1);
               if (foodKeeperMatches.length > 0) {
                 category = foodKeeperMatches[0].category;
+              } else {
+                // Use AI categorization for Premium users, keyword matching for others
+                category = await categoryService.detectCategoryWithAI(capitalizedName, user.uid);
               }
             }
             

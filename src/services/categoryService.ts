@@ -1,0 +1,74 @@
+/**
+ * Category Service
+ * Handles AI-powered and fallback category detection for food items
+ */
+
+import { userSettingsService } from './userSettingsService';
+import { detectCategory, type FoodCategory } from '../utils/categoryUtils';
+import { logServiceOperation, logServiceError } from './baseService';
+
+export const categoryService = {
+  /**
+   * Detect category for a food item using AI for Premium users, fallback to keyword matching
+   */
+  async detectCategoryWithAI(itemName: string, userId?: string): Promise<FoodCategory> {
+    logServiceOperation('detectCategoryWithAI', 'categoryService', { itemName, userId });
+
+    if (!itemName || !itemName.trim()) {
+      return 'Other';
+    }
+
+    // Check if user is Premium
+    let isPremium = false;
+    if (userId) {
+      try {
+        isPremium = await userSettingsService.isPremiumUser(userId);
+      } catch (error) {
+        console.error('Error checking premium status:', error);
+        // Continue with non-premium flow if check fails
+      }
+    }
+
+    // If Premium, try AI categorization
+    if (isPremium) {
+      try {
+        const response = await fetch('/.netlify/functions/ai-category-detector', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ itemName: itemName.trim() })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.category) {
+            // Validate category is one of the allowed values
+            const validCategories: FoodCategory[] = ['Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Leftovers', 'Other'];
+            if (validCategories.includes(data.category as FoodCategory)) {
+              logServiceOperation('detectCategoryWithAI', 'categoryService', { 
+                itemName, 
+                category: data.category, 
+                method: 'AI' 
+              });
+              return data.category as FoodCategory;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('AI category detection failed, falling back to keyword matching:', error);
+        logServiceError('detectCategoryWithAI', 'categoryService', error, { itemName, userId });
+        // Fall through to keyword-based detection
+      }
+    }
+
+    // Fallback to keyword-based detection (for non-premium users or if AI fails)
+    const category = detectCategory(itemName);
+    logServiceOperation('detectCategoryWithAI', 'categoryService', { 
+      itemName, 
+      category, 
+      method: 'keyword' 
+    });
+    return category;
+  }
+};
