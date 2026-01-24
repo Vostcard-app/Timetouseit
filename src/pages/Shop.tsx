@@ -1054,73 +1054,73 @@ const Shop: React.FC = () => {
                 </div>
               )}
             </div>
-            <button
-              type="submit"
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#002B4D',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                minHeight: '44px',
-                minWidth: '100px'
-              }}
-            >
-              Add Item
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                type="submit"
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#002B4D',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '1.5rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  minHeight: '44px',
+                  minWidth: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                aria-label="Add item"
+                title="Add item"
+              >
+                +
+              </button>
+              {/* Scan icon button for adding new item */}
+              <button
+                type="button"
+                onClick={handleAddItemScanClick}
+                style={{
+                  padding: '0.5rem',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '44px',
+                  minHeight: '44px'
+                }}
+                aria-label="Scan label to add item"
+                title="Scan label with AI to add item"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                >
+                  <path d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 4H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </button>
+            </div>
           </form>
           <div style={{ 
             marginTop: '0.5rem', 
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem'
+            fontSize: '1.25rem', 
+            color: '#1f2937',
+            textAlign: 'center',
+            fontStyle: 'italic'
           }}>
-            <div style={{ 
-              fontSize: '1.25rem', 
-              color: '#1f2937',
-              fontStyle: 'italic',
-              flex: 1
-            }}>
-              Swipe to remove
-            </div>
-            {/* Scan icon button for adding new item */}
-            <button
-              type="button"
-              onClick={handleAddItemScanClick}
-              style={{
-                padding: '0.5rem',
-                backgroundColor: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '44px',
-                minHeight: '44px'
-              }}
-              aria-label="Scan label to add item"
-              title="Scan label with AI to add item"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ display: 'inline-block', verticalAlign: 'middle' }}
-              >
-                <path d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 4H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </button>
+            Swipe to remove
           </div>
         </div>
 

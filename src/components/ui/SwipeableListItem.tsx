@@ -500,7 +500,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                   onFreeze();
                 }}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: '0.5rem',
                   backgroundColor: '#3b82f6',
                   color: 'white',
                   border: 'none',
@@ -508,13 +508,26 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                   fontSize: '0.875rem',
                   fontWeight: '500',
                   cursor: 'pointer',
-                  minWidth: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '44px',
                   minHeight: '36px'
                 }}
                 aria-label="Freeze item"
+                title="Freeze item"
                 type="button"
               >
-                Freeze
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                >
+                  <path d="M12 2V22M12 2L10 6L12 8L14 6L12 2ZM12 22L10 18L12 16L14 18L12 22ZM2 12H22M2 12L6 10L8 12L6 14L2 12ZM22 12L18 10L16 12L18 14L22 12ZM7 7L17 17M17 7L7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
             )}
             <button
