@@ -80,41 +80,7 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
     }
   }, [isOpen, importedRecipeTitle]);
 
-  // Set default selections for shopping list (missing and reserved items) - checked by default
-  useEffect(() => {
-    if (ingredientStatuses.length === 0) return;
-    
-    const missingAndReservedIndices = ingredientStatuses
-      .filter(item => item.status === 'missing' || item.status === 'reserved' || item.isReserved === true)
-      .map(item => item.index);
-    
-    // Always set missing and reserved items to be checked (for shopping list)
-    if (missingAndReservedIndices.length > 0) {
-      setSelectedForShoppingList(prev => {
-        const newSet = new Set(prev);
-        missingAndReservedIndices.forEach(idx => newSet.add(idx));
-        return newSet;
-      });
-    }
-  }, [ingredientStatuses.length]);
-
-  // Set default selections for reservation (available items only, not reserved) - checked by default
-  useEffect(() => {
-    if (ingredientStatuses.length === 0) return;
-    
-    const availableIndices = ingredientStatuses
-      .filter(item => item.status === 'available' || item.status === 'partial')
-      .map(item => item.index);
-    
-    // Always set available items to be checked (for reservation)
-    if (availableIndices.length > 0) {
-      setSelectedToReserve(prev => {
-        const newSet = new Set(prev);
-        availableIndices.forEach(idx => newSet.add(idx));
-        return newSet;
-      });
-    }
-  }, [ingredientStatuses.length]);
+  // No auto-selection - user must explicitly choose ingredients
 
   const toggleShoppingList = (index: number) => {
     const newSelected = new Set(selectedForShoppingList);
@@ -348,7 +314,8 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                     const parsed = parsedIngredient 
                       ? { itemName: parsedIngredient.name, quantity: parsedIngredient.quantity }
                       : parseIngredientQuantity(ingredient);
-                    const displayName = parsed.itemName; // Use parsed ingredient name without quantity/unit
+                    // Use parsed ingredient name as fallback display name
+                    const displayName = parsed.itemName;
                     const isAvailable = item.status === 'available' || item.status === 'partial';
                     const isReserved = item.status === 'reserved' || item.isReserved === true;
                     const isMissing = item.status === 'missing';
@@ -401,7 +368,45 @@ export const SaveDishModal: React.FC<SaveDishModalProps> = ({
                           fontWeight: '500', 
                           color: '#1f2937' 
                         }}>
-                          {displayName}
+                          {(() => {
+                            // If we have parsedIngredients with formattedAmount, display it
+                            if (parsedIngredient && parsedIngredient.formattedAmount && parsedIngredient.formattedAmount.trim()) {
+                              const capitalizedName = parsedIngredient.name
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                .join(' ');
+                              return `${parsedIngredient.formattedAmount} ${capitalizedName}`;
+                            }
+                            // If we have parsedIngredients but no formattedAmount, construct it from quantity/unit
+                            if (parsedIngredient && parsedIngredient.name) {
+                              let formattedAmount = parsedIngredient.formattedAmount;
+                              if (!formattedAmount || !formattedAmount.trim()) {
+                                if (parsedIngredient.quantity !== null && parsedIngredient.quantity !== undefined && parsedIngredient.unit) {
+                                  const unitMap: Record<string, string> = {
+                                    'cup': 'Cups', 'cups': 'Cups', 'tbsp': 'Tbsp', 'tablespoon': 'Tbsp', 'tablespoons': 'Tbsp',
+                                    'tsp': 'Tsp', 'teaspoon': 'Tsp', 'teaspoons': 'Tsp',
+                                    'oz': 'Oz', 'ounce': 'Oz', 'ounces': 'Oz',
+                                    'lb': 'Lbs', 'lbs': 'Lbs', 'pound': 'Lbs', 'pounds': 'Lbs',
+                                    'g': 'G', 'gram': 'G', 'grams': 'G',
+                                    'kg': 'Kg', 'kilogram': 'Kg', 'kilograms': 'Kg',
+                                    'ml': 'Ml', 'milliliter': 'Ml', 'milliliters': 'Ml',
+                                    'l': 'L', 'liter': 'L', 'liters': 'L'
+                                  };
+                                  const capitalizedUnit = unitMap[parsedIngredient.unit.toLowerCase()] || parsedIngredient.unit.charAt(0).toUpperCase() + parsedIngredient.unit.slice(1).toLowerCase();
+                                  formattedAmount = `${parsedIngredient.quantity} ${capitalizedUnit}`;
+                                }
+                              }
+                              const capitalizedName = parsedIngredient.name
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                .join(' ');
+                              return formattedAmount && formattedAmount.trim() 
+                                ? `${formattedAmount} ${capitalizedName}`
+                                : capitalizedName;
+                            }
+                            // Fallback to parsed itemName or original ingredient
+                            return displayName;
+                          })()}
                         </span>
                         
                         {/* Status button(s) on the right */}
