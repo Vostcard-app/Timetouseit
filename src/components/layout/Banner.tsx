@@ -79,7 +79,7 @@ const Banner: React.FC<BannerProps> = ({
               </svg>
             </Link>
           )}
-          {showLogo !== false && (
+          {showLogo === true && (
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
               TimeToUseIt
             </h1>
