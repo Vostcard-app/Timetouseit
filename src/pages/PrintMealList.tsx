@@ -292,20 +292,54 @@ const PrintMealList: React.FC = () => {
                                 </p>
                               </div>
                               {isExpanded && hasIngredients && (
-                                <ul style={{ 
-                                  marginTop: '0.5rem', 
-                                  marginLeft: '1.5rem',
-                                  paddingLeft: '1rem',
-                                  listStyle: 'disc',
-                                  fontSize: '0.875rem',
-                                  color: '#6b7280'
-                                }}>
-                                  {dish.recipeIngredients.map((ingredient, idx) => (
-                                    <li key={idx} style={{ marginBottom: '0.25rem' }}>
-                                      {ingredient}
-                                    </li>
-                                  ))}
-                                </ul>
+                                <div style={{ marginTop: '0.5rem', marginLeft: '1.5rem' }}>
+                                  {/* Recipe Link - Show at top if URL exists */}
+                                  {dish.recipeSourceUrl && (
+                                    <a
+                                      href={dish.recipeSourceUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display: 'block',
+                                        marginBottom: '0.75rem',
+                                        padding: '0.5rem 0.75rem',
+                                        backgroundColor: '#f0f8ff',
+                                        color: '#002B4D',
+                                        textDecoration: 'none',
+                                        borderRadius: '4px',
+                                        fontSize: '0.875rem',
+                                        fontWeight: '500',
+                                        border: '1px solid #002B4D',
+                                        transition: 'all 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = '#e0f2fe';
+                                        e.currentTarget.style.textDecoration = 'underline';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = '#f0f8ff';
+                                        e.currentTarget.style.textDecoration = 'none';
+                                      }}
+                                    >
+                                      📖 View Recipe
+                                    </a>
+                                  )}
+                                  
+                                  {/* Ingredients List */}
+                                  <ul style={{ 
+                                    margin: 0,
+                                    paddingLeft: '1rem',
+                                    listStyle: 'disc',
+                                    fontSize: '0.875rem',
+                                    color: '#6b7280'
+                                  }}>
+                                    {dish.recipeIngredients.map((ingredient, idx) => (
+                                      <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                                        {ingredient}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               )}
                             </div>
                           );
