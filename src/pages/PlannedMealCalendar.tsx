@@ -281,15 +281,6 @@ const PlannedMealCalendar: React.FC = () => {
     cleanupLegacyMeals();
   }, [user, allPlannedMeals]); // Only run when allPlannedMeals are computed
 
-  // Handle meal indicator click (specific meal type)
-  const handleMealIndicatorClick = (date: Date, mealType: MealType, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent day click handler from firing
-    const normalizedDate = startOfDay(date);
-    setSelectedDay(normalizedDate);
-    setSelectedMealType(mealType);
-    setShowDishList(true);
-  };
-
   // Handle meal type letter click (new compact view)
   const handleMealTypeLetterClick = (date: Date, mealType: MealType, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -372,14 +363,6 @@ const PlannedMealCalendar: React.FC = () => {
   };
 
   // Drag and drop handlers
-  const handleDragStart = (meal: PlannedMeal, date: Date, e: React.DragEvent) => {
-    e.stopPropagation(); // Prevent day click handler
-    setDraggedMeal({ meal, sourceDate: date });
-    setIsDragging(true);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ''); // Required for Firefox
-  };
-
   const handleDragEnd = () => {
     setDraggedMeal(null);
     setDragOverDate(null);
