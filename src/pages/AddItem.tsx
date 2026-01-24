@@ -46,6 +46,7 @@ const AddItem: React.FC = () => {
   const dashboardEditingItem = locationState?.editingItem;
   const forceFreeze = locationState?.forceFreeze;
   const storageType = locationState?.storageType; // 'pantry' | 'refrigerator'
+  const scannedLabelData = locationState?.scannedLabelData;
   
   // Determine source for button rendering
   const fromShop = fromShoppingList === true;
@@ -84,6 +85,14 @@ const AddItem: React.FC = () => {
       setSearchQuery('');
     }
   }, [storageType, dashboardEditingItem, fromShoppingList]);
+
+  // If coming with scanned label data, show form immediately with pre-filled data
+  React.useEffect(() => {
+    if (scannedLabelData) {
+      setShowForm(true);
+      setSearchQuery(scannedLabelData.itemName);
+    }
+  }, [scannedLabelData]);
 
   // Sync isFrozen state when editingItem changes
   React.useEffect(() => {
@@ -455,6 +464,9 @@ const AddItem: React.FC = () => {
   }
 
   if (showForm) {
+    // Determine initial name - prioritize scanned label data
+    const initialName = scannedLabelData?.itemName || (fromShoppingList && shoppingListItemName ? shoppingListItemName : undefined);
+    
     return (
       <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto' }}>
         <AddItemForm
@@ -464,7 +476,7 @@ const AddItem: React.FC = () => {
           initialItem={editingItem}
           onCancel={handleCancel}
           onToss={editingItem ? handleToss : undefined}
-          initialName={fromShoppingList && shoppingListItemName ? shoppingListItemName : undefined}
+          initialName={initialName}
           forceFreeze={forceFreeze}
           externalIsFrozen={isFrozen}
           onIsFrozenChange={setIsFrozen}
@@ -472,6 +484,7 @@ const AddItem: React.FC = () => {
           foodItems={foodItems}
           fromShop={fromShop}
           fromStorageTab={fromStorageTab}
+          scannedLabelData={scannedLabelData}
         />
       </div>
     );

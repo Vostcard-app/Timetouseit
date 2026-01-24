@@ -41,9 +41,15 @@ interface AddItemFormProps {
   foodItems?: FoodItem[]; // List of previously added items for search/autocomplete
   fromShop?: boolean; // True when navigating from Shop screen
   fromStorageTab?: 'perishable' | 'dryCanned' | null; // Which storage tab user came from
+  scannedLabelData?: {
+    itemName: string;
+    quantity?: number;
+    expirationDate?: Date;
+    category?: string;
+  };
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel, onToss, initialName, forceFreeze, externalIsFrozen, onIsFrozenChange, initialIsDryCanned, foodItems = [], fromShop = false, fromStorageTab = null }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel, onToss, initialName, forceFreeze, externalIsFrozen, onIsFrozenChange, initialIsDryCanned, foodItems = [], fromShop = false, fromStorageTab = null, scannedLabelData }) => {
   const [user] = useAuthState(auth);
   const [formData, setFormData] = useState<FoodItemData>({
     name: initialItem?.name || initialName || '',
@@ -212,11 +218,21 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       setIsFrozenState(shouldFreeze);
       setFreezeCategory(initialItem.freezeCategory as FreezeCategory | null);
       setHasManuallyChangedDate(true); // Don't auto-apply when editing existing item
+    } else if (scannedLabelData) {
+      // Populate form with scanned label data
+      setFormData(prev => ({
+        ...prev,
+        name: scannedLabelData.itemName,
+        quantity: scannedLabelData.quantity || 1,
+        bestByDate: scannedLabelData.expirationDate || prev.bestByDate || new Date(),
+        category: scannedLabelData.category || prev.category
+      }));
+      setHasManuallyChangedDate(false); // Reset flag for new items
     } else if (initialName && !formData.name) {
       setFormData(prev => ({ ...prev, name: initialName }));
       setHasManuallyChangedDate(false); // Reset flag for new items
     }
-  }, [initialItem, initialName, forceFreeze]);
+  }, [initialItem, initialName, scannedLabelData, forceFreeze]);
 
   // Handle forceFreeze when no initialItem
   // Note: Warning should have already been shown on dashboard when Freeze button was tapped

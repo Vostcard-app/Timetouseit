@@ -10,6 +10,12 @@ export interface AddItemLocationState {
   editingItem?: import('./foodItem').FoodItem;
   forceFreeze?: boolean;
   storageType?: 'pantry' | 'refrigerator'; // Storage type from Dashboard tab
+  scannedLabelData?: {
+    itemName: string;
+    quantity?: number;
+    expirationDate?: Date;
+    category?: string;
+  };
 }
 
 export interface CalendarLocationState {

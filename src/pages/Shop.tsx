@@ -38,6 +38,7 @@ const Shop: React.FC = () => {
   const [editingNameValue, setEditingNameValue] = useState<string>('');
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [scanningItem, setScanningItem] = useState<ShoppingListItem | null>(null);
+  const [showAddItemScanner, setShowAddItemScanner] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const lastUsedListIdRef = useRef<string | null>(null);
   const settingsLoadedRef = useRef(false);
@@ -690,6 +691,66 @@ const Shop: React.FC = () => {
     setScanningItem(null);
   };
 
+  // Handle scan for adding new item to dashboard
+  const handleAddItemScanClick = () => {
+    if (isPremium) {
+      setShowAddItemScanner(true);
+    } else {
+      alert('Upgrade to Premium to use AI label scanning');
+    }
+  };
+
+  // Handle scan result for adding new item
+  const handleAddItemScanResult = async (result: LabelScanResult) => {
+    try {
+      if (!user) {
+        alert('Please log in to add items.');
+        return;
+      }
+
+      // Detect category using AI
+      const capitalizedName = capitalizeItemName(result.itemName);
+      const detectedCategory = await categoryService.detectCategoryWithAI(capitalizedName, user.uid);
+
+      // Navigate to AddItem page with scanned data
+      navigate('/add', {
+        state: {
+          scannedLabelData: {
+            itemName: capitalizedName,
+            quantity: result.quantity || 1,
+            expirationDate: result.expirationDate,
+            category: detectedCategory
+          }
+        }
+      });
+
+      setShowAddItemScanner(false);
+
+      // Track analytics
+      analyticsService.trackEngagement(user.uid, 'label_scanned', {
+        feature: 'label_scanner_add_item',
+        hasQuantity: result.quantity !== null && result.quantity !== undefined,
+        hasExpirationDate: result.expirationDate !== null && result.expirationDate !== undefined
+      });
+    } catch (error) {
+      console.error('Error processing label scan for add item:', error);
+      alert('Failed to process scanned label. Please try again.');
+      setShowAddItemScanner(false);
+    }
+  };
+
+  // Handle add item scanner error
+  const handleAddItemScannerError = (error: Error) => {
+    console.error('Add item scanner error:', error);
+    alert(`Error scanning label: ${error.message}`);
+    setShowAddItemScanner(false);
+  };
+
+  // Handle add item scanner close
+  const handleAddItemScannerClose = () => {
+    setShowAddItemScanner(false);
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -1013,12 +1074,53 @@ const Shop: React.FC = () => {
           </form>
           <div style={{ 
             marginTop: '0.5rem', 
-            fontSize: '1.25rem', 
-            color: '#1f2937',
-            textAlign: 'center',
-            fontStyle: 'italic'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem'
           }}>
-            Swipe to remove
+            <div style={{ 
+              fontSize: '1.25rem', 
+              color: '#1f2937',
+              fontStyle: 'italic',
+              flex: 1
+            }}>
+              Swipe to remove
+            </div>
+            {/* Scan icon button for adding new item */}
+            <button
+              type="button"
+              onClick={handleAddItemScanClick}
+              style={{
+                padding: '0.5rem',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '44px',
+                minHeight: '44px'
+              }}
+              aria-label="Scan label to add item"
+              title="Scan label with AI to add item"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: 'inline-block', verticalAlign: 'middle' }}
+              >
+                <path d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 4H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -1833,6 +1935,45 @@ const Shop: React.FC = () => {
               onScan={handleLabelScanResult}
               onError={handleLabelScannerError}
               onClose={handleLabelScannerClose}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Item Scanner Modal */}
+      {showAddItemScanner && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={handleAddItemScannerClose}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            <LabelScanner
+              onScan={handleAddItemScanResult}
+              onError={handleAddItemScannerError}
+              onClose={handleAddItemScannerClose}
             />
           </div>
         </div>
