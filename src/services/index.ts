@@ -34,6 +34,9 @@ export { recipeSiteService } from './recipeSiteService';
 // Category service
 export { categoryService } from './categoryService';
 
+// Label scanner service
+export { labelScannerService } from './labelScannerService';
+
 // Base utilities and error classes
 export * from './baseService';
 export * from './errors';

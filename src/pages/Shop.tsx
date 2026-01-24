@@ -2,17 +2,19 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { shoppingListService, shoppingListsService, userSettingsService, userItemsService } from '../services';
+import { shoppingListService, shoppingListsService, userSettingsService, userItemsService, foodItemService } from '../services';
 import { findFoodItems } from '../services/foodkeeperService';
-import type { ShoppingListItem, ShoppingList, UserItem } from '../types';
+import type { ShoppingListItem, ShoppingList, UserItem, LabelScanResult } from '../types';
 import HamburgerMenu from '../components/layout/HamburgerMenu';
 import Banner from '../components/layout/Banner';
+import LabelScanner from '../components/features/LabelScanner';
 import { useFoodItems } from '../hooks/useFoodItems';
 import { analyticsService } from '../services/analyticsService';
 
 import { STORAGE_KEYS } from '../constants';
 import { capitalizeItemName } from '../utils/formatting';
 import { categoryService } from '../services/categoryService';
+import { getFoodItemStatus } from '../utils/statusUtils';
 
 const Shop: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -34,12 +36,15 @@ const Shop: React.FC = () => {
   const [editingQuantityValue, setEditingQuantityValue] = useState<string>('');
   const [editingNameItemId, setEditingNameItemId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState<string>('');
+  const [showLabelScanner, setShowLabelScanner] = useState(false);
+  const [scanningItem, setScanningItem] = useState<ShoppingListItem | null>(null);
+  const [isPremium, setIsPremium] = useState<boolean>(false);
   const lastUsedListIdRef = useRef<string | null>(null);
   const settingsLoadedRef = useRef(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const cursorPositionRef = useRef<{ start: number; end: number } | null>(null);
 
-  // Load user settings
+  // Load user settings and premium status
   useEffect(() => {
     if (!user) {
       setSettingsLoaded(true);
@@ -53,11 +58,14 @@ const Shop: React.FC = () => {
       try {
         const settings = await userSettingsService.getUserSettings(user.uid);
         const loadedLastUsedId = settings?.lastUsedShoppingListId || null;
+        const premiumStatus = settings?.isPremium === true;
         console.log('⚙️ Settings loaded:', { lastUsedShoppingListId: loadedLastUsedId, settings });
         lastUsedListIdRef.current = loadedLastUsedId;
+        setIsPremium(premiumStatus);
       } catch (error) {
         console.error('Error loading user settings:', error);
         lastUsedListIdRef.current = null;
+        setIsPremium(false);
       } finally {
         setSettingsLoaded(true);
         settingsLoadedRef.current = true;
@@ -613,6 +621,73 @@ const Shop: React.FC = () => {
 
   const handleItemClick = (item: ShoppingListItem) => {
     navigate('/add', { state: { fromShoppingList: true, shoppingListItemId: item.id, itemName: item.name } });
+  };
+
+  const handleScanLabel = (item: ShoppingListItem) => {
+    setScanningItem(item);
+    setShowLabelScanner(true);
+  };
+
+  const handleLabelScanResult = async (result: LabelScanResult) => {
+    if (!user || !scanningItem) return;
+
+    try {
+      // Add item to dashboard
+      const capitalizedName = capitalizeItemName(result.itemName);
+      const itemData = {
+        name: capitalizedName,
+        quantity: result.quantity || 1,
+        ...(result.expirationDate && { bestByDate: result.expirationDate })
+      };
+
+      const status = result.expirationDate ? getFoodItemStatus(result.expirationDate) : 'fresh';
+      await foodItemService.addFoodItem(user.uid, itemData, status);
+
+      // Save to userItems if expiration date exists
+      if (result.expirationDate) {
+        try {
+          const addedDate = new Date();
+          const expirationLength = Math.ceil((result.expirationDate.getTime() - addedDate.getTime()) / (1000 * 60 * 60 * 24));
+          const category = await categoryService.detectCategoryWithAI(capitalizedName, user.uid);
+          
+          await userItemsService.createOrUpdateUserItem(user.uid, {
+            name: capitalizedName,
+            expirationLength: Math.max(1, expirationLength),
+            category: category
+          });
+        } catch (error) {
+          console.error('Error saving to userItems:', error);
+        }
+      }
+
+      // Remove shopping list item
+      await shoppingListService.deleteShoppingListItem(scanningItem.id);
+
+      // Track engagement
+      await analyticsService.trackEngagement(user.uid, 'label_scanned_item_added', {
+        itemName: capitalizedName,
+        hasQuantity: result.quantity !== undefined,
+        hasExpirationDate: result.expirationDate !== null
+      });
+
+      // Close scanner and navigate to dashboard
+      setShowLabelScanner(false);
+      setScanningItem(null);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error adding scanned item:', error);
+      alert('Failed to add item. Please try again.');
+    }
+  };
+
+  const handleLabelScannerError = (error: Error) => {
+    console.error('Label scanner error:', error);
+    alert(error.message || 'Failed to scan label. Please try again.');
+  };
+
+  const handleLabelScannerClose = () => {
+    setShowLabelScanner(false);
+    setScanningItem(null);
   };
 
   if (loading) {
@@ -1210,6 +1285,43 @@ const Shop: React.FC = () => {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {isPremium && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleScanLabel(item);
+                        }}
+                        style={{
+                          padding: '0.5rem',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '44px',
+                          minHeight: '44px'
+                        }}
+                        aria-label="Scan label"
+                        title="Scan label with AI"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                        >
+                          <path d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 4H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1228,7 +1340,7 @@ const Shop: React.FC = () => {
                         alignItems: 'center',
                         gap: '0.5rem'
                       }}
-                                  aria-label="Add to calendar"
+                      aria-label="Add to calendar"
                     >
                       <span>+</span>
                       <svg
@@ -1686,6 +1798,45 @@ const Shop: React.FC = () => {
       )}
 
       <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      {/* Label Scanner Modal */}
+      {showLabelScanner && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={handleLabelScannerClose}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            <LabelScanner
+              onScan={handleLabelScanResult}
+              onError={handleLabelScannerError}
+              onClose={handleLabelScannerClose}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };

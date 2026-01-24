@@ -48,7 +48,9 @@ export type EngagementEventType =
   | 'shopping_list_item_added'
   | 'shopping_list_item_crossed_off'
   | 'calendar_viewed'
-  | 'barcode_scanned';
+  | 'barcode_scanned'
+  | 'label_scanned'
+  | 'label_scanned_item_added';
 
 // Funnel Events
 export type FunnelEventType = 
@@ -126,6 +128,8 @@ export interface EngagementEventMetadata {
   itemId?: string;
   itemName?: string;
   category?: string;
+  hasQuantity?: boolean;
+  hasExpirationDate?: boolean;
 }
 
 // Funnel Event Metadata

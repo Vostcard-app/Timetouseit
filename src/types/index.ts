@@ -63,3 +63,8 @@ export type {
   MealPlanningContext,
   ReplanningContext
 } from './mealPlan';
+
+// Label Scanner Types
+export type {
+  LabelScanResult
+} from './labelScanner';
