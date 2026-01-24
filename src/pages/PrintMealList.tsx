@@ -40,6 +40,7 @@ const PrintMealList: React.FC = () => {
   });
   const [meals, setMeals] = useState<PlannedMeal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Load meals for the month containing the selected date
   useEffect(() => {
@@ -92,6 +93,19 @@ const PrintMealList: React.FC = () => {
       return filtered;
     }
   }, [meals, selectedDate, viewMode]);
+
+  // Toggle ingredients visibility
+  const toggleIngredients = (itemId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
 
   // Group meals for display
   const groupedMeals = useMemo(() => {
@@ -338,18 +352,75 @@ const PrintMealList: React.FC = () => {
                     
                     {/* Dishes */}
                     {meal.dishes && meal.dishes.length > 0 ? (
-                      meal.dishes.map(dish => (
-                        <div key={dish.id} style={{ marginBottom: '1rem', marginLeft: '1rem' }}>
-                          <p style={{ 
-                            margin: '0 0 0.5rem 0', 
-                            fontSize: '1.125rem', 
-                            fontWeight: '600', 
-                            color: '#1f2937' 
-                          }}>
-                            {MEAL_TYPE_LABELS[mealType]} {dish.dishName}
-                          </p>
-                        </div>
-                      ))
+                      meal.dishes.map(dish => {
+                        const itemId = `${meal.id}-${dish.id}`;
+                        const isExpanded = expandedItems.has(itemId);
+                        const hasIngredients = dish.recipeIngredients && dish.recipeIngredients.length > 0;
+                        
+                        return (
+                          <div key={dish.id} style={{ marginBottom: '1rem', marginLeft: '1rem' }}>
+                            <div
+                              onClick={() => hasIngredients && toggleIngredients(itemId)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: hasIngredients ? 'pointer' : 'default',
+                                padding: '0.25rem 0',
+                                transition: 'background-color 0.2s',
+                                borderRadius: '4px'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (hasIngredients) {
+                                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (hasIngredients) {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                              }}
+                            >
+                              {hasIngredients && (
+                                <span style={{
+                                  fontSize: '0.875rem',
+                                  color: '#6b7280',
+                                  transition: 'transform 0.2s',
+                                  display: 'inline-block',
+                                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+                                }}>
+                                  ▶
+                                </span>
+                              )}
+                              <p style={{ 
+                                margin: 0,
+                                fontSize: '1.125rem', 
+                                fontWeight: '600', 
+                                color: '#1f2937',
+                                flex: 1
+                              }}>
+                                {MEAL_TYPE_LABELS[mealType]} {dish.dishName}
+                              </p>
+                            </div>
+                            {isExpanded && hasIngredients && (
+                              <ul style={{ 
+                                marginTop: '0.5rem', 
+                                marginLeft: '1.5rem',
+                                paddingLeft: '1rem',
+                                listStyle: 'disc',
+                                fontSize: '0.875rem',
+                                color: '#6b7280'
+                              }}>
+                                {dish.recipeIngredients.map((ingredient, idx) => (
+                                  <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                                    {ingredient}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        );
+                      })
                     ) : (
                       <p style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#9ca3af', fontStyle: 'italic' }}>
                         No dishes planned

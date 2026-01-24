@@ -15,6 +15,7 @@ import { MealDetailModal } from '../components/MealPlanner/MealDetailModal';
 import { MealTypeSelectionModal } from '../components/MealPlanner/MealTypeSelectionModal';
 import { DayMealsModal } from '../components/MealPlanner/DayMealsModal';
 import { DishListModal } from '../components/MealPlanner/DishListModal';
+import { MealSelectionModal } from '../components/MealPlanner/MealSelectionModal';
 import { addDays, startOfWeek, endOfWeek, format, isSameDay, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../components/Toast';
@@ -41,6 +42,7 @@ const PlannedMealCalendar: React.FC = () => {
   const [showIngredientPicker, setShowIngredientPicker] = useState(false);
   const [selectedDish, setSelectedDish] = useState<{ dish: any; meal: PlannedMeal } | null>(null);
   const [showMealDetailModal, setShowMealDetailModal] = useState(false);
+  const [showMealSelectionModal, setShowMealSelectionModal] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const unsubscribeRef = useRef<Map<string, () => void>>(new Map());
   const loadedWeeksRef = useRef<Set<string>>(new Set());
@@ -286,6 +288,49 @@ const PlannedMealCalendar: React.FC = () => {
     setSelectedDay(normalizedDate);
     setSelectedMealType(mealType);
     setShowDishList(true);
+  };
+
+  // Handle meal type letter click (new compact view)
+  const handleMealTypeLetterClick = (date: Date, mealType: MealType, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const normalizedDate = startOfDay(date);
+    const mealsOfType = getMealsForDay(normalizedDate).filter(m => m.mealType === mealType);
+    
+    if (mealsOfType.length === 0) return;
+    
+    if (mealsOfType.length === 1) {
+      // Single meal: show details directly
+      const meal = mealsOfType[0];
+      if (meal.dishes && meal.dishes.length === 1) {
+        // Single dish: show meal detail modal
+        setSelectedDish({ dish: meal.dishes[0], meal });
+        setShowMealDetailModal(true);
+      } else if (meal.dishes && meal.dishes.length > 1) {
+        // Multiple dishes: show dish list modal
+        setSelectedDay(normalizedDate);
+        setSelectedMealType(mealType);
+        setShowDishList(true);
+      }
+    } else {
+      // Multiple meals: show meal selection modal
+      setSelectedDay(normalizedDate);
+      setSelectedMealType(mealType);
+      setShowMealSelectionModal(true);
+    }
+  };
+
+  // Handle meal click from meal selection modal
+  const handleMealSelectionClick = (meal: PlannedMeal) => {
+    setShowMealSelectionModal(false);
+    if (meal.dishes && meal.dishes.length === 1) {
+      // Single dish: show meal detail modal
+      setSelectedDish({ dish: meal.dishes[0], meal });
+      setShowMealDetailModal(true);
+    } else if (meal.dishes && meal.dishes.length > 1) {
+      // Multiple dishes: show dish list modal
+      setSelectedMealType(meal.mealType);
+      setShowDishList(true);
+    }
   };
 
   // Handle day click (only when not clicking on a meal indicator)
@@ -732,69 +777,99 @@ const PlannedMealCalendar: React.FC = () => {
                   {format(day, 'd')}
                 </div>
                 
-                {/* Meal Indicators */}
+                {/* Meal Indicators - Tappable Letters */}
                 {dayMeals.length > 0 && (() => {
-                  // Flatten all dishes from all meals for this day
-                  const allDishes: Array<{ dish: Dish; meal: PlannedMeal }> = [];
+                  // Group meals by meal type
+                  const mealsByType: Record<MealType, PlannedMeal[]> = {
+                    breakfast: [],
+                    lunch: [],
+                    dinner: []
+                  };
+                  
                   dayMeals.forEach(meal => {
                     if (meal.dishes && meal.dishes.length > 0) {
-                      meal.dishes.forEach(dish => {
-                        allDishes.push({ dish, meal });
-                      });
+                      mealsByType[meal.mealType].push(meal);
                     }
                   });
                   
-                  // Limit to first 5 dishes to avoid overcrowding
-                  const dishesToShow = allDishes.slice(0, 5);
+                  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner'];
                   
                   return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      {dishesToShow.map(({ dish, meal }, dishIndex) => {
-                        const isBeingDragged = isDragging && draggedMeal?.meal.id === meal.id && isSameDay(draggedMeal.sourceDate, normalizedDay);
+                    <div style={{ display: 'flex', flexDirection: 'row', gap: '0.25rem', flexWrap: 'wrap' }}>
+                      {mealTypes.map(mealType => {
+                        const mealsOfType = mealsByType[mealType];
+                        if (mealsOfType.length === 0) return null;
+                        
+                        const mealCount = mealsOfType.length;
+                        const hasMultipleMeals = mealCount > 1;
+                        
                         return (
                           <div
-                            key={`${meal.id}-${dish.id}-${dishIndex}`}
-                            draggable={true}
-                            onDragStart={(e) => handleDragStart(meal, normalizedDay, e)}
-                            onDragEnd={handleDragEnd}
+                            key={mealType}
                             onClick={(e) => {
                               if (!isDragging) {
-                                handleMealIndicatorClick(normalizedDay, meal.mealType, e);
+                                handleMealTypeLetterClick(normalizedDay, mealType, e);
                               }
                             }}
                             style={{
-                              fontSize: '0.75rem',
-                              padding: '0.25rem 0.5rem',
-                              backgroundColor: dish.completed ? '#9ca3af' : '#002B4D',
+                              position: 'relative',
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              backgroundColor: '#002B4D',
                               color: '#ffffff',
-                              borderRadius: '4px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '0.25rem',
-                              opacity: isBeingDragged ? 0.3 : (dish.completed ? 0.6 : 1),
-                              cursor: isDragging ? 'grabbing' : 'grab',
-                              userSelect: 'none'
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              cursor: isDragging ? 'default' : 'pointer',
+                              userSelect: 'none',
+                              transition: 'all 0.2s'
                             }}
-                            title={`${MEAL_TYPE_ABBREVIATIONS[meal.mealType]}: ${dish.dishName} - Drag to move`}
+                            onMouseEnter={(e) => {
+                              if (!isDragging) {
+                                e.currentTarget.style.backgroundColor = '#003d6b';
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isDragging) {
+                                e.currentTarget.style.backgroundColor = '#002B4D';
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }
+                            }}
+                            title={hasMultipleMeals 
+                              ? `${MEAL_TYPE_ABBREVIATIONS[mealType]}: ${mealCount} meals - Tap to select`
+                              : `${MEAL_TYPE_ABBREVIATIONS[mealType]}: ${mealsOfType[0].dishes?.[0]?.dishName || 'Tap to view'}`
+                            }
                           >
-                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
-                              {MEAL_TYPE_ABBREVIATIONS[meal.mealType]}: {dish.dishName}
-                            </span>
+                            {MEAL_TYPE_ABBREVIATIONS[mealType]}
+                            {hasMultipleMeals && (
+                              <span
+                                style={{
+                                  position: 'absolute',
+                                  top: '-4px',
+                                  right: '-4px',
+                                  width: '14px',
+                                  height: '14px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#ef4444',
+                                  color: '#ffffff',
+                                  fontSize: '0.6rem',
+                                  fontWeight: '700',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  border: '1px solid #ffffff'
+                                }}
+                              >
+                                {mealCount}
+                              </span>
+                            )}
                           </div>
                         );
                       })}
-                      {allDishes.length > 5 && (
-                        <div style={{
-                          fontSize: '0.75rem',
-                          color: '#6b7280',
-                          fontStyle: 'italic'
-                        }}>
-                          +{allDishes.length - 5} more
-                        </div>
-                      )}
                     </div>
                   );
                 })()}
@@ -914,6 +989,22 @@ const PlannedMealCalendar: React.FC = () => {
           }}
           selectedDate={selectedDay}
           initialMealType={selectedMealType}
+        />
+      )}
+
+      {/* Meal Selection Modal - Shows list when multiple meals of same type */}
+      {showMealSelectionModal && selectedDay && selectedMealType && (
+        <MealSelectionModal
+          isOpen={showMealSelectionModal}
+          onClose={() => {
+            setShowMealSelectionModal(false);
+            setSelectedMealType(null);
+            setSelectedDay(null);
+          }}
+          date={selectedDay}
+          mealType={selectedMealType}
+          meals={getMealsForDay(selectedDay).filter(m => m.mealType === selectedMealType)}
+          onMealClick={handleMealSelectionClick}
         />
       )}
 
