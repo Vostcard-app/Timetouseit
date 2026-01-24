@@ -255,6 +255,42 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
             )}
           </Link>
           <Link
+            to="/calendar"
+            onClick={() => handleLinkClick('/calendar')}
+            style={{
+              display: 'flex',
+              padding: '1rem 1.5rem',
+              color: '#1f2937',
+              textDecoration: 'none',
+              fontSize: '22px',
+              fontWeight: '500',
+              transition: 'background-color 0.2s',
+              borderLeft: '3px solid transparent',
+              minHeight: '44px',
+              alignItems: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f3f4f6';
+              e.currentTarget.style.borderLeftColor = '#002B4D';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderLeftColor = 'transparent';
+            }}
+            onTouchStart={(e) => {
+              e.currentTarget.style.backgroundColor = '#f3f4f6';
+              e.currentTarget.style.borderLeftColor = '#002B4D';
+            }}
+            onTouchEnd={(e) => {
+              setTimeout(() => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderLeftColor = 'transparent';
+              }, 200);
+            }}
+          >
+            Calendar
+          </Link>
+          <Link
             to="/favorite-websites"
             onClick={() => handleLinkClick('/favorite-websites')}
             style={{
@@ -361,42 +397,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
             }}
           >
             Edit items
-          </Link>
-          <Link
-            to="/edit-categories"
-            onClick={() => handleLinkClick('/edit-categories')}
-            style={{
-              display: 'flex',
-              padding: '1rem 1.5rem',
-              color: '#1f2937',
-              textDecoration: 'none',
-              fontSize: '22px',
-              fontWeight: '500',
-              transition: 'background-color 0.2s',
-              borderLeft: '3px solid transparent',
-              minHeight: '44px', // Touch target size for mobile
-              alignItems: 'center'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderLeftColor = '#002B4D';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderLeftColor = 'transparent';
-            }}
-            onTouchStart={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderLeftColor = '#002B4D';
-            }}
-            onTouchEnd={(e) => {
-              setTimeout(() => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderLeftColor = 'transparent';
-              }, 200);
-            }}
-          >
-            Edit categories
           </Link>
           <Link
             to="/user-guide"

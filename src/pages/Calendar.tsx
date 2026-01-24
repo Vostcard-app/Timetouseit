@@ -1144,7 +1144,7 @@ const Calendar: React.FC = () => {
     <>
       <Banner onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
 
-      {/* Shop, List and Calendar Buttons */}
+      {/* Lists, Items, and Plan Buttons */}
       <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
         <button
           onClick={() => navigate('/shop')}
@@ -1181,15 +1181,12 @@ const Calendar: React.FC = () => {
           Items
         </button>
         <button
-          onClick={() => {
-            // Already on Calendar, just scroll to top or do nothing
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onClick={() => navigate('/planned-meal-calendar')}
           style={{
             padding: '0.75rem 2rem',
-            backgroundColor: '#002B4D',
-            color: 'white',
-            border: 'none',
+            backgroundColor: '#f3f4f6',
+            color: '#1f2937',
+            border: '1px solid #d1d5db',
             borderRadius: '6px',
             fontSize: '1rem',
             fontWeight: '500',
@@ -1198,7 +1195,7 @@ const Calendar: React.FC = () => {
             minWidth: '120px'
           }}
         >
-          Calendar
+          Plan
         </button>
       </div>
 

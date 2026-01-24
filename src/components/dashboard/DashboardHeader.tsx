@@ -39,7 +39,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <>
       <Banner onMenuClick={onMenuClick} />
 
-      {/* Shop, List and Calendar Buttons */}
+      {/* Lists, Items, and Plan Buttons */}
       <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
         <button
           onClick={() => navigate('/shop')}
@@ -76,7 +76,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           List Items
         </button>
         <button
-          onClick={() => navigate('/calendar')}
+          onClick={() => navigate('/planned-meal-calendar')}
           style={{
             padding: '0.75rem 1.5rem',
             backgroundColor: '#002B4D',
@@ -90,7 +90,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             maxWidth: '200px'
           }}
         >
-          Calendar
+          Plan
         </button>
       </div>
 

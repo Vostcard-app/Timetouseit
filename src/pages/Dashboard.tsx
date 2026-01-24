@@ -387,7 +387,7 @@ const Dashboard: React.FC = () => {
       }}>
         <Banner onMenuClick={() => setMenuOpen(true)} />
 
-        {/* Shop, List and Calendar Buttons */}
+        {/* Lists, Items, and Plan Buttons */}
         <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
           <button
             onClick={() => navigate('/shop')}
@@ -427,7 +427,7 @@ const Dashboard: React.FC = () => {
             Items
           </button>
           <button
-            onClick={() => navigate('/calendar', { state: { defaultView: 'week' } })}
+            onClick={() => navigate('/planned-meal-calendar')}
             style={{
               padding: '0.75rem 2rem',
               backgroundColor: '#f3f4f6',
@@ -441,7 +441,7 @@ const Dashboard: React.FC = () => {
               minWidth: '120px'
             }}
           >
-            Calendar
+            Plan
           </button>
         </div>
       </div>

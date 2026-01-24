@@ -142,7 +142,7 @@ const EditLists: React.FC = () => {
     <>
       <Banner onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
 
-      {/* Shop, List, and Calendar Buttons */}
+      {/* Lists, Items, and Plan Buttons */}
       <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
         <button
           onClick={() => navigate('/shop')}
@@ -177,7 +177,7 @@ const EditLists: React.FC = () => {
           Items
         </button>
         <button
-          onClick={() => navigate('/calendar', { state: { defaultView: 'week' } })}
+          onClick={() => navigate('/planned-meal-calendar')}
           style={{
             padding: '0.75rem 1.5rem',
             backgroundColor: '#f3f4f6',
@@ -190,7 +190,7 @@ const EditLists: React.FC = () => {
             minHeight: '44px'
           }}
         >
-          Calendar
+          Plan
         </button>
       </div>
 
