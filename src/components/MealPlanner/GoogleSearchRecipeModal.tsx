@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase/firebaseConfig';
 import { recipeImportService } from '../../services';
 import type { RecipeImportResult } from '../../types/recipeImport';
 import { showToast } from '../Toast';
@@ -21,6 +23,7 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
   ingredients,
   onRecipeImported
 }) => {
+  const [user] = useAuthState(auth);
   const [pastedUrl, setPastedUrl] = useState('');
   const [importingRecipe, setImportingRecipe] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<RecipeImportResult | null>(null);
@@ -68,7 +71,7 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
 
     setImportingRecipe(true);
     try {
-      const recipe = await recipeImportService.importRecipe(pastedUrl);
+      const recipe = await recipeImportService.importRecipe(pastedUrl, user?.uid);
       setImportedRecipe(recipe);
       if (recipe.title && !dishName.trim()) {
         setDishName(recipe.title);

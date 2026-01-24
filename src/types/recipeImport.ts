@@ -13,9 +13,10 @@ export interface RecipeSite {
 }
 
 export interface ParsedIngredient {
-  name: string;
+  name: string; // Clean ingredient name (descriptors removed)
   quantity: number | null;
   unit: string | null;
+  formattedAmount?: string; // e.g., "3 Lbs"
 }
 
 export interface RecipeImportResult {

@@ -11,12 +11,14 @@ import { foodItemService } from '../../services';
 import { recipeImportService } from '../../services';
 import { shoppingListService, shoppingListsService } from '../../services';
 import type { FoodItem } from '../../types';
+import type { ParsedIngredient } from '../../types/recipeImport';
 import { showToast } from '../Toast';
 import { parseIngredientQuantity, cleanIngredientName } from '../../utils/ingredientQuantityParser';
 import { capitalizeItemName } from '../../utils/formatting';
 
 interface RecipeIngredientChecklistProps {
   ingredients: string[];
+  parsedIngredients?: ParsedIngredient[]; // AI-parsed ingredients for premium users
   mealId?: string;
   onClose: () => void;
 }
@@ -31,6 +33,7 @@ interface IngredientStatus {
 
 export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps> = ({
   ingredients,
+  parsedIngredients,
   mealId,
   onClose
 }) => {
@@ -388,7 +391,26 @@ export const RecipeIngredientChecklist: React.FC<RecipeIngredientChecklistProps>
                     }}
                     title="Click to edit"
                   >
-                    {editedIngredients.get(index) || ingredient}
+                    {(() => {
+                      // If edited, use edited value
+                      if (editedIngredients.has(index)) {
+                        return editedIngredients.get(index);
+                      }
+                      // If premium user with parsed data, display formatted
+                      if (parsedIngredients && parsedIngredients[index]) {
+                        const parsed = parsedIngredients[index];
+                        if (parsed.formattedAmount && parsed.name) {
+                          // Capitalize the ingredient name
+                          const capitalizedName = parsed.name
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ');
+                          return `${parsed.formattedAmount} ${capitalizedName}`;
+                        }
+                      }
+                      // Fallback to original ingredient string
+                      return ingredient;
+                    })()}
                   </span>
                 )}
                 {isAvailable && count > 0 && (

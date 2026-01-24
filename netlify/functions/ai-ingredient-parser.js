@@ -57,23 +57,41 @@ exports.handler = async (event) => {
       };
     }
 
+    // Check if this is a premium request (enhanced parsing)
+    const isPremium = body.isPremium === true;
+    
+    // Enhanced prompt for premium users
+    const premiumInstructions = isPremium ? `
+IMPORTANT FOR PREMIUM USERS:
+1. Remove ALL cooking descriptors from ingredient names:
+   - Remove: chopped, diced, minced, sliced, grated, crushed, whole, ground, dried, fresh, frozen, canned, raw, cooked, peeled, seeded, stemmed, trimmed, julienned, cubed, shredded, crumbled, mashed, pureed, whipped, beaten, softened, melted, warmed, cooled, room temperature, large, small, medium, extra large, extra small, thin, thick, fine, coarse, rough, smooth, optional, to taste, as needed, for garnish
+   - Example: "3 lbs chopped fresh cilantro" → name: "cilantro" (not "chopped fresh cilantro")
+2. Format amounts with proper capitalization and spacing:
+   - Use capitalized unit abbreviations: "Lbs", "Oz", "Cups", "Tbsp", "Tsp", "G", "Kg", "Ml", "L"
+   - Include space between number and unit: "3 Lbs" (not "3lbs" or "3 lb")
+   - Example: "3 lbs" → formattedAmount: "3 Lbs"
+3. Return clean, normalized ingredient names without descriptors.` : '';
+    
     // Build prompt for ingredient parsing
-    const prompt = `Parse these recipe ingredients and extract the ingredient name, quantity, and unit separately.
+    const prompt = `Parse these recipe ingredients and extract the ingredient name, quantity, unit, and formatted amount separately.
 
 Ingredients to parse:
 ${ingredients.map((ing, i) => `${i + 1}. ${ing}`).join('\n')}
 
 For each ingredient, extract:
-- name: The ingredient name (e.g., "flour", "olive oil", "chicken breast")
+- name: The clean ingredient name (remove cooking descriptors like "chopped", "diced", "minced", etc.)
 - quantity: The numeric quantity (e.g., 2, 1.5, 0.5) or null if no quantity specified
 - unit: The unit of measurement (e.g., "cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "piece", "pieces", "clove", "cloves") or null if no unit
+- formattedAmount: A formatted string combining quantity and unit with proper capitalization (e.g., "3 Lbs", "1/2 Cup", "2 Tbsp") or empty string if no quantity/unit
+
+${premiumInstructions}
 
 Examples:
-- "2 cups flour" → {name: "flour", quantity: 2, unit: "cup"}
-- "1 tablespoon olive oil" → {name: "olive oil", quantity: 1, unit: "tbsp"}
-- "salt, to taste" → {name: "salt", quantity: null, unit: null}
-- "3 cloves garlic" → {name: "garlic", quantity: 3, unit: "cloves"}
-- "1/2 cup milk" → {name: "milk", quantity: 0.5, unit: "cup"}
+- "2 cups flour" → {name: "flour", quantity: 2, unit: "cup", formattedAmount: "2 Cups"}
+- "1 tablespoon olive oil" → {name: "olive oil", quantity: 1, unit: "tbsp", formattedAmount: "1 Tbsp"}
+- "3 lbs chopped fresh cilantro" → {name: "cilantro", quantity: 3, unit: "lb", formattedAmount: "3 Lbs"}
+- "salt, to taste" → {name: "salt", quantity: null, unit: null, formattedAmount: ""}
+- "1/2 cup diced onions" → {name: "onions", quantity: 0.5, unit: "cup", formattedAmount: "1/2 Cup"}
 
 Return a JSON object with this structure:
 {
@@ -81,7 +99,8 @@ Return a JSON object with this structure:
     {
       "name": "ingredient name",
       "quantity": 2.0,
-      "unit": "cup"
+      "unit": "cup",
+      "formattedAmount": "2 Cups"
     }
   ]
 }

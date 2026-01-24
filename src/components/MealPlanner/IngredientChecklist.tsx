@@ -5,9 +5,11 @@
 
 import React from 'react';
 import type { IngredientStatus } from '../../hooks/useIngredientAvailability';
+import type { ParsedIngredient } from '../../types/recipeImport';
 
 interface IngredientChecklistProps {
   ingredientStatuses: IngredientStatus[];
+  parsedIngredients?: ParsedIngredient[]; // AI-parsed ingredients for premium users
   selectedIngredientIndices: Set<number>;
   onToggleIngredient: (index: number) => void;
   editingIngredientIndex?: number | null;
@@ -20,6 +22,7 @@ interface IngredientChecklistProps {
 
 export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
   ingredientStatuses,
+  parsedIngredients,
   selectedIngredientIndices,
   onToggleIngredient,
   editingIngredientIndex = null,
@@ -154,7 +157,26 @@ export const IngredientChecklist: React.FC<IngredientChecklistProps> = ({
                 }}
                 title={onStartEditing ? "Click to edit" : undefined}
               >
-                {editedIngredients.get(index) || ingredient}
+                {(() => {
+                  // If edited, use edited value
+                  if (editedIngredients.has(index)) {
+                    return editedIngredients.get(index);
+                  }
+                  // If premium user with parsed data, display formatted
+                  if (parsedIngredients && parsedIngredients[index]) {
+                    const parsed = parsedIngredients[index];
+                    if (parsed.formattedAmount && parsed.name) {
+                      // Capitalize the ingredient name
+                      const capitalizedName = parsed.name
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ');
+                      return `${parsed.formattedAmount} ${capitalizedName}`;
+                    }
+                  }
+                  // Fallback to original ingredient string
+                  return ingredient;
+                })()}
               </span>
             )}
             {count > 0 && (isAvailable || isReservedStatus) && (

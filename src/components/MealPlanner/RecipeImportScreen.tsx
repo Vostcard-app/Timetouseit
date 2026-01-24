@@ -65,7 +65,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         if (!user) return;
         setImporting(true);
         try {
-          const recipe = await recipeImportService.importRecipe(initialRecipeUrl.trim());
+          const recipe = await recipeImportService.importRecipe(initialRecipeUrl.trim(), user.uid);
           setImportedRecipe(recipe);
           setSelectedIngredientIndices(new Set());
           showToast('Recipe imported successfully', 'success');
@@ -97,7 +97,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
 
     setImporting(true);
     try {
-      const recipe = await recipeImportService.importRecipe(urlInput.trim());
+      const recipe = await recipeImportService.importRecipe(urlInput.trim(), user.uid);
       setImportedRecipe(recipe);
       setSelectedIngredientIndices(new Set()); // Reset selections
       showToast('Recipe imported successfully', 'success');
@@ -243,8 +243,8 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
           let quantity: number | undefined;
           
           if (parsedIngredient) {
-            // Use AI-parsed data
-            itemName = parsedIngredient.name;
+            // Use AI-parsed data - capitalize the name
+            itemName = capitalizeItemName(parsedIngredient.name);
             quantity = parsedIngredient.quantity ?? undefined;
           } else {
             // Fallback to manual parsing
@@ -509,6 +509,7 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
                   </div>
                   <IngredientChecklist
                     ingredientStatuses={ingredientStatuses}
+                    parsedIngredients={importedRecipe?.parsedIngredients}
                     selectedIngredientIndices={selectedIngredientIndices}
                     onToggleIngredient={toggleIngredient}
                     editingIngredientIndex={editingIngredientIndex}

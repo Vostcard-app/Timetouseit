@@ -8,6 +8,7 @@ import type { FoodItem, ShoppingListItem, PlannedMeal } from '../types';
 import { recipeSiteService } from './recipeSiteService';
 import { foodItemService } from './foodItemService';
 import { shoppingListService } from './shoppingListService';
+import { userSettingsService } from './userSettingsService';
 import { logServiceOperation, logServiceError } from './baseService';
 import { parseIngredientQuantity, normalizeItemName } from '../utils/ingredientQuantityParser';
 
@@ -17,17 +18,34 @@ import { parseIngredientQuantity, normalizeItemName } from '../utils/ingredientQ
 export const recipeImportService = {
   /**
    * Import recipe from URL
+   * @param url - Recipe URL to import
+   * @param userId - Optional user ID to check premium status
    */
-  async importRecipe(url: string): Promise<RecipeImportResult> {
-    logServiceOperation('importRecipe', 'recipeImport', { url });
+  async importRecipe(url: string, userId?: string): Promise<RecipeImportResult> {
+    logServiceOperation('importRecipe', 'recipeImport', { url, userId });
 
     try {
+      // Check premium status if userId provided
+      let isPremium = false;
+      if (userId) {
+        try {
+          isPremium = await userSettingsService.isPremiumUser(userId);
+        } catch (error) {
+          console.error('Error checking premium status:', error);
+          // Continue with non-premium flow if check fails
+        }
+      }
+
       const response = await fetch('/.netlify/functions/recipe-import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ 
+          url,
+          userId: userId || null,
+          isPremium 
+        })
       });
 
       if (!response.ok) {
@@ -38,7 +56,7 @@ export const recipeImportService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      logServiceError('importRecipe', 'recipeImport', error, { url });
+      logServiceError('importRecipe', 'recipeImport', error, { url, userId });
       throw error;
     }
   },

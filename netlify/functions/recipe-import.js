@@ -35,7 +35,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { url } = body;
+    const { url, userId, isPremium } = body;
 
     if (!url || typeof url !== 'string') {
       return {
@@ -212,20 +212,24 @@ exports.handler = async (event) => {
       };
     }
 
-    // If we have ingredients but they need quantity parsing, use AI parser
+    // If we have ingredients, use AI parser for premium users, or if ingredients need parsing
     if (recipeData.ingredients && recipeData.ingredients.length > 0) {
       try {
-        // Check if ingredients need parsing (don't have clear quantities)
-        const needsParsing = recipeData.ingredients.some(ing => {
-          const ingStr = typeof ing === 'string' ? ing : String(ing);
-          // Check if ingredient has a clear quantity pattern
-          const hasQuantity = /^[\d\s½¼¾⅓⅔⅛⅜⅝⅞]+/.test(ingStr.trim());
-          return !hasQuantity || ingStr.length > 100; // Also parse if very long (might be description)
-        });
+        // For premium users, always use AI parsing
+        // For non-premium users, only parse if ingredients need it
+        const shouldUseAI = isPremium === true || (() => {
+          const needsParsing = recipeData.ingredients.some(ing => {
+            const ingStr = typeof ing === 'string' ? ing : String(ing);
+            // Check if ingredient has a clear quantity pattern
+            const hasQuantity = /^[\d\s½¼¾⅓⅔⅛⅜⅝⅞]+/.test(ingStr.trim());
+            return !hasQuantity || ingStr.length > 100; // Also parse if very long (might be description)
+          });
+          return needsParsing;
+        })();
 
-        if (needsParsing && process.env.OPENAI_API_KEY) {
-          console.log('Parsing ingredient quantities with AI');
-          const parsedResult = await parseIngredientQuantities(recipeData.ingredients);
+        if (shouldUseAI && process.env.OPENAI_API_KEY) {
+          console.log(isPremium ? 'Premium user: Parsing all ingredients with AI' : 'Parsing ingredient quantities with AI');
+          const parsedResult = await parseIngredientQuantities(recipeData.ingredients, isPremium);
           if (parsedResult && parsedResult.parsedIngredients && parsedResult.parsedIngredients.length > 0) {
             // Replace ingredients with parsed versions
             recipeData.ingredients = parsedResult.parsedIngredients.map(parsed => {
@@ -579,8 +583,10 @@ Return only valid JSON.`;
 
 /**
  * Parse ingredient quantities using AI
+ * @param ingredients - Array of ingredient strings
+ * @param isPremium - Whether user is premium (enhanced parsing)
  */
-async function parseIngredientQuantities(ingredients) {
+async function parseIngredientQuantities(ingredients, isPremium = false) {
   if (!process.env.OPENAI_API_KEY) {
     return null;
   }
@@ -588,15 +594,37 @@ async function parseIngredientQuantities(ingredients) {
   try {
     const ingredientStrings = ingredients.map(ing => typeof ing === 'string' ? ing : String(ing));
     
-    const prompt = `Parse these recipe ingredients and extract the ingredient name, quantity, and unit separately.
+    // Enhanced prompt for premium users
+    const premiumInstructions = isPremium ? `
+IMPORTANT FOR PREMIUM USERS:
+1. Remove ALL cooking descriptors from ingredient names:
+   - Remove: chopped, diced, minced, sliced, grated, crushed, whole, ground, dried, fresh, frozen, canned, raw, cooked, peeled, seeded, stemmed, trimmed, julienned, cubed, shredded, crumbled, mashed, pureed, whipped, beaten, softened, melted, warmed, cooled, room temperature, large, small, medium, extra large, extra small, thin, thick, fine, coarse, rough, smooth, optional, to taste, as needed, for garnish
+   - Example: "3 lbs chopped fresh cilantro" → name: "cilantro" (not "chopped fresh cilantro")
+2. Format amounts with proper capitalization and spacing:
+   - Use capitalized unit abbreviations: "Lbs", "Oz", "Cups", "Tbsp", "Tsp", "G", "Kg", "Ml", "L"
+   - Include space between number and unit: "3 Lbs" (not "3lbs" or "3 lb")
+   - Example: "3 lbs" → formattedAmount: "3 Lbs"
+3. Return clean, normalized ingredient names without descriptors.` : '';
+    
+    const prompt = `Parse these recipe ingredients and extract the ingredient name, quantity, unit, and formatted amount separately.
 
 Ingredients to parse:
 ${ingredientStrings.map((ing, i) => `${i + 1}. ${ing}`).join('\n')}
 
 For each ingredient, extract:
-- name: The ingredient name (e.g., "flour", "olive oil", "chicken breast")
+- name: The clean ingredient name (remove cooking descriptors like "chopped", "diced", "minced", etc.)
 - quantity: The numeric quantity (e.g., 2, 1.5, 0.5) or null if no quantity specified
 - unit: The unit of measurement (e.g., "cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "piece", "pieces", "clove", "cloves") or null if no unit
+- formattedAmount: A formatted string combining quantity and unit with proper capitalization (e.g., "3 Lbs", "1/2 Cup", "2 Tbsp") or empty string if no quantity/unit
+
+${premiumInstructions}
+
+Examples:
+- "2 cups flour" → {name: "flour", quantity: 2, unit: "cup", formattedAmount: "2 Cups"}
+- "1 tablespoon olive oil" → {name: "olive oil", quantity: 1, unit: "tbsp", formattedAmount: "1 Tbsp"}
+- "3 lbs chopped fresh cilantro" → {name: "cilantro", quantity: 3, unit: "lb", formattedAmount: "3 Lbs"}
+- "salt, to taste" → {name: "salt", quantity: null, unit: null, formattedAmount: ""}
+- "1/2 cup diced onions" → {name: "onions", quantity: 0.5, unit: "cup", formattedAmount: "1/2 Cup"}
 
 Return a JSON object with this structure:
 {
@@ -604,7 +632,8 @@ Return a JSON object with this structure:
     {
       "name": "ingredient name",
       "quantity": 2.0,
-      "unit": "cup"
+      "unit": "cup",
+      "formattedAmount": "2 Cups"
     }
   ]
 }

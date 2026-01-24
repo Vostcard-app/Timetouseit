@@ -412,7 +412,7 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
     
     setImportingRecipe(true);
     try {
-      const recipe = await recipeImportService.importRecipe(trimmedUrl);
+      const recipe = await recipeImportService.importRecipe(trimmedUrl, user.uid);
       setImportedRecipe(recipe);
       
       // Open SaveDishModal with imported ingredients

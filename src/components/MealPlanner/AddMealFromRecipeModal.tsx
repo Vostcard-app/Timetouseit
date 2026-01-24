@@ -171,7 +171,7 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
 
     setImporting(true);
     try {
-      const recipe = await recipeImportService.importRecipe(urlInput.trim());
+      const recipe = await recipeImportService.importRecipe(urlInput.trim(), user?.uid);
       setImportedRecipe(recipe);
       showToast('Recipe imported successfully', 'success');
     } catch (error: any) {
