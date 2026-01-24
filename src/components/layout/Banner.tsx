@@ -79,11 +79,11 @@ const Banner: React.FC<BannerProps> = ({
               </svg>
             </Link>
           )}
-          {showLogo === true ? (
+          {showLogo !== false && (
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
               TimeToUseIt
             </h1>
-          ) : null}
+          )}
         </div>
         <button
           onClick={onMenuClick}
