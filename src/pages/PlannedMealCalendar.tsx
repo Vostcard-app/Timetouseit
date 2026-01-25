@@ -57,7 +57,7 @@ const PlannedMealCalendar: React.FC = () => {
   const [dragOverMealType, setDragOverMealType] = useState<MealType | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Check for favorite recipe in location state
+  // Check for favorite recipe or recipe URL in location state
   useEffect(() => {
     const locationState = location.state as PlannedMealCalendarLocationState | null;
     if (locationState?.favoriteRecipe) {
@@ -68,8 +68,22 @@ const PlannedMealCalendar: React.FC = () => {
         setCurrentDate(locationState.selectedDate);
       }
       // Don't auto-open modals - wait for user to select date on calendar
+    } else if (locationState?.recipeUrl) {
+      // Store recipe URL as a favorite recipe object to pass to IngredientPickerModal
+      // It will auto-import when modal opens
+      setFavoriteRecipe({
+        id: '',
+        userId: user?.uid || '',
+        dishName: '',
+        recipeSourceUrl: locationState.recipeUrl,
+        recipeIngredients: [],
+        createdAt: new Date()
+      } as FavoriteRecipe);
+      if (locationState.selectedDate) {
+        setCurrentDate(locationState.selectedDate);
+      }
     }
-  }, [location.state]);
+  }, [location.state, user]);
 
 
   // Check premium status

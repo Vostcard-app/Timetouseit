@@ -103,18 +103,29 @@ const FavoriteRecipes: React.FC = () => {
                     {recipe.recipeTitle || recipe.dishName}
                   </h3>
                   {recipe.recipeSourceUrl && (
-                    <a
-                      href={recipe.recipeSourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Navigate to calendar with recipe URL to trigger import flow
+                        navigate('/planned-meal-calendar', {
+                          state: {
+                            recipeUrl: recipe.recipeSourceUrl
+                          }
+                        });
+                      }}
                       style={{
                         fontSize: '0.875rem',
                         color: '#3b82f6',
-                        textDecoration: 'none'
+                        textDecoration: 'none',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        textAlign: 'left'
                       }}
                     >
                       {recipe.recipeSourceDomain || recipe.recipeSourceUrl}
-                    </a>
+                    </button>
                   )}
                 </div>
 

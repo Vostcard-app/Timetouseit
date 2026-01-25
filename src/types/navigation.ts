@@ -24,6 +24,7 @@ export interface CalendarLocationState {
 
 export interface PlannedMealCalendarLocationState {
   favoriteRecipe?: import('./favoriteRecipe').FavoriteRecipe;
+  recipeUrl?: string; // Recipe URL to import (triggers same flow as manual URL import)
   selectedDate?: Date;
   selectedMealType?: import('./mealPlan').MealType;
 }
