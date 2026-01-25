@@ -643,7 +643,7 @@ const PlannedMealCalendar: React.FC = () => {
 
   return (
     <>
-      {/* Fixed Header: Banner */}
+      {/* Fixed Header: Banner and Navigation Buttons */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -654,10 +654,68 @@ const PlannedMealCalendar: React.FC = () => {
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
         <Banner showHomeIcon={true} showLogo={false} onMenuClick={() => setMenuOpen(true)} />
+
+        {/* Lists, Items, and Plan Buttons */}
+        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <button
+            onClick={() => navigate('/shop')}
+            style={{
+              padding: '0.75rem 2rem',
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              minHeight: '44px',
+              minWidth: '120px'
+            }}
+          >
+            Lists
+          </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            style={{
+              padding: '0.75rem 2rem',
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              minHeight: '44px',
+              minWidth: '120px'
+            }}
+          >
+            Items
+          </button>
+          <button
+            onClick={() => {
+              // Already on Plan page, just scroll to top
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{
+              padding: '0.75rem 2rem',
+              backgroundColor: '#002B4D',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              minHeight: '44px',
+              minWidth: '120px'
+            }}
+          >
+            Plan
+          </button>
+        </div>
       </div>
       <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem', width: '100%', boxSizing: 'border-box', marginTop: '80px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem', width: '100%', boxSizing: 'border-box', marginTop: '160px' }}>
         <h2 style={{ marginBottom: '1rem' }}>Planned Meal Calendar</h2>
         
         {/* Navigation and View Controls */}
