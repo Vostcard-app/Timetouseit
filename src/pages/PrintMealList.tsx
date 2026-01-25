@@ -265,29 +265,24 @@ const PrintMealList: React.FC = () => {
         <div className="printable-content">
           {/* Header */}
           <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-              <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
-                Meal List
-              </h1>
-              <button
-                onClick={() => navigate('/planned-meal-calendar')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#002B4D',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                Calendar
-              </button>
-            </div>
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.25rem', color: '#6b7280' }}>
-              {meals.length} meal{meals.length !== 1 ? 's' : ''} starting from {format(selectedDate, 'MMMM d, yyyy')}
-            </p>
+            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>
+              Meal List
+            </h1>
+            <button
+              onClick={() => navigate('/planned-meal-calendar')}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#002B4D',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Calendar
+            </button>
           </div>
 
           {/* Meals List - Chronological by Date */}
@@ -298,7 +293,17 @@ const PrintMealList: React.FC = () => {
               </p>
             </div>
           ) : (
-            sortedDates.map(dateKey => {
+            <>
+              {/* Meal count and date info above first meal */}
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <p style={{ margin: '0.5rem 0', fontSize: '1.25rem', color: '#6b7280' }}>
+                  {meals.length} meal{meals.length !== 1 ? 's' : ''}
+                </p>
+                <p style={{ margin: '0.5rem 0', fontSize: '1.25rem', color: '#6b7280' }}>
+                  {format(parseISO(sortedDates[0]), 'MMMM d, yyyy')}
+                </p>
+              </div>
+              {sortedDates.map(dateKey => {
               const dateMeals = mealsByDate[dateKey];
               const date = parseISO(dateKey);
               
@@ -445,7 +450,8 @@ const PrintMealList: React.FC = () => {
                   ))}
                 </div>
               );
-            })
+            })}
+            </>
           )}
         </div>
       </div>
