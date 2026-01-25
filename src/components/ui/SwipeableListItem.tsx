@@ -460,7 +460,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                   onScan();
                 }}
                 style={{
-                  padding: '0.25rem',
+                  padding: '0',
                   backgroundColor: '#48a13b',
                   color: 'white',
                   border: 'none',
@@ -481,9 +481,7 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                 <img 
                   src="/icons/Scan.svg" 
                   alt="Scan" 
-                  width="20" 
-                  height="20" 
-                  style={{ display: 'inline-block', verticalAlign: 'middle' }} 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
                 />
               </button>
             )}
