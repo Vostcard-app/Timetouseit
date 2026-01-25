@@ -1149,7 +1149,7 @@ const Calendar: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 1000,
-        backgroundColor: '#002B4D',
+        backgroundColor: '#ffffff',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
         <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
