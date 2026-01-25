@@ -84,7 +84,7 @@ const FavoriteRecipes: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 1000,
-        backgroundColor: '#002B4D',
+        backgroundColor: '#ffffff',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
         <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
@@ -161,55 +161,16 @@ const FavoriteRecipes: React.FC = () => {
                   backgroundColor: '#ffffff',
                   border: '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  padding: '1.5rem',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  position: 'relative'
+                  padding: '0.75rem 1rem',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                {/* Delete icon in top right corner */}
-                <button
-                  onClick={() => handleDeleteRecipe(recipe.id)}
-                  style={{
-                    position: 'absolute',
-                    top: '0.75rem',
-                    right: '0.75rem',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '0.25rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#6b7280',
-                    fontSize: '1.25rem',
-                    lineHeight: 1,
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '4px',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                    e.currentTarget.style.color = '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#6b7280';
-                  }}
-                  aria-label="Delete recipe"
-                  title="Delete recipe"
-                >
-                  ×
-                </button>
-                <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
-                    {recipe.recipeTitle || recipe.dishName}
-                  </h3>
+                {/* Line 1: Button | Title | Delete */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                   {recipe.recipeSourceUrl && (
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        // Navigate to calendar with recipe URL to trigger import flow
                         navigate('/planned-meal-calendar', {
                           state: {
                             recipeUrl: recipe.recipeSourceUrl
@@ -217,31 +178,91 @@ const FavoriteRecipes: React.FC = () => {
                         });
                       }}
                       style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#002B4D',
-                        color: 'white',
+                        background: 'none',
                         border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
                         cursor: 'pointer',
-                        marginTop: '0.5rem'
+                        padding: '0.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#002B4D',
+                        fontSize: '1.25rem',
+                        lineHeight: 1,
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '4px',
+                        transition: 'background-color 0.2s',
+                        flexShrink: 0
                       }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      aria-label="Add to calendar"
+                      title="Add to calendar"
                     >
-                      Select a date
+                      <span style={{ marginRight: '2px' }}>+</span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ marginLeft: '2px' }}
+                      >
+                        <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+                        <path d="M8 3V7M16 3V7M4 9H20" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
                     </button>
                   )}
+                  <h3 style={{ flex: 1, margin: 0, fontSize: '1.125rem', fontWeight: '600', color: '#1f2937' }}>
+                    {recipe.recipeTitle || recipe.dishName}
+                  </h3>
+                  <button
+                    onClick={() => handleDeleteRecipe(recipe.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '0.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#6b7280',
+                      fontSize: '1.25rem',
+                      lineHeight: 1,
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.2s',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      e.currentTarget.style.color = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#6b7280';
+                    }}
+                    aria-label="Delete recipe"
+                    title="Delete recipe"
+                  >
+                    ×
+                  </button>
                 </div>
 
-                <div style={{ marginBottom: '1rem' }}>
+                {/* Line 2: Ingredients dropdown */}
+                <div>
                   <div
                     onClick={() => toggleIngredients(recipe.id)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      cursor: 'pointer',
-                      marginBottom: '0.5rem'
+                      cursor: 'pointer'
                     }}
                   >
                     <span style={{
@@ -253,12 +274,12 @@ const FavoriteRecipes: React.FC = () => {
                     }}>
                       ▶
                     </span>
-                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '500', color: '#374151' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
                       Ingredients:
                     </h4>
                   </div>
                   {expandedRecipes.has(recipe.id) && (
-                    <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                    <ul style={{ margin: '0.25rem 0 0 0', paddingLeft: '1.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
                       {recipe.recipeIngredients.map((ingredient, index) => (
                         <li key={index}>{ingredient}</li>
                       ))}
