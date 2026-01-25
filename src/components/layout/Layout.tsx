@@ -17,8 +17,8 @@ interface LayoutProps {
  */
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
-  // Hide Layout header on Dashboard, Calendar, Shop, EditLists, EditItems, EditCategories, Settings, Admin, UserGuide, PlannedMealCalendar, and PrintMealList since they have their own banners or don't need one
-  const showHeader = location.pathname !== '/dashboard' && location.pathname !== '/calendar' && location.pathname !== '/shop' && location.pathname !== '/edit-lists' && location.pathname !== '/edit-items' && location.pathname !== '/edit-categories' && location.pathname !== '/settings' && location.pathname !== '/admin' && location.pathname !== '/user-guide' && location.pathname !== '/planned-meal-calendar' && location.pathname !== '/print-meal-list';
+  // Hide Layout header on Dashboard, Calendar, Shop, EditLists, EditItems, EditCategories, Settings, Admin, UserGuide, PlannedMealCalendar, PrintMealList, FavoriteRecipes, and FavoriteWebsites since they have their own banners or don't need one
+  const showHeader = location.pathname !== '/dashboard' && location.pathname !== '/calendar' && location.pathname !== '/shop' && location.pathname !== '/edit-lists' && location.pathname !== '/edit-items' && location.pathname !== '/edit-categories' && location.pathname !== '/settings' && location.pathname !== '/admin' && location.pathname !== '/user-guide' && location.pathname !== '/planned-meal-calendar' && location.pathname !== '/print-meal-list' && location.pathname !== '/favorite-recipes' && location.pathname !== '/favorite-websites';
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

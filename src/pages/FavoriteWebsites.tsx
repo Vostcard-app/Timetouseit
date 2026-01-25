@@ -199,62 +199,73 @@ const FavoriteWebsites: React.FC = () => {
 
   return (
     <>
-      <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
-      <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+      {/* Fixed Header: Banner and Navigation Buttons */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        backgroundColor: '#002B4D',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+      }}>
+        <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
 
-      {/* Lists, Items, and Plan Buttons */}
-      <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-        <button
-          onClick={() => navigate('/shop')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#f3f4f6',
-            color: '#1f2937',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            minHeight: '44px'
-          }}
-        >
-          Lists
-        </button>
-        <button
-          onClick={() => navigate('/dashboard')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#f3f4f6',
-            color: '#1f2937',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            minHeight: '44px'
-          }}
-        >
-          Items
-        </button>
-        <button
-          onClick={() => navigate('/planned-meal-calendar')}
-          style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#f3f4f6',
-            color: '#1f2937',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            minHeight: '44px'
-          }}
-        >
-          Plan
-        </button>
+        {/* Lists, Items, and Plan Buttons */}
+        <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <button
+            onClick={() => navigate('/shop')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              minHeight: '44px'
+            }}
+          >
+            Lists
+          </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              minHeight: '44px'
+            }}
+          >
+            Items
+          </button>
+          <button
+            onClick={() => navigate('/planned-meal-calendar')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              minHeight: '44px'
+            }}
+          >
+            Plan
+          </button>
+        </div>
       </div>
+      <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', marginTop: '160px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h2 style={{ margin: 0 }}>Favorite Recipe Websites</h2>
           <button

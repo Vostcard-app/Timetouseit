@@ -122,10 +122,21 @@ const Settings: React.FC = () => {
 
   return (
     <>
-      <Banner onMenuClick={() => setMenuOpen(true)} />
+      {/* Fixed Header: Banner */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        backgroundColor: '#002B4D',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+      }}>
+        <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
+      </div>
 
       {/* Main Content */}
-      <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem' }}>
+      <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '2rem', marginTop: '80px' }}>
 
       <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '2rem', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
         <div style={{ marginBottom: '2rem' }}>
