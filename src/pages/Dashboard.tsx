@@ -590,7 +590,7 @@ const Dashboard: React.FC = () => {
             transition: 'all 0.2s ease'
           }}
         >
-          Dry/Canned ({itemsByStorageType.dryCannedItems.length})
+          Pantry ({itemsByStorageType.dryCannedItems.length})
         </button>
         <span style={{ 
           fontSize: '1.25rem', 
@@ -657,12 +657,12 @@ const Dashboard: React.FC = () => {
         <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
           <p style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
             {filter === 'all' 
-              ? `No ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} items yet.`
-              : `No ${filter.replace('_', ' ')} ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} items.`}
+              ? `No ${storageTab === 'perishable' ? 'perishable' : 'pantry'} items yet.`
+              : `No ${filter.replace('_', ' ')} ${storageTab === 'perishable' ? 'perishable' : 'pantry'} items.`}
           </p>
           <p style={{ marginBottom: '1.5rem' }}>
             {filter === 'all' 
-              ? `Add your first ${storageTab === 'perishable' ? 'perishable' : 'dry/canned'} item to start tracking expiration dates!`
+              ? `Add your first ${storageTab === 'perishable' ? 'perishable' : 'pantry'} item to start tracking expiration dates!`
               : 'Try a different filter.'}
           </p>
           {filter === 'all' && (
