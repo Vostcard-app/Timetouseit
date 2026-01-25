@@ -17,7 +17,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase/firebaseConfig';
 import { adminService } from '../../services/adminService';
-import { userSettingsService } from '../../services/userSettingsService';
 
 interface HamburgerMenuProps {
   /** Whether the menu is currently open */
@@ -33,7 +32,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [user] = useAuthState(auth);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
   const [showOtherApps, setShowOtherApps] = useState(false);
 
   // Check admin status
@@ -47,16 +45,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
     checkAdmin();
   }, [user]);
 
-  // Check premium status
-  useEffect(() => {
-    const checkPremium = async () => {
-      if (user) {
-        const premiumStatus = await userSettingsService.isPremiumUser(user.uid);
-        setIsPremium(premiumStatus);
-      }
-    };
-    checkPremium();
-  }, [user]);
 
   // Close menu on escape key
   useEffect(() => {
@@ -86,15 +74,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const handleMealPlannerClick = (e: React.MouseEvent) => {
-    if (!isPremium) {
-      e.preventDefault();
-      navigate('/settings');
-      onClose();
-    } else {
-      handleLinkClick('/planned-meal-calendar');
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -206,8 +185,8 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
             Account
           </Link>
           <Link
-            to="/planned-meal-calendar"
-            onClick={handleMealPlannerClick}
+            to="/calendar"
+            onClick={() => handleLinkClick('/calendar')}
             style={{
               display: 'flex',
               padding: '1rem 1.5rem',
@@ -218,8 +197,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               transition: 'background-color 0.2s',
               borderLeft: '3px solid transparent',
               minHeight: '44px',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              alignItems: 'center'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#f3f4f6';
@@ -240,19 +218,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
               }, 200);
             }}
           >
-            <span>Meal Planner</span>
-            {isPremium && (
-              <span style={{
-                padding: '0.25rem 0.5rem',
-                backgroundColor: '#10b981',
-                color: 'white',
-                borderRadius: '8px',
-                fontSize: '0.75rem',
-                fontWeight: '600'
-              }}>
-                PREMIUM
-              </span>
-            )}
+            Calendar
           </Link>
           <Link
             to="/favorite-recipes"
@@ -289,42 +255,6 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose }) => {
             }}
           >
             Favorite Recipes
-          </Link>
-          <Link
-            to="/calendar"
-            onClick={() => handleLinkClick('/calendar')}
-            style={{
-              display: 'flex',
-              padding: '1rem 1.5rem',
-              color: '#1f2937',
-              textDecoration: 'none',
-              fontSize: '22px',
-              fontWeight: '500',
-              transition: 'background-color 0.2s',
-              borderLeft: '3px solid transparent',
-              minHeight: '44px',
-              alignItems: 'center'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderLeftColor = '#002B4D';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderLeftColor = 'transparent';
-            }}
-            onTouchStart={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderLeftColor = '#002B4D';
-            }}
-            onTouchEnd={(e) => {
-              setTimeout(() => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderLeftColor = 'transparent';
-              }, 200);
-            }}
-          >
-            Calendar
           </Link>
           <Link
             to="/favorite-websites"

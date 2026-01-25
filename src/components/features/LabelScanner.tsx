@@ -183,7 +183,7 @@ const LabelScanner: React.FC<LabelScannerProps> = ({ onScan, onError, onClose })
           />
           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
             <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-              Position the label in the frame
+              Position entire label in frame
             </p>
             <button
               onClick={capturePhoto}
