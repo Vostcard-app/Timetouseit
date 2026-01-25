@@ -1,208 +1,149 @@
 /**
- * Base Service Utilities
- * Common patterns and utilities for all services
+ * Base Service Class
+ * Abstract base class for Firestore services with common patterns
  */
 
 import type { QuerySnapshot, DocumentData } from 'firebase/firestore';
-import { FirestoreError, toServiceError } from './errors';
-import { analyticsService } from './analyticsService';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+import {
+  handleSubscriptionError,
+  cleanFirestoreData,
+  transformDocument,
+  transformSnapshot,
+  logServiceOperation,
+  logServiceError
+} from './baseService';
+import { toServiceError, FirestoreError } from './errors';
 
-/**
- * Service result wrapper for consistent error handling
- */
-export interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: FirestoreError;
+export interface ServiceOptions {
+  dateFields?: string[];
+  collectionName: string;
 }
 
 /**
- * Handle Firestore subscription errors with consistent logging and fallback
+ * Abstract base class for Firestore services
  */
-export function handleSubscriptionError(
-  error: unknown,
-  collectionName: string,
-  userId?: string,
-  fallbackQuery?: () => QuerySnapshot<DocumentData> | Promise<QuerySnapshot<DocumentData>>,
-  fallbackCallback?: (snapshot: QuerySnapshot<DocumentData>) => void
-): void {
-  const serviceError = toServiceError(error, collectionName) as FirestoreError;
-  
-  // Log error using standardized logging
-  logServiceError('subscription', collectionName, serviceError, { userId });
+export abstract class BaseService<T extends { id: string }> {
+  protected collectionName: string;
+  protected dateFields: string[];
 
-  // Track sync failure
-  if (userId) {
-    analyticsService.trackQuality(userId, 'sync_failed', {
-      errorType: serviceError.code || 'unknown',
-      errorMessage: serviceError.message || 'Unknown Firestore error',
-      action: `subscribe_${collectionName}`,
-    });
+  constructor(options: ServiceOptions) {
+    this.collectionName = options.collectionName;
+    this.dateFields = options.dateFields || ['createdAt', 'addedDate', 'lastUsed'];
   }
 
-  // Handle index errors
-  if (serviceError.isIndexError()) {
-    handleIndexError(serviceError, collectionName);
-    
-    // Try fallback query if provided
-    if (fallbackQuery && fallbackCallback) {
-      logServiceOperation('subscription', collectionName, { 
-        note: 'Falling back to query without orderBy',
-        userId 
-      });
-      try {
-        const fallbackResult = fallbackQuery();
-        // Handle both sync and async fallback queries
-        if (fallbackResult instanceof Promise) {
-          fallbackResult
-            .then((snapshot) => {
-              if (fallbackCallback) fallbackCallback(snapshot);
-            })
-            .catch((fallbackErr) => {
-              logServiceError('subscription', collectionName, fallbackErr, { 
-                note: 'Fallback query also failed',
-                userId 
-              });
-            });
-        } else {
-          if (fallbackCallback) fallbackCallback(fallbackResult);
-        }
-      } catch (fallbackErr) {
-        logServiceError('subscription', collectionName, fallbackErr, { 
-          note: 'Fallback query also failed',
-          userId 
-        });
-      }
-    }
+  /**
+   * Transform Firestore document to typed object
+   */
+  protected transformDocument(doc: { id: string; data: () => DocumentData }): T {
+    return transformDocument<T>(doc, this.dateFields);
   }
-}
 
-/**
- * Handle Firestore index errors with user-friendly warnings
- */
-function handleIndexError(error: FirestoreError, collectionName: string): void {
-  const warningKey = `__${collectionName}IndexWarningShown`;
-  
-  if (!(window as any)[warningKey]) {
-    const indexUrl = error.getIndexUrl();
-    // Use logServiceOperation for index warnings (these are informational, not errors)
-    logServiceOperation('subscription', collectionName, {
-      note: 'Firestore index required',
-      indexUrl: indexUrl || 'Firebase Console → Firestore → Indexes',
-      message: `The app will work, but ${collectionName} won't load until the index is created and enabled. If you just created the index, wait 2-5 minutes for it to build, then refresh.`
-    });
-    
-    (window as any)[warningKey] = true;
+  /**
+   * Transform Firestore snapshot to typed array
+   */
+  protected transformSnapshot(snapshot: QuerySnapshot<DocumentData>): T[] {
+    return transformSnapshot<T>(snapshot, this.dateFields);
   }
-}
 
-/**
- * Transform Firestore document to typed object with date conversion
- */
-export function transformDocument<T>(
-  doc: { id: string; data: () => DocumentData },
-  dateFields: string[] = ['createdAt', 'addedDate', 'lastUsed']
-): T {
-  const data = doc.data();
-  const transformed: Record<string, unknown> = {
-    id: doc.id,
-    ...data,
-  };
+  /**
+   * Get a document by ID
+   */
+  async getById(id: string): Promise<T | null> {
+    logServiceOperation('getById', this.collectionName, { id });
 
-  // Convert Timestamp fields to Date
-  dateFields.forEach(field => {
-    if (data[field] && typeof data[field].toDate === 'function') {
-      transformed[field] = data[field].toDate();
-    }
-  });
-
-  return transformed as T;
-}
-
-/**
- * Transform Firestore query snapshot to typed array
- */
-export function transformSnapshot<T>(
-  snapshot: QuerySnapshot<DocumentData>,
-  dateFields: string[] = ['createdAt', 'addedDate', 'lastUsed']
-): T[] {
-  return snapshot.docs.map(doc => transformDocument<T>(doc, dateFields));
-}
-
-/**
- * Clean data object by removing undefined values (Firestore doesn't allow undefined)
- */
-export function cleanFirestoreData<T extends Record<string, unknown>>(
-  data: T
-): Record<string, unknown> {
-  const cleaned: Record<string, unknown> = {};
-  
-  Object.keys(data).forEach(key => {
-    const value = data[key];
-    if (value !== undefined) {
-      cleaned[key] = value;
-    }
-  });
-  
-  return cleaned;
-}
-
-/**
- * Retry a function with exponential backoff
- */
-export async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  initialDelay: number = 1000
-): Promise<T> {
-  let lastError: unknown;
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      
-      if (attempt < maxRetries - 1) {
-        const delay = initialDelay * Math.pow(2, attempt);
-        logServiceOperation('retryWithBackoff', 'retry', {
-          attempt: attempt + 1,
-          maxRetries,
-          delay
-        });
-        await new Promise(resolve => setTimeout(resolve, delay));
+      const docRef = doc(db, this.collectionName, id);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return null;
       }
+
+      return this.transformDocument(docSnap);
+    } catch (error) {
+      logServiceError('getById', this.collectionName, error, { id });
+      throw toServiceError(error, this.collectionName);
     }
   }
-  
-  throw lastError;
-}
 
-/**
- * Log service operation
- */
-export function logServiceOperation(
-  operation: string,
-  collection: string,
-  details?: Record<string, unknown>
-): void {
-  console.log(`🔧 [${collection}] ${operation}`, details || '');
-}
+  /**
+   * Get all documents for a user
+   */
+  async getAll(userId: string): Promise<T[]> {
+    logServiceOperation('getAll', this.collectionName, { userId });
 
-/**
- * Log service error
- */
-export function logServiceError(
-  operation: string,
-  collection: string,
-  error: unknown,
-  details?: Record<string, unknown>
-): void {
-  const serviceError = toServiceError(error, collection);
-  console.error(`❌ [${collection}] ${operation} failed:`, {
-    error: serviceError.message,
-    code: serviceError.code,
-    ...details,
-  });
-}
+    try {
+      const q = query(
+        collection(db, this.collectionName),
+        where('userId', '==', userId)
+      );
 
+      const snapshot = await getDocs(q);
+      return this.transformSnapshot(snapshot);
+    } catch (error) {
+      logServiceError('getAll', this.collectionName, error, { userId });
+      throw toServiceError(error, this.collectionName);
+    }
+  }
+
+  /**
+   * Create a new document
+   */
+  async create(data: Omit<T, 'id'>): Promise<string> {
+    logServiceOperation('create', this.collectionName, { data });
+
+    try {
+      const cleanData = cleanFirestoreData(data as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, this.collectionName), cleanData);
+      return docRef.id;
+    } catch (error) {
+      logServiceError('create', this.collectionName, error, { data });
+      throw toServiceError(error, this.collectionName);
+    }
+  }
+
+  /**
+   * Update a document
+   */
+  async update(id: string, updates: Partial<T>): Promise<void> {
+    logServiceOperation('update', this.collectionName, { id, updates });
+
+    try {
+      const docRef = doc(db, this.collectionName, id);
+      const cleanData = cleanFirestoreData(updates as Record<string, unknown>);
+      await updateDoc(docRef, cleanData);
+    } catch (error) {
+      logServiceError('update', this.collectionName, error, { id, updates });
+      throw toServiceError(error, this.collectionName);
+    }
+  }
+
+  /**
+   * Delete a document
+   */
+  async delete(id: string): Promise<void> {
+    logServiceOperation('delete', this.collectionName, { id });
+
+    try {
+      const docRef = doc(db, this.collectionName, id);
+      await deleteDoc(docRef);
+    } catch (error) {
+      logServiceError('delete', this.collectionName, error, { id });
+      throw toServiceError(error, this.collectionName);
+    }
+  }
+
+  /**
+   * Handle subscription errors (to be used by subclasses)
+   */
+  protected handleSubscriptionError(
+    error: unknown,
+    userId?: string,
+    fallbackQuery?: () => QuerySnapshot<DocumentData> | Promise<QuerySnapshot<DocumentData>>,
+    fallbackCallback?: (snapshot: QuerySnapshot<DocumentData>) => void
+  ): void {
+    handleSubscriptionError(error, this.collectionName, userId, fallbackQuery, fallbackCallback);
+  }
+}

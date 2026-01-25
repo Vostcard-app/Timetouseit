@@ -104,3 +104,93 @@ export function getLastDocument(snapshot: QuerySnapshot<DocumentData>): Document
   return snapshot.docs[snapshot.docs.length - 1];
 }
 
+/**
+ * Build a query with date range filtering
+ */
+export function buildDateRangeQuery(
+  collectionName: string,
+  userId: string,
+  dateField: string,
+  startDate: Date,
+  endDate: Date,
+  orderByField?: string,
+  orderDirection: 'asc' | 'desc' = 'asc'
+): Query<DocumentData> {
+  const constraints: QueryConstraint[] = [
+    where(dateField, '>=', startDate),
+    where(dateField, '<=', endDate),
+  ];
+
+  if (orderByField) {
+    constraints.push(orderBy(orderByField, orderDirection));
+  }
+
+  return buildUserQuery(collectionName, userId, constraints);
+}
+
+/**
+ * Build a query with array contains filter
+ */
+export function buildArrayContainsQuery(
+  collectionName: string,
+  userId: string,
+  arrayField: string,
+  value: unknown,
+  orderByField?: string,
+  orderDirection: 'asc' | 'desc' = 'asc'
+): Query<DocumentData> {
+  const constraints: QueryConstraint[] = [
+    where(arrayField, 'array-contains', value),
+  ];
+
+  if (orderByField) {
+    constraints.push(orderBy(orderByField, orderDirection));
+  }
+
+  return buildUserQuery(collectionName, userId, constraints);
+}
+
+/**
+ * Build a query with multiple array-contains-any filters
+ */
+export function buildArrayContainsAnyQuery(
+  collectionName: string,
+  userId: string,
+  arrayField: string,
+  values: unknown[],
+  orderByField?: string,
+  orderDirection: 'asc' | 'desc' = 'asc'
+): Query<DocumentData> {
+  const constraints: QueryConstraint[] = [
+    where(arrayField, 'array-contains-any', values),
+  ];
+
+  if (orderByField) {
+    constraints.push(orderBy(orderByField, orderDirection));
+  }
+
+  return buildUserQuery(collectionName, userId, constraints);
+}
+
+/**
+ * Build a query with in filter
+ */
+export function buildInQuery(
+  collectionName: string,
+  userId: string,
+  field: string,
+  values: unknown[],
+  orderByField?: string,
+  orderDirection: 'asc' | 'desc' = 'asc'
+): Query<DocumentData> {
+  const constraints: QueryConstraint[] = [
+    where(field, 'in', values),
+  ];
+
+  if (orderByField) {
+    constraints.push(orderBy(orderByField, orderDirection));
+  }
+
+  return buildUserQuery(collectionName, userId, constraints);
+}
+

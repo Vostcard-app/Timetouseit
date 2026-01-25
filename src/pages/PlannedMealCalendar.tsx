@@ -16,17 +16,16 @@ import { MealTypeSelectionModal } from '../components/MealPlanner/MealTypeSelect
 import { DayMealsModal } from '../components/MealPlanner/DayMealsModal';
 import { DishListModal } from '../components/MealPlanner/DishListModal';
 import { MealSelectionModal } from '../components/MealPlanner/MealSelectionModal';
-import { addDays, startOfWeek, endOfWeek, format, isSameDay, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { CalendarNavigation } from '../components/calendar/CalendarNavigation';
+import { CalendarGrid } from '../components/calendar/CalendarGrid';
+import { CalendarNavigation } from '../components/MealPlanner/CalendarNavigation';
+import { CalendarGrid } from '../components/MealPlanner/CalendarGrid';
+import { addDays, startOfWeek, format, isSameDay, startOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import type { PlannedMealCalendarLocationState } from '../types/navigation';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-const MEAL_TYPE_ABBREVIATIONS: Record<MealType, string> = {
-  breakfast: 'B',
-  lunch: 'L',
-  dinner: 'D'
-};
 
 const PlannedMealCalendar: React.FC = () => {
   const [user] = useAuthState(auth);
@@ -42,7 +41,7 @@ const PlannedMealCalendar: React.FC = () => {
   const [showDishList, setShowDishList] = useState(false);
   const [showDayMealsModal, setShowDayMealsModal] = useState(false);
   const [showIngredientPicker, setShowIngredientPicker] = useState(false);
-  const [selectedDish, setSelectedDish] = useState<{ dish: any; meal: PlannedMeal } | null>(null);
+  const [selectedDish, setSelectedDish] = useState<{ dish: Dish; meal: PlannedMeal } | null>(null);
   const [showMealDetailModal, setShowMealDetailModal] = useState(false);
   const [showMealSelectionModal, setShowMealSelectionModal] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
@@ -264,6 +263,23 @@ const PlannedMealCalendar: React.FC = () => {
     });
     return meals;
   }, [mealPlans]);
+
+  // Create meals by day map for CalendarGrid
+  const mealsByDayMap = useMemo(() => {
+    const map = new Map<string, PlannedMeal[]>();
+    allPlannedMeals.forEach(meal => {
+      const dayKey = startOfDay(meal.date).toISOString().split('T')[0];
+      if (!map.has(dayKey)) {
+        map.set(dayKey, []);
+      }
+      const dayMeals = map.get(dayKey)!;
+      // Only include meals with dishes
+      if (meal.dishes && meal.dishes.length > 0) {
+        dayMeals.push(meal);
+      }
+    });
+    return map;
+  }, [allPlannedMeals]);
 
   // Get meals for a specific day
   const getMealsForDay = (date: Date): PlannedMeal[] => {
@@ -560,15 +576,6 @@ const PlannedMealCalendar: React.FC = () => {
     }
   };
 
-  // Generate calendar days for current month
-  const monthCalendarDays = useMemo(() => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  }, [currentDate]);
-
   // Navigate periods (months)
   const navigatePeriod = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -732,334 +739,28 @@ const PlannedMealCalendar: React.FC = () => {
         <h2 style={{ marginBottom: '1rem' }}>Planned Meal Calendar</h2>
         
         {/* Navigation and View Controls */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={() => navigatePeriod('prev')}
-              style={{
-                padding: '0.5rem',
-                backgroundColor: '#f3f4f6',
-                color: '#1f2937',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '44px',
-                minHeight: '44px'
-              }}
-              aria-label="Previous Month"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M15 18L9 12L15 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-              {format(currentDate, 'MMMM yyyy')}
-            </h3>
-            <button
-              onClick={() => navigatePeriod('next')}
-              style={{
-                padding: '0.5rem',
-                backgroundColor: '#f3f4f6',
-                color: '#1f2937',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '44px',
-                minHeight: '44px'
-              }}
-              aria-label="Next Month"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M9 18L15 12L9 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <button
-            onClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#002B4D',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            List View
-          </button>
-        </div>
+        <CalendarNavigation
+          currentDate={currentDate}
+          onNavigate={navigatePeriod}
+          onListClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
+        />
 
         {/* Calendar Grid */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', 
-          gap: '0.25rem',
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
-          padding: '0.25rem',
-          backgroundColor: '#ffffff',
-          width: '100%',
-          boxSizing: 'border-box',
-          overflowX: 'auto'
-        }}>
-          {/* Day Headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div
-              key={day}
-              style={{
-                padding: '0.5rem 0.25rem',
-                textAlign: 'center',
-                fontWeight: '600',
-                fontSize: '0.75rem',
-                color: '#6b7280',
-                borderBottom: '1px solid #e5e7eb',
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {day}
-            </div>
-          ))}
-
-          {/* Calendar Days */}
-          {monthCalendarDays.map((day, index) => {
-            const normalizedDay = startOfDay(day);
-            const dayMeals = getMealsForDay(normalizedDay);
-            const isToday = isSameDay(normalizedDay, startOfDay(new Date()));
-            const isCurrentMonth = (
-              normalizedDay.getMonth() === currentDate.getMonth() && 
-              normalizedDay.getFullYear() === currentDate.getFullYear()
-            );
-            
-            // Check if this day is a valid drop target for each meal type
-            const canDropBreakfast = isDragging && draggedMeal && canDropMeal(normalizedDay, 'breakfast');
-            const canDropLunch = isDragging && draggedMeal && canDropMeal(normalizedDay, 'lunch');
-            const canDropDinner = isDragging && draggedMeal && canDropMeal(normalizedDay, 'dinner');
-            const isDropTarget = canDropBreakfast || canDropLunch || canDropDinner;
-            const isInvalidDrop = isDragging && draggedMeal && !isDropTarget && 
-              (dragOverDate && isSameDay(dragOverDate, normalizedDay));
-            
-            return (
-              <div
-                key={index}
-                onClick={() => {
-                  if (!isDragging) {
-                    handleDayClick(normalizedDay);
-                  }
-                }}
-                onDragOver={(e) => {
-                  // Handle drag over for each meal type
-                  if (isDragging && draggedMeal) {
-                    const mealType = draggedMeal.meal.mealType;
-                    handleDragOver(normalizedDay, mealType, e);
-                  }
-                }}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => {
-                  if (isDragging && draggedMeal) {
-                    const mealType = draggedMeal.meal.mealType;
-                    handleDrop(normalizedDay, mealType, e);
-                  }
-                }}
-                style={{
-                  minHeight: '80px',
-                  padding: '0.25rem',
-                  border: isDropTarget ? '2px solid #10b981' : (isInvalidDrop ? '2px solid #ef4444' : '1px solid #e5e7eb'),
-                  borderRadius: '4px',
-                  backgroundColor: isDropTarget ? '#f0fdf4' : (isInvalidDrop ? '#fef2f2' : (isToday ? '#f0f8ff' : (isCurrentMonth ? '#ffffff' : '#f9fafb'))),
-                  cursor: isDragging ? (isDropTarget ? 'copy' : (isInvalidDrop ? 'not-allowed' : 'pointer')) : 'pointer',
-                  transition: 'all 0.2s',
-                  position: 'relative',
-                  opacity: isCurrentMonth ? 1 : 0.5,
-                  minWidth: 0,
-                  overflow: 'hidden'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isDragging) {
-                    e.currentTarget.style.backgroundColor = isToday ? '#e0f2fe' : (isCurrentMonth ? '#f3f4f6' : '#f9fafb');
-                    e.currentTarget.style.borderColor = '#002B4D';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDragging) {
-                    e.currentTarget.style.backgroundColor = isToday ? '#f0f8ff' : (isCurrentMonth ? '#ffffff' : '#f9fafb');
-                    e.currentTarget.style.borderColor = '#e5e7eb';
-                  }
-                }}
-              >
-                <div style={{
-                  fontSize: '0.75rem',
-                  fontWeight: isToday ? '700' : (isCurrentMonth ? '500' : '400'),
-                  color: isCurrentMonth ? '#1f2937' : '#9ca3af',
-                  marginBottom: '0.25rem'
-                }}>
-                  {format(day, 'd')}
-                </div>
-                
-                {/* Meal Indicators - Tappable Letters */}
-                {dayMeals.length > 0 && (() => {
-                  // Group meals by meal type
-                  const mealsByType: Record<MealType, PlannedMeal[]> = {
-                    breakfast: [],
-                    lunch: [],
-                    dinner: []
-                  };
-                  
-                  dayMeals.forEach(meal => {
-                    if (meal.dishes && meal.dishes.length > 0) {
-                      mealsByType[meal.mealType].push(meal);
-                    }
-                  });
-                  
-                  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner'];
-                  
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'row', gap: '0.25rem', flexWrap: 'wrap' }}>
-                      {mealTypes.map(mealType => {
-                        const mealsOfType = mealsByType[mealType];
-                        if (mealsOfType.length === 0) return null;
-                        
-                        const mealCount = mealsOfType.length;
-                        const hasMultipleMeals = mealCount > 1;
-                        
-                        return (
-                          <div
-                            key={mealType}
-                            onClick={(e) => {
-                              if (!isDragging) {
-                                handleMealTypeLetterClick(normalizedDay, mealType, e);
-                              }
-                            }}
-                            style={{
-                              position: 'relative',
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              backgroundColor: '#002B4D',
-                              color: '#ffffff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.65rem',
-                              fontWeight: '600',
-                              cursor: isDragging ? 'default' : 'pointer',
-                              userSelect: 'none',
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isDragging) {
-                                e.currentTarget.style.backgroundColor = '#003d6b';
-                                e.currentTarget.style.transform = 'scale(1.1)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isDragging) {
-                                e.currentTarget.style.backgroundColor = '#002B4D';
-                                e.currentTarget.style.transform = 'scale(1)';
-                              }
-                            }}
-                            title={hasMultipleMeals 
-                              ? `${MEAL_TYPE_ABBREVIATIONS[mealType]}: ${mealCount} meals - Tap to select`
-                              : `${MEAL_TYPE_ABBREVIATIONS[mealType]}: ${mealsOfType[0].dishes?.[0]?.dishName || 'Tap to view'}`
-                            }
-                          >
-                            {MEAL_TYPE_ABBREVIATIONS[mealType]}
-                            {hasMultipleMeals && (
-                              <span
-                                style={{
-                                  position: 'absolute',
-                                  top: '-4px',
-                                  right: '-4px',
-                                  width: '14px',
-                                  height: '14px',
-                                  borderRadius: '50%',
-                                  backgroundColor: '#ef4444',
-                                  color: '#ffffff',
-                                  fontSize: '0.6rem',
-                                  fontWeight: '700',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  border: '1px solid #ffffff'
-                                }}
-                              >
-                                {mealCount}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-                
-                {/* Drop zone indicators for empty meal types */}
-                {isDragging && draggedMeal && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
-                    {(['breakfast', 'lunch', 'dinner'] as MealType[]).map(mealType => {
-                      const hasMealOfType = dayMeals.some(m => m.mealType === mealType);
-                      // Only show drop zone if this meal type is empty and matches the dragged meal type
-                      if (hasMealOfType || mealType !== draggedMeal.meal.mealType) return null;
-                      
-                      const isTarget = dragOverDate && isSameDay(dragOverDate, normalizedDay) && dragOverMealType === mealType;
-                      
-                      return (
-                        <div
-                          key={mealType}
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: isTarget ? '#10b981' : '#e5e7eb',
-                            color: isTarget ? '#ffffff' : '#9ca3af',
-                            borderRadius: '4px',
-                            border: isTarget ? '2px dashed #10b981' : '1px dashed #d1d5db',
-                            textAlign: 'center',
-                            opacity: isTarget ? 1 : 0.5
-                          }}
-                        >
-                          Drop {MEAL_TYPE_ABBREVIATIONS[mealType]} here
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <CalendarGrid
+          currentDate={currentDate}
+          monthDays={monthCalendarDays}
+          mealsByDay={mealsByDayMap}
+          isDragging={isDragging}
+          draggedMeal={draggedMeal}
+          dragOverDate={dragOverDate}
+          dragOverMealType={dragOverMealType}
+          onDayClick={handleDayClick}
+          onMealTypeClick={handleMealTypeLetterClick}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          canDropMeal={canDropMeal}
+        />
 
         {/* Legend */}
         <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px' }}>

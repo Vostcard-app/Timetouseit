@@ -9,6 +9,9 @@ import { auth } from '../../firebase/firebaseConfig';
 import { recipeImportService } from '../../services';
 import type { RecipeImportResult } from '../../types/recipeImport';
 import { showToast } from '../Toast';
+import { BaseModal } from '../ui/BaseModal';
+import { buttonStyles, combineStyles } from '../../styles/componentStyles';
+import { spacing } from '../../styles/designTokens';
 
 interface GoogleSearchRecipeModalProps {
   isOpen: boolean;
@@ -77,9 +80,10 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
         setDishName(recipe.title);
       }
       showToast('Recipe imported successfully!', 'success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error importing recipe:', error);
-      showToast(error.message || 'Failed to import recipe. Please try again.', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import recipe. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setImportingRecipe(false);
     }
@@ -113,71 +117,43 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
     }
   };
 
+  // Footer buttons
+  const footer = (
+    <div style={{ display: 'flex', gap: spacing.md, justifyContent: 'flex-end' }}>
+      <button
+        onClick={onClose}
+        disabled={saving}
+        style={combineStyles(
+          buttonStyles.secondary,
+          saving && buttonStyles.disabled
+        )}
+      >
+        Cancel
+      </button>
+      <button
+        onClick={handleSaveRecipe}
+        disabled={!dishName.trim() || !importedRecipe || saving}
+        style={combineStyles(
+          buttonStyles.primary,
+          (!dishName.trim() || !importedRecipe || saving) && buttonStyles.disabled
+        )}
+      >
+        {saving ? 'Saving...' : 'Add to Dish'}
+      </button>
+    </div>
+  );
+
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1004,
-        padding: '1rem'
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Search Recipes on Google"
+      size="full"
+      footer={footer}
     >
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '8px',
-          maxWidth: '1200px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'hidden',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ 
-          padding: '1.5rem', 
-          borderBottom: '1px solid #e5e7eb', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center' 
-        }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-            Search Recipes on Google
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem 0.5rem'
-            }}
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
           {/* Search Info */}
           <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
             <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
@@ -305,51 +281,7 @@ export const GoogleSearchRecipeModal: React.FC<GoogleSearchRecipeModalProps> = (
               }}
             />
           </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{ 
-          padding: '1.5rem', 
-          borderTop: '1px solid #e5e7eb', 
-          display: 'flex', 
-          gap: '0.75rem', 
-          justifyContent: 'flex-end' 
-        }}>
-          <button
-            onClick={onClose}
-            disabled={saving}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f3f4f6',
-              color: '#1f2937',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.5 : 1
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSaveRecipe}
-            disabled={!dishName.trim() || !importedRecipe || saving}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: (!dishName.trim() || !importedRecipe || saving) ? '#9ca3af' : '#002B4D',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: (!dishName.trim() || !importedRecipe || saving) ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {saving ? 'Saving...' : 'Add to Dish'}
-          </button>
-        </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };

@@ -59,7 +59,7 @@ export async function getExpirationSuggestion(
       reasoning: aiResult.reasoning,
       creditsRemaining: creditResult.remaining.freeCreditsRemaining + creditResult.remaining.paidCredits
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logServiceError('getExpirationSuggestion', 'expirationHelper', error, { itemName, storageType });
     return {
       success: false,

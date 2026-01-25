@@ -74,9 +74,10 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         parsedIngredients: recipe.parsedIngredients 
       });
       showToast('Recipe imported successfully', 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error auto-importing recipe:', error);
-          showToast(error.message || 'Failed to import recipe', 'error');
+          const errorMessage = error instanceof Error ? error.message : 'Failed to import recipe';
+          showToast(errorMessage, 'error');
         } finally {
           setImporting(false);
         }
@@ -132,9 +133,10 @@ export const RecipeImportScreen: React.FC<RecipeImportScreenProps> = ({
         parsedIngredients: recipe.parsedIngredients 
       });
       showToast('Recipe imported successfully', 'success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error importing recipe:', error);
-      showToast(error.message || 'Failed to import recipe', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import recipe';
+      showToast(errorMessage, 'error');
     } finally {
       setImporting(false);
     }

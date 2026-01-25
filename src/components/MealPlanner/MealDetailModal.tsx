@@ -13,6 +13,9 @@ import { format, isSameDay } from 'date-fns';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
 import { IngredientChecklist } from './IngredientChecklist';
 import { fuzzyMatchIngredientToItem } from '../../utils/fuzzyIngredientMatcher';
+import { BaseModal } from '../ui/BaseModal';
+import { buttonStyles, combineStyles } from '../../styles/componentStyles';
+import { spacing } from '../../styles/designTokens';
 
 interface MealDetailModalProps {
   isOpen: boolean;
@@ -96,6 +99,89 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   );
 
   if (!isOpen || !currentDish || !meal) return null;
+
+  const displayName = currentDish.dishName;
+  const truncatedDisplayName = smartTruncate(displayName, 60);
+
+  // Footer buttons based on mode
+  const footer = (
+    <div style={{ display: 'flex', gap: spacing.md, justifyContent: 'flex-end' }}>
+      {isEditing ? (
+        <>
+          <button
+            onClick={handleCancelEdit}
+            disabled={saving}
+            style={combineStyles(
+              buttonStyles.secondary,
+              saving && buttonStyles.disabled
+            )}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={combineStyles(
+              buttonStyles.primary,
+              saving && buttonStyles.disabled
+            )}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </>
+      ) : isPreparing ? (
+        <>
+          <button
+            onClick={handleCancelPreparing}
+            disabled={preparing}
+            style={combineStyles(
+              buttonStyles.secondary,
+              preparing && buttonStyles.disabled
+            )}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmPrepared}
+            disabled={preparing}
+            style={combineStyles(
+              buttonStyles.success,
+              preparing && buttonStyles.disabled
+            )}
+          >
+            {preparing ? 'Preparing...' : 'Confirm Prepared'}
+          </button>
+        </>
+      ) : (
+        <>
+          {!meal.completed && (
+            <button
+              onClick={handlePrepared}
+              style={buttonStyles.success}
+            >
+              Prepared
+            </button>
+          )}
+          <button
+            onClick={handleEdit}
+            style={buttonStyles.secondary}
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            style={combineStyles(
+              buttonStyles.danger,
+              deleting && buttonStyles.disabled
+            )}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   // Initialize edit state when dish changes
   useEffect(() => {
@@ -490,7 +576,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       onDishDeleted?.(); // Refresh calendar
       onMealDeleted?.(); // Legacy support
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[handleDelete] Error deleting dish:', error);
       const errorMessage = error?.message || 'Unknown error occurred';
       console.error('[handleDelete] Error details:', {
@@ -503,9 +589,6 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       setDeleting(false);
     }
   };
-
-  const displayName = currentDish.dishName;
-  const truncatedDisplayName = smartTruncate(displayName, 60);
 
   const toggleIngredient = (index: number) => {
     const newSelected = new Set(selectedIngredientIndices);
@@ -612,76 +695,31 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1003,
-        padding: '1rem'
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '8px',
-          maxWidth: '600px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
-              {currentDish.dishName}
-            </h2>
-            {currentDish.completed && (
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  backgroundColor: '#10b981',
-                  color: '#ffffff'
-                }}
-              >
-                Completed
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem 0.5rem'
-            }}
-          >
-            ×
-          </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+          <span>{currentDish.dishName}</span>
+          {currentDish.completed && (
+            <span
+              style={{
+                fontSize: '0.75rem',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '12px',
+                fontWeight: '600',
+                backgroundColor: '#10b981',
+                color: '#ffffff'
+              }}
+            >
+              Completed
+            </span>
+          )}
         </div>
-
-        {/* Content */}
-        <div style={{ padding: '1.5rem' }}>
+      }
+      size="medium"
+      footer={footer}
+    >
           {/* Meal Name */}
           <div style={{ marginBottom: '1.5rem' }}>
             {isEditing ? (
@@ -819,135 +857,6 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-            {isEditing ? (
-              <>
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={saving}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#f3f4f6',
-                    color: '#1f2937',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: saving ? 'not-allowed' : 'pointer',
-                    opacity: saving ? 0.5 : 1
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: saving ? '#9ca3af' : '#002B4D',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: saving ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-              </>
-            ) : isPreparing ? (
-              <>
-                <button
-                  onClick={handleCancelPreparing}
-                  disabled={preparing}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#f3f4f6',
-                    color: '#1f2937',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: preparing ? 'not-allowed' : 'pointer',
-                    opacity: preparing ? 0.5 : 1
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmPrepared}
-                  disabled={preparing}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: preparing ? '#9ca3af' : '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: preparing ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {preparing ? 'Preparing...' : 'Confirm Prepared'}
-                </button>
-              </>
-            ) : (
-              <>
-                {!meal.completed && (
-                  <button
-                    onClick={handlePrepared}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      backgroundColor: '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '1rem',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Prepared
-                  </button>
-                )}
-                <button
-                  onClick={handleEdit}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#f3f4f6',
-                    color: '#1f2937',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: deleting ? '#9ca3af' : '#dc2626',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: deleting ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    </BaseModal>
   );
 };

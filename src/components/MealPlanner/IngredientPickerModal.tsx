@@ -15,12 +15,17 @@ import { isDryCannedItem } from '../../utils/storageUtils';
 import { addDays, startOfWeek, isSameDay } from 'date-fns';
 import { detectCategory, type FoodCategory } from '../../utils/categoryUtils';
 import { useIngredientAvailability } from '../../hooks/useIngredientAvailability';
-import { IngredientChecklist } from './IngredientChecklist';
 import { GoogleSearchRecipeModal } from './GoogleSearchRecipeModal';
 import { SaveDishModal } from './SaveDishModal';
+import { MyIngredientsTab } from './MyIngredientsTab';
+import { RecipeUrlTab } from './RecipeUrlTab';
+import { PasteIngredientsTab } from './PasteIngredientsTab';
 import { showToast } from '../Toast';
 import { parseIngredientQuantity, cleanIngredientName } from '../../utils/ingredientQuantityParser';
 import { capitalizeItemName } from '../../utils/formatting';
+import { BaseModal } from '../ui/BaseModal';
+import { buttonStyles, combineStyles } from '../../styles/componentStyles';
+import { spacing } from '../../styles/designTokens';
 
 interface IngredientPickerModalProps {
   isOpen: boolean;
@@ -401,9 +406,10 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
             if (selectedMealType && recipe.ingredients && recipe.ingredients.length > 0) {
               setShowSaveDishModal(true);
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Error auto-importing recipe:', error);
-            showToast(error.message || 'Failed to import recipe. Please try again.', 'error');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to import recipe. Please try again.';
+            showToast(errorMessage, 'error');
           } finally {
             setImportingRecipe(false);
           }
@@ -485,7 +491,8 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
       }
     } catch (error: any) {
       console.error('Error importing recipe:', error);
-      showToast(error.message || 'Failed to import recipe. Please try again.', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import recipe. Please try again.';
+      showToast(errorMessage, 'error');
       setRecipeImportError(true);
     } finally {
       setImportingRecipe(false);
@@ -890,60 +897,31 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Footer button
+  const footer = selectedMealType ? (
+    <div style={{ display: 'flex', gap: spacing.md, justifyContent: 'flex-end' }}>
+      <button
+        onClick={onClose}
+        disabled={saving}
+        style={combineStyles(
+          buttonStyles.secondary,
+          saving && buttonStyles.disabled
+        )}
+      >
+        Cancel
+      </button>
+    </div>
+  ) : undefined;
+
   return (
     <>
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem'
-        }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            onClose();
-          }
-        }}
+      <BaseModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Select Ingredients"
+        size="large"
+        footer={footer}
       >
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '8px',
-            maxWidth: '700px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Select Ingredients</h2>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: '#6b7280',
-                padding: '0.25rem 0.5rem'
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Content */}
-          <div style={{ padding: '1.5rem' }}>
             {!selectedMealType ? (
               /* Meal Type Selection */
               <div>
@@ -1087,617 +1065,59 @@ export const IngredientPickerModal: React.FC<IngredientPickerModalProps> = ({
                 {/* Tab Content */}
                 <div style={{ marginBottom: '1.5rem', minHeight: '300px' }}>
                   {activeTab === 'myIngredients' && (
-                    <div>
-                      {loading ? (
-                        <p style={{ textAlign: 'center', color: '#6b7280' }}>Loading ingredients...</p>
-                      ) : (
-                        <div>
-                          {/* Category Filter Dropdown */}
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ 
-                              display: 'block', 
-                              marginBottom: '0.5rem', 
-                              fontSize: '0.875rem', 
-                              fontWeight: '500', 
-                              color: '#1f2937' 
-                            }}>
-                              Filter Perishables:
-                            </label>
-                            <select
-                              value={categoryFilter}
-                              onChange={(e) => setCategoryFilter(e.target.value)}
-                              style={{
-                                width: '100%',
-                                padding: '0.5rem 0.75rem',
-                                backgroundColor: '#ffffff',
-                                color: '#1f2937',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                                fontSize: '0.875rem',
-                                fontWeight: '500',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <option value="all">All Categories</option>
-                              <option value="Proteins">Proteins</option>
-                              <option value="Vegetables">Vegetables</option>
-                              <option value="Fruits">Fruits</option>
-                              <option value="Dairy">Dairy</option>
-                              <option value="Leftovers">Leftovers</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          </div>
-                          
-                          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                          {/* Use Soon */}
-                          {groupedIngredients.bestBySoon.length > 0 && (
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                                {getSourceLabel('bestBySoon')}
-                              </h4>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {groupedIngredients.bestBySoon.map(ingredient => (
-                                  <label
-                                    key={ingredient.id}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      padding: '0.75rem',
-                                      cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer',
-                                      borderRadius: '4px',
-                                      backgroundColor: selectedIngredients.has(ingredient.id) ? '#f0f8ff' : 'transparent',
-                                      opacity: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 0.5 : 1
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIngredients.has(ingredient.id)}
-                                      onChange={() => toggleIngredient(ingredient.id)}
-                                      disabled={selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id)}
-                                      style={{
-                                        marginRight: '0.75rem',
-                                        width: '1.25rem',
-                                        height: '1.25rem',
-                                        cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer'
-                                      }}
-                                    />
-                                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '0.5rem' }}>
-                                      <span style={{ flex: 1, fontSize: '1rem', color: ingredient.isReserved ? '#9ca3af' : '#1f2937' }}>{ingredient.name}</span>
-                                      {ingredient.originalItemId && (
-                                        <div style={{ position: 'relative' }}>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setEditingCategoryItemId(editingCategoryItemId === ingredient.id ? null : ingredient.id);
-                                            }}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              cursor: 'pointer',
-                                              padding: '0.25rem',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              color: '#6b7280'
-                                            }}
-                                            title="Edit category"
-                                          >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                            </svg>
-                                          </button>
-                                          {editingCategoryItemId === ingredient.id && (
-                                            <div style={{
-                                              position: 'absolute',
-                                              right: 0,
-                                              top: '100%',
-                                              marginTop: '0.25rem',
-                                              backgroundColor: '#ffffff',
-                                              border: '1px solid #d1d5db',
-                                              borderRadius: '6px',
-                                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                                              zIndex: 1000,
-                                              minWidth: '150px'
-                                            }}>
-                                              <select
-                                                value={ingredient.category || 'Other'}
-                                                onChange={(e) => handleCategoryChange(ingredient.id, e.target.value as FoodCategory)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onBlur={() => setEditingCategoryItemId(null)}
-                                                style={{
-                                                  width: '100%',
-                                                  padding: '0.5rem 0.75rem',
-                                                  backgroundColor: '#ffffff',
-                                                  color: '#1f2937',
-                                                  border: 'none',
-                                                  borderRadius: '6px',
-                                                  fontSize: '0.875rem',
-                                                  fontWeight: '500',
-                                                  cursor: 'pointer'
-                                                }}
-                                                autoFocus
-                                              >
-                                                {categoryOptions.map(cat => (
-                                                  <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                              </select>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Perishable Items */}
-                          {groupedIngredients.perishable.length > 0 && (
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                                {getSourceLabel('perishable')}
-                              </h4>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {groupedIngredients.perishable.map(ingredient => (
-                                  <label
-                                    key={ingredient.id}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      padding: '0.75rem',
-                                      cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer',
-                                      borderRadius: '4px',
-                                      backgroundColor: selectedIngredients.has(ingredient.id) ? '#f0f8ff' : 'transparent',
-                                      opacity: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 0.5 : 1
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIngredients.has(ingredient.id)}
-                                      onChange={() => toggleIngredient(ingredient.id)}
-                                      disabled={selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id)}
-                                      style={{
-                                        marginRight: '0.75rem',
-                                        width: '1.25rem',
-                                        height: '1.25rem',
-                                        cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer'
-                                      }}
-                                    />
-                                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '0.5rem' }}>
-                                      <span style={{ flex: 1, fontSize: '1rem', color: ingredient.isReserved ? '#9ca3af' : '#1f2937' }}>{ingredient.name}</span>
-                                      {ingredient.originalItemId && (
-                                        <div style={{ position: 'relative' }}>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setEditingCategoryItemId(editingCategoryItemId === ingredient.id ? null : ingredient.id);
-                                            }}
-                                            style={{
-                                              background: 'none',
-                                              border: 'none',
-                                              cursor: 'pointer',
-                                              padding: '0.25rem',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              color: '#6b7280'
-                                            }}
-                                            title="Edit category"
-                                          >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                            </svg>
-                                          </button>
-                                          {editingCategoryItemId === ingredient.id && (
-                                            <div style={{
-                                              position: 'absolute',
-                                              right: 0,
-                                              top: '100%',
-                                              marginTop: '0.25rem',
-                                              backgroundColor: '#ffffff',
-                                              border: '1px solid #d1d5db',
-                                              borderRadius: '6px',
-                                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                                              zIndex: 1000,
-                                              minWidth: '150px'
-                                            }}>
-                                              <select
-                                                value={ingredient.category || 'Other'}
-                                                onChange={(e) => handleCategoryChange(ingredient.id, e.target.value as FoodCategory)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onBlur={() => setEditingCategoryItemId(null)}
-                                                style={{
-                                                  width: '100%',
-                                                  padding: '0.5rem 0.75rem',
-                                                  backgroundColor: '#ffffff',
-                                                  color: '#1f2937',
-                                                  border: 'none',
-                                                  borderRadius: '6px',
-                                                  fontSize: '0.875rem',
-                                                  fontWeight: '500',
-                                                  cursor: 'pointer'
-                                                }}
-                                                autoFocus
-                                              >
-                                                {categoryOptions.map(cat => (
-                                                  <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                              </select>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Dry/Canned Items */}
-                          {groupedIngredients.dryCanned.length > 0 && (
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                                {getSourceLabel('dryCanned')}
-                              </h4>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {groupedIngredients.dryCanned.map(ingredient => (
-                                  <label
-                                    key={ingredient.id}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      padding: '0.75rem',
-                                      cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer',
-                                      borderRadius: '4px',
-                                      backgroundColor: selectedIngredients.has(ingredient.id) ? '#f0f8ff' : 'transparent',
-                                      opacity: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 0.5 : 1
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIngredients.has(ingredient.id)}
-                                      onChange={() => toggleIngredient(ingredient.id)}
-                                      disabled={selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id)}
-                                      style={{
-                                        marginRight: '0.75rem',
-                                        width: '1.25rem',
-                                        height: '1.25rem',
-                                        cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer'
-                                      }}
-                                    />
-                                    <span style={{ flex: 1, fontSize: '1rem', color: ingredient.isReserved ? '#9ca3af' : '#1f2937' }}>{ingredient.name}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Shop List */}
-                          {groupedIngredients.shopList.length > 0 && (
-                            <div style={{ marginBottom: '1.5rem' }}>
-                              <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                                {getSourceLabel('shopList')}
-                              </h4>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {groupedIngredients.shopList.map(ingredient => (
-                                  <label
-                                    key={ingredient.id}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      padding: '0.75rem',
-                                      cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer',
-                                      borderRadius: '4px',
-                                      backgroundColor: selectedIngredients.has(ingredient.id) ? '#f0f8ff' : 'transparent',
-                                      opacity: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 0.5 : 1
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIngredients.has(ingredient.id)}
-                                      onChange={() => toggleIngredient(ingredient.id)}
-                                      disabled={selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id)}
-                                      style={{
-                                        marginRight: '0.75rem',
-                                        width: '1.25rem',
-                                        height: '1.25rem',
-                                        cursor: selectedIngredients.size >= 3 && !selectedIngredients.has(ingredient.id) ? 'not-allowed' : 'pointer'
-                                      }}
-                                    />
-                                    <span style={{ flex: 1, fontSize: '1rem', color: ingredient.isReserved ? '#9ca3af' : '#1f2937' }}>{ingredient.name}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <MyIngredientsTab
+                      loading={loading}
+                      groupedIngredients={groupedIngredients}
+                      selectedIngredients={selectedIngredients}
+                      onToggleIngredient={toggleIngredient}
+                      categoryFilter={categoryFilter}
+                      onCategoryFilterChange={setCategoryFilter}
+                      categoryOptions={categoryOptions}
+                      editingCategoryItemId={editingCategoryItemId}
+                      onSetEditingCategoryItemId={setEditingCategoryItemId}
+                      onCategoryChange={handleCategoryChange}
+                      getSourceLabel={getSourceLabel}
+                    />
                   )}
 
                   {activeTab === 'recipeUrl' && (
-                    <div>
-                      {/* Recipe URL Paste Field */}
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <label htmlFor="recipeUrl" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                          Paste Recipe URL
-                        </label>
-                        <input
-                          id="recipeUrl"
-                          type="url"
-                          value={recipeUrl}
-                          onChange={(e) => setRecipeUrl(e.target.value)}
-                          placeholder="https://example.com/recipe"
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            color: '#1f2937'
-                          }}
-                        />
-                        <button
-                          onClick={handleGetIngredients}
-                          disabled={!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())}
-                          style={{
-                            marginTop: '0.75rem',
-                            width: '100%',
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? '#9ca3af' : '#002B4D',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            fontWeight: '500',
-                            cursor: (!recipeUrl.trim() || importingRecipe || !isValidUrl(recipeUrl.trim())) ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          {importingRecipe ? 'Importing...' : 'Get Ingredients'}
-                        </button>
-                        {importingRecipe && (
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#002B4D', fontStyle: 'italic', textAlign: 'center' }}>
-                            Importing recipe...
-                          </p>
-                        )}
-                        {recipeImportError && (
-                          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px' }}>
-                            <p style={{ margin: 0, fontSize: '0.875rem', color: '#991b1b', fontWeight: '500' }}>
-                              Copy then paste ingredients in the Add Ingredients tab
-                            </p>
-                          </div>
-                        )}
-                        <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                          Paste a recipe URL and click "Get Ingredients" to import the recipe.
-                        </p>
-                      </div>
-
-                      {/* Favorite Websites Dropdown */}
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <label htmlFor="favoriteWebsite" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                          Select Favorite Website
-                        </label>
-                        <select
-                          id="favoriteWebsite"
-                          value={selectedFavoriteSite?.id || ''}
-                          onChange={(e) => {
-                            if (e.target.value === '__add_favorite__') {
-                              // Open Google search modal with selected ingredients
-                              const ingredientsToSearch = selectedSearchIngredients.size > 0
-                                ? Array.from(selectedSearchIngredients)
-                                : combinedIngredients.slice(0, 3); // Limit to 3
-                              
-                              if (ingredientsToSearch.length === 0) {
-                                showToast('Please select at least one ingredient to search', 'warning');
-                                return;
-                              }
-                              
-                              setShowGoogleSearchRecipeModal(true);
-                            } else {
-                              const site = favoriteWebsites.find(s => s.id === e.target.value);
-                              if (site) {
-                                handleFavoriteSiteSelect(site);
-                              }
-                            }
-                          }}
-                          disabled={loadingFavorites}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            color: '#1f2937',
-                            backgroundColor: loadingFavorites ? '#f3f4f6' : '#ffffff'
-                          }}
-                        >
-                          <option value="">Choose a favorite website...</option>
-                          {favoriteWebsites.map(site => (
-                            <option key={site.id} value={site.id}>
-                              {site.label}
-                            </option>
-                          ))}
-                          <option value="__add_favorite__" style={{ fontStyle: 'italic', color: '#6b7280' }}>
-                            + Add Favorite (Google Search)
-                          </option>
-                        </select>
-                        {loadingFavorites && (
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                            Loading favorite websites...
-                          </p>
-                        )}
-                        {!loadingFavorites && favoriteWebsites.length === 0 && (
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#dc2626' }}>
-                            No favorite websites found. Add favorites at{' '}
-                            <a 
-                              href="/favorite-websites" 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              style={{ color: '#002B4D', textDecoration: 'underline' }}
-                            >
-                              Favorite Websites
-                            </a>
-                          </p>
-                        )}
-                      </div>
-
-                      {/* View Button */}
-                      {selectedFavoriteSite && (
-                        <div style={{ marginBottom: '1.5rem' }}>
-                          <button
-                            onClick={handleViewFavoriteSite}
-                            style={{
-                              padding: '0.75rem 1.5rem',
-                              backgroundColor: '#002B4D',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '1rem',
-                              fontWeight: '500',
-                              cursor: 'pointer',
-                              width: '100%'
-                            }}
-                          >
-                            View {selectedFavoriteSite.label}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Check up to 3 items to search */}
-                      {combinedIngredients.length > 0 && (
-                        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                          <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                            Check up to 3 items to search ({selectedSearchIngredients.size} of 3 selected)
-                          </h4>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
-                            {combinedIngredients.map((ingredient, index) => (
-                              <label
-                                key={index}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  padding: '0.5rem',
-                                  cursor: selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient) ? 'not-allowed' : 'pointer',
-                                  borderRadius: '4px',
-                                  backgroundColor: selectedSearchIngredients.has(ingredient) ? '#f0f8ff' : 'transparent',
-                                  opacity: selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient) ? 0.5 : 1
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedSearchIngredients.has(ingredient)}
-                                  onChange={() => toggleSearchIngredient(ingredient)}
-                                  disabled={selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient)}
-                                  style={{
-                                    marginRight: '0.75rem',
-                                    width: '1.25rem',
-                                    height: '1.25rem',
-                                    cursor: selectedSearchIngredients.size >= 3 && !selectedSearchIngredients.has(ingredient) ? 'not-allowed' : 'pointer'
-                                  }}
-                                />
-                                <span style={{ flex: 1, fontSize: '0.875rem' }}>{ingredient}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Search with Google Button */}
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <button
-                          onClick={handleGoogleSearch}
-                          disabled={selectedSearchIngredients.size === 0 || selectedSearchIngredients.size > 3}
-                          style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: (selectedSearchIngredients.size === 0 || selectedSearchIngredients.size > 3) ? '#9ca3af' : '#002B4D',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '1rem',
-                            fontWeight: '500',
-                            cursor: (selectedSearchIngredients.size === 0 || selectedSearchIngredients.size > 3) ? 'not-allowed' : 'pointer',
-                            width: '100%'
-                          }}
-                        >
-                          Search with Google
-                        </button>
-                      </div>
-
-                    </div>
+                    <RecipeUrlTab
+                      recipeUrl={recipeUrl}
+                      onRecipeUrlChange={setRecipeUrl}
+                      onGetIngredients={handleGetIngredients}
+                      importingRecipe={importingRecipe}
+                      recipeImportError={recipeImportError}
+                      favoriteWebsites={favoriteWebsites}
+                      loadingFavorites={loadingFavorites}
+                      selectedFavoriteSite={selectedFavoriteSite}
+                      onFavoriteSiteSelect={handleFavoriteSiteSelect}
+                      onViewFavoriteSite={handleViewFavoriteSite}
+                      onGoogleSearch={handleGoogleSearch}
+                      combinedIngredients={combinedIngredients}
+                      selectedSearchIngredients={selectedSearchIngredients}
+                      onToggleSearchIngredient={toggleSearchIngredient}
+                      onOpenGoogleSearchModal={() => setShowGoogleSearchRecipeModal(true)}
+                      isValidUrl={isValidUrl}
+                    />
                   )}
 
                   {activeTab === 'pasteIngredients' && (
-                    <div>
-                      <label htmlFor="pastedIngredients" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#374151' }}>
-                        Add Ingredients
-                      </label>
-                      <textarea
-                        id="pastedIngredients"
-                        value={pastedIngredients}
-                        onChange={(e) => setPastedIngredients(e.target.value)}
-                        placeholder="Paste or type ingredients here, one per line or separated by commas...&#10;Example:&#10;2 cups flour&#10;1 cup sugar&#10;3 eggs"
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '1rem',
-                          color: '#1f2937',
-                          minHeight: '150px',
-                          resize: 'vertical',
-                          fontFamily: 'inherit',
-                          marginBottom: '1rem'
-                        }}
-                      />
-                      {parsedIngredients.length > 0 && (
-                        <div>
-                          <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem', fontWeight: '600', color: '#1f2937' }}>
-                            Parsed Ingredients ({selectedPastedIngredientIndices.size} of {parsedIngredients.length} selected)
-                          </h4>
-                          {loadingPastedIngredients ? (
-                            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>Checking ingredient availability...</p>
-                          ) : (
-                            <IngredientChecklist
-                              ingredientStatuses={pastedIngredientStatuses}
-                              selectedIngredientIndices={selectedPastedIngredientIndices}
-                              onToggleIngredient={togglePastedIngredient}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <PasteIngredientsTab
+                      pastedIngredients={pastedIngredients}
+                      onPastedIngredientsChange={setPastedIngredients}
+                      parsedIngredients={parsedIngredients}
+                      selectedPastedIngredientIndices={selectedPastedIngredientIndices}
+                      onTogglePastedIngredient={togglePastedIngredient}
+                      loadingPastedIngredients={loadingPastedIngredients}
+                      pastedIngredientStatuses={pastedIngredientStatuses}
+                    />
                   )}
                 </div>
 
 
-                {/* Cancel Button */}
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                  <button
-                    onClick={onClose}
-                    disabled={saving}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      backgroundColor: '#f3f4f6',
-                      color: '#1f2937',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '1rem',
-                      fontWeight: '500',
-                      cursor: saving ? 'not-allowed' : 'pointer',
-                      opacity: saving ? 0.5 : 1
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
             )}
-          </div>
-        </div>
-      </div>
+      </BaseModal>
 
       {/* Google Search Recipe Modal */}
       <GoogleSearchRecipeModal

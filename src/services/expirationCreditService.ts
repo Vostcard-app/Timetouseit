@@ -76,7 +76,7 @@ export async function useCredit(): Promise<UseCreditResult> {
       usedFree,
       remaining
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logServiceError('useCredit', 'expirationCredits', error);
     const currentCredits = await getCredits().catch(() => ({ 
       freeCreditsRemaining: 0, 

@@ -6,6 +6,9 @@
 import React from 'react';
 import type { MealType, PlannedMeal } from '../../types';
 import { format } from 'date-fns';
+import { BaseModal } from '../ui/BaseModal';
+import { combineStyles, buttonStyles, cardStyles, textStyles } from '../../styles/componentStyles';
+import { colors, spacing, borderRadius } from '../../styles/designTokens';
 
 const MEAL_TYPE_LABELS: Record<MealType, string> = {
   breakfast: 'Breakfast',
@@ -30,166 +33,116 @@ export const MealSelectionModal: React.FC<MealSelectionModalProps> = ({
   meals,
   onMealClick
 }) => {
-  if (!isOpen) return null;
+  const title = `${MEAL_TYPE_LABELS[mealType]} - ${format(date, 'EEEE, MMMM d, yyyy')}`;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-      }}
-      onClick={onClose}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size="medium"
     >
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          padding: '2rem',
-          maxWidth: '600px',
-          width: '90%',
-          maxHeight: '80vh',
-          overflow: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
-              {MEAL_TYPE_LABELS[mealType]}
-            </h2>
-            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
-              {format(date, 'EEEE, MMMM d, yyyy')}
-            </p>
-            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
-              {meals.length} meal{meals.length !== 1 ? 's' : ''} planned
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem 0.5rem'
-            }}
-          >
-            ×
-          </button>
-        </div>
+      <div style={{ marginBottom: spacing.md }}>
+        <p style={combineStyles(textStyles.bodySmall, { margin: 0 })}>
+          {meals.length} meal{meals.length !== 1 ? 's' : ''} planned
+        </p>
+      </div>
 
-        {/* Meals List */}
-        {meals.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem 0', color: '#6b7280' }}>
-            <p style={{ margin: 0, fontSize: '1rem' }}>No meals planned</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-            {meals.map((meal) => {
-              const dishes = meal.dishes || [];
-              return (
-                <div
-                  key={meal.id}
-                  onClick={() => onMealClick(meal)}
-                  style={{
-                    padding: '1.25rem',
-                    backgroundColor: '#f9fafb',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
+      {/* Meals List */}
+      {meals.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: spacing['2xl'], color: colors.gray[500] }}>
+          <p style={combineStyles(textStyles.body, { margin: 0 })}>No meals planned</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md, marginBottom: spacing.lg }}>
+          {meals.map((meal) => {
+            const dishes = meal.dishes || [];
+            return (
+              <div
+                key={meal.id}
+                onClick={() => onMealClick(meal)}
+                style={combineStyles(
+                  cardStyles.base,
+                  {
+                    padding: spacing.lg,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                    e.currentTarget.style.borderColor = '#002B4D';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                    e.currentTarget.style.borderColor = '#e5e7eb';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      {dishes.length === 0 ? (
-                        <p style={{ margin: 0, fontSize: '1rem', color: '#9ca3af', fontStyle: 'italic' }}>
-                          No dishes planned
-                        </p>
-                      ) : dishes.length === 1 ? (
-                        <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: '#1f2937' }}>
-                          {dishes[0].dishName}
+                    transition: 'all 0.2s',
+                    backgroundColor: colors.gray[50],
+                    borderColor: colors.gray[200]
+                  }
+                )}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.gray[100];
+                  e.currentTarget.style.borderColor = colors.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.gray[50];
+                  e.currentTarget.style.borderColor = colors.gray[200];
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    {dishes.length === 0 ? (
+                      <p style={combineStyles(textStyles.body, { margin: 0, color: colors.gray[400], fontStyle: 'italic' })}>
+                        No dishes planned
+                      </p>
+                    ) : dishes.length === 1 ? (
+                      <h3 style={combineStyles(textStyles.heading3, { margin: 0 })}>
+                        {dishes[0].dishName}
+                      </h3>
+                    ) : (
+                      <div>
+                        <h3 style={combineStyles(textStyles.body, { margin: `0 0 ${spacing.sm} 0`, fontWeight: 600, color: colors.gray[500] })}>
+                          {dishes.length} dishes
                         </h3>
-                      ) : (
-                        <div>
-                          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: '600', color: '#6b7280' }}>
-                            {dishes.length} dishes
-                          </h3>
-                          <ul style={{ margin: 0, paddingLeft: '1.5rem', listStyle: 'disc' }}>
-                            {dishes.map((dish) => (
-                              <li key={dish.id} style={{ fontSize: '0.875rem', color: '#1f2937', marginBottom: '0.25rem' }}>
-                                {dish.dishName}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {dishes.length > 0 && (
-                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
-                          {dishes.reduce((total, dish) => total + (dish.recipeIngredients?.length || 0), 0)} total ingredient{dishes.reduce((total, dish) => total + (dish.recipeIngredients?.length || 0), 0) !== 1 ? 's' : ''}
-                        </p>
-                      )}
-                    </div>
-                    {dishes.length > 1 && (
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '12px',
-                          fontWeight: '600',
-                          backgroundColor: '#002B4D',
-                          color: '#ffffff',
-                          marginLeft: '1rem'
-                        }}
-                      >
-                        {dishes.length} dishes
-                      </span>
+                        <ul style={{ margin: 0, paddingLeft: spacing.lg, listStyle: 'disc' }}>
+                          {dishes.map((dish) => (
+                            <li key={dish.id} style={combineStyles(textStyles.bodySmall, { marginBottom: spacing.xs })}>
+                              {dish.dishName}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {dishes.length > 0 && (
+                      <p style={combineStyles(textStyles.bodySmall, { margin: `${spacing.sm} 0 0 0` })}>
+                        {dishes.reduce((total, dish) => total + (dish.recipeIngredients?.length || 0), 0)} total ingredient{dishes.reduce((total, dish) => total + (dish.recipeIngredients?.length || 0), 0) !== 1 ? 's' : ''}
+                      </p>
                     )}
                   </div>
+                  {dishes.length > 1 && (
+                    <span
+                      style={combineStyles(
+                        {
+                          fontSize: '0.75rem',
+                          padding: `${spacing.xs} ${spacing.sm}`,
+                          borderRadius: borderRadius.full,
+                          fontWeight: 600,
+                          backgroundColor: colors.primary,
+                          color: colors.white,
+                          marginLeft: spacing.md
+                        }
+                      )}
+                    >
+                      {dishes.length} dishes
+                    </span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f3f4f6',
-              color: '#1f2937',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            Close
-          </button>
+              </div>
+            );
+          })}
         </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.lg }}>
+        <button
+          onClick={onClose}
+          style={combineStyles(buttonStyles.secondary)}
+        >
+          Close
+        </button>
       </div>
-    </div>
+    </BaseModal>
   );
 };

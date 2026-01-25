@@ -10,6 +10,9 @@ import { recipeImportService, shoppingListsService, shoppingListService } from '
 import type { RecipeSite, RecipeImportResult } from '../../types/recipeImport';
 import type { FoodItem, MealType, ShoppingListItem } from '../../types';
 import { showToast } from '../Toast';
+import { BaseModal } from '../ui/BaseModal';
+import { buttonStyles, combineStyles } from '../../styles/componentStyles';
+import { spacing } from '../../styles/designTokens';
 
 interface AddMealFromRecipeModalProps {
   isOpen: boolean;
@@ -182,9 +185,10 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
         parsedIngredients: recipe.parsedIngredients 
       });
       showToast('Recipe imported successfully', 'success');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error importing recipe:', error);
-      showToast(error.message || 'Failed to import recipe', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import recipe';
+      showToast(errorMessage, 'error');
     } finally {
       setImporting(false);
     }
@@ -225,61 +229,40 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  // Footer buttons for recipe preview
+  const footer = importedRecipe ? (
+    <div style={{ display: 'flex', gap: spacing.md, justifyContent: 'flex-end' }}>
+      <button
+        onClick={() => setImportedRecipe(null)}
+        disabled={saving}
+        style={combineStyles(
+          buttonStyles.secondary,
+          saving && buttonStyles.disabled
+        )}
+      >
+        Back
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={saving || selectedIngredients.size === 0}
+        style={combineStyles(
+          buttonStyles.primary,
+          (saving || selectedIngredients.size === 0) && buttonStyles.disabled
+        )}
+      >
+        {saving ? 'Saving...' : `Save to Meal Planner (${selectedIngredients.size} ingredients)`}
+      </button>
+    </div>
+  ) : undefined;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '1rem'
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add Meal from Recipe"
+      size="large"
+      footer={footer}
     >
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '8px',
-          maxWidth: '700px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Add Meal from Recipe</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem 0.5rem'
-            }}
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Content */}
-        <div style={{ padding: '1.5rem' }}>
           {!importedRecipe ? (
             <>
               {/* Expiring Soon Items Section */}
@@ -652,47 +635,9 @@ export const AddMealFromRecipeModal: React.FC<AddMealFromRecipeModalProps> = ({
                 </div>
               </div>
 
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setImportedRecipe(null)}
-                  disabled={saving}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#f3f4f6',
-                    color: '#1f2937',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: saving ? 'not-allowed' : 'pointer',
-                    opacity: saving ? 0.5 : 1
-                  }}
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || selectedIngredients.size === 0}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: saving || selectedIngredients.size === 0 ? '#9ca3af' : '#002B4D',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: saving || selectedIngredients.size === 0 ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {saving ? 'Saving...' : `Save to Meal Planner (${selectedIngredients.size} ingredients)`}
-                </button>
-              </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </BaseModal>
   );
 };
 

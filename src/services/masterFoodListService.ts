@@ -171,7 +171,7 @@ export async function updateMasterFoodItem(
     const docRef = doc(db, COLLECTION_NAME, id);
     
     // Build update object
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: Timestamp.now(),
       updatedBy: adminEmail,
     };
