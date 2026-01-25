@@ -26,6 +26,24 @@ const QUANTITY_UNITS = [
   { value: 'units', label: 'Units' }
 ] as const;
 
+// Quantity unit options for pantry/dry canned goods
+const PANTRY_UNITS = [
+  // Volume (Cups & larger)
+  { value: 'c', label: 'c (cup)' },
+  { value: 'pt', label: 'pt (pint)' },
+  { value: 'qt', label: 'qt (quart)' },
+  { value: 'gal', label: 'gal (gallon)' },
+  // Weight / Mass - US / Imperial
+  { value: 'oz', label: 'oz (ounce)' },
+  { value: 'lb', label: 'lb (pound)' },
+  // Weight / Mass - Metric
+  { value: 'g', label: 'g (gram)' },
+  { value: 'kg', label: 'kg (kilogram)' },
+  // Volume - Metric
+  { value: 'ml', label: 'ml (milliliter)' },
+  { value: 'l', label: 'L (liter)' }
+] as const;
+
 interface AddItemFormProps {
   onSubmit: (data: FoodItemData, photoFile?: File, noBestBy?: boolean) => Promise<void>;
   onCancel?: () => void;
@@ -49,7 +67,7 @@ interface AddItemFormProps {
   };
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onScanBarcode, initialItem, onCancel, onToss, initialName, forceFreeze, externalIsFrozen, onIsFrozenChange, initialIsDryCanned, foodItems = [], fromShop = false, fromStorageTab = null, scannedLabelData }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, initialItem, onCancel, onToss, initialName, forceFreeze, externalIsFrozen, onIsFrozenChange, initialIsDryCanned, foodItems = [], fromShop = false, fromStorageTab = null, scannedLabelData }) => {
   const [user] = useAuthState(auth);
   const [formData, setFormData] = useState<FoodItemData>({
     name: initialItem?.name || initialName || '',
@@ -64,8 +82,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
     freezeCategory: initialItem?.freezeCategory as FreezeCategory | undefined,
     isDryCanned: initialItem?.isDryCanned ?? initialIsDryCanned
   });
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(initialItem?.photoUrl || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedBestByDate, setSuggestedBestByDate] = useState<Date | null>(null);
   const [qualityMessage, setQualityMessage] = useState<string | null>(null);
@@ -91,7 +107,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -214,7 +229,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
         isFrozen: shouldFreeze,
         freezeCategory: initialItem.freezeCategory as FreezeCategory | undefined
       });
-      setPhotoPreview(initialItem.photoUrl || null);
       setIsFrozenState(shouldFreeze);
       setFreezeCategory(initialItem.freezeCategory as FreezeCategory | null);
       setHasManuallyChangedDate(true); // Don't auto-apply when editing existing item
@@ -394,24 +408,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
   
   // Note: Thaw date is calculated automatically from freeze category, so no manual change handler needed
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      // Track engagement: feature_used (photo upload)
-      if (user) {
-        analyticsService.trackEngagement(user.uid, 'feature_used', {
-          feature: 'photo_upload',
-        });
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent, isDryCannedOverride?: boolean) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
@@ -470,7 +466,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
       };
       
       console.log('💾 Submitting item with isDryCanned:', finalIsDryCanned, 'override:', isDryCannedOverride);
-      await onSubmit(dataToSubmit, photoFile || undefined);
+      await onSubmit(dataToSubmit, undefined);
       
       // Reset form only if not editing
       if (!initialItem) {
@@ -485,14 +481,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           notes: '',
           isFrozen: false
         });
-        setPhotoFile(null);
-        setPhotoPreview(null);
         setIsFrozenState(false);
         setFreezeCategory(null);
         setHasManuallyChangedDate(false); // Reset flag for next item
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -844,7 +835,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               cursor: 'pointer'
             }}
           >
-            {QUANTITY_UNITS.map(unit => (
+            {(formData.isDryCanned ? PANTRY_UNITS : QUANTITY_UNITS).map(unit => (
               <option key={unit.value} value={unit.value}>
                 {unit.label}
               </option>
@@ -1105,7 +1096,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
                 minHeight: '44px'
               }}
             >
-              {isSubmitting ? 'Saving...' : 'Save Dry/Canned Goods'}
+              {isSubmitting ? 'Saving...' : 'Pantry'}
             </button>
           </>
         )}
@@ -1140,78 +1131,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
           </button>
         </div>
       )}
-
-      {/* 6. Photo/Barcode Section */}
-      <div style={{ 
-        paddingTop: '1.5rem', 
-        borderTop: '1px solid #e5e7eb',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        {onScanBarcode && (
-          <button
-            type="button"
-            onClick={() => {
-              // Track engagement: feature_used (barcode scanner)
-              if (user) {
-                analyticsService.trackEngagement(user.uid, 'feature_used', {
-                  feature: 'barcode_scanner',
-                });
-              }
-              onScanBarcode();
-            }}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: '#f3f4f6',
-              color: '#1f2937',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              minHeight: '44px' // Touch target size for mobile
-            }}
-          >
-            📷 Scan Barcode
-          </button>
-        )}
-        
-        <div>
-          <label htmlFor="photo" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.875rem', color: '#6b7280' }}>
-            Take Photo (optional)
-          </label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            id="photo"
-            name="photo"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '0.875rem'
-            }}
-          />
-          {photoPreview && (
-            <img
-              src={photoPreview}
-              alt="Preview"
-              style={{
-                width: '100%',
-                maxWidth: '300px',
-                height: 'auto',
-                marginTop: '0.5rem',
-                borderRadius: '8px'
-              }}
-            />
-          )}
-        </div>
-      </div>
 
       {/* Freeze Warning Modal */}
       {showFreezeWarning && (
