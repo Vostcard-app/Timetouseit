@@ -2,6 +2,7 @@ import { doc, getDocs, collection, query, where, deleteDoc } from 'firebase/fire
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/firebaseConfig';
 import type { UserInfo } from '../types';
+import { aiUsageService } from './aiUsageService';
 
 // Configure admin emails here
 const ADMIN_EMAILS = [
@@ -57,15 +58,35 @@ export const adminService = {
   async getUserStats(userId: string): Promise<{
     foodItemsCount: number;
     userItemsCount: number;
+    tokenUsage?: {
+      totalTokens: number;
+      promptTokens: number;
+      completionTokens: number;
+      requestCount: number;
+    };
   }> {
-    const [foodItems, userItems] = await Promise.all([
+    const [foodItems, userItems, tokenUsage] = await Promise.all([
       getDocs(query(collection(db, 'foodItems'), where('userId', '==', userId))),
       getDocs(query(collection(db, 'userItems'), where('userId', '==', userId))),
+      aiUsageService.getUserTokenUsage(userId).catch(() => ({
+        totalTokens: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+        requestCount: 0,
+        byFeature: {},
+        byModel: {}
+      }))
     ]);
     
     return {
       foodItemsCount: foodItems.size,
       userItemsCount: userItems.size,
+      tokenUsage: {
+        totalTokens: tokenUsage.totalTokens,
+        promptTokens: tokenUsage.promptTokens,
+        completionTokens: tokenUsage.completionTokens,
+        requestCount: tokenUsage.requestCount
+      }
     };
   },
 
@@ -75,12 +96,21 @@ export const adminService = {
     totalFoodItems: number;
     totalShoppingLists: number;
     totalUserItems: number;
+    totalAITokens: number;
+    totalAIRequests: number;
   }> {
-    const [foodItems, shoppingLists, userItems, userSettings] = await Promise.all([
+    const [foodItems, shoppingLists, userItems, userSettings, aiUsage] = await Promise.all([
       getDocs(collection(db, 'foodItems')),
       getDocs(collection(db, 'shoppingLists')),
       getDocs(collection(db, 'userItems')),
       getDocs(collection(db, 'userSettings')),
+      aiUsageService.getAllUsersTokenUsage().catch(() => ({
+        totalTokens: 0,
+        totalRequests: 0,
+        userCount: 0,
+        byFeature: {},
+        byModel: {}
+      }))
     ]);
     
     // Count unique users
@@ -95,6 +125,8 @@ export const adminService = {
       totalFoodItems: foodItems.size,
       totalShoppingLists: shoppingLists.size,
       totalUserItems: userItems.size,
+      totalAITokens: aiUsage.totalTokens,
+      totalAIRequests: aiUsage.totalRequests,
     };
   },
 

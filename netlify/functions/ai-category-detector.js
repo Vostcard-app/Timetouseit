@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { itemName } = body;
+    const { itemName, userId } = body;
 
     if (!itemName || typeof itemName !== 'string' || !itemName.trim()) {
       return {
@@ -145,13 +145,26 @@ Return only valid JSON.`;
       };
     }
 
+    // Extract token usage from OpenAI response
+    const usage = data.usage || null;
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ category })
+      body: JSON.stringify({
+        category,
+        usage: usage ? {
+          promptTokens: usage.prompt_tokens || 0,
+          completionTokens: usage.completion_tokens || 0,
+          totalTokens: usage.total_tokens || 0
+        } : null,
+        userId: userId || null,
+        feature: 'category_detection',
+        model: 'gpt-3.5-turbo'
+      })
     };
   } catch (error) {
     console.error('Error in AI category detector:', error);

@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { imageBase64 } = body;
+    const { imageBase64, userId } = body;
 
     if (!imageBase64 || typeof imageBase64 !== 'string' || !imageBase64.trim()) {
       return {
@@ -164,13 +164,26 @@ Return only valid JSON.`;
       }
     }
 
+    // Extract token usage from OpenAI response
+    const usage = data.usage || null;
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify(result)
+      body: JSON.stringify({
+        ...result,
+        usage: usage ? {
+          promptTokens: usage.prompt_tokens || 0,
+          completionTokens: usage.completion_tokens || 0,
+          totalTokens: usage.total_tokens || 0
+        } : null,
+        userId: userId || null,
+        feature: 'label_scanning',
+        model: 'gpt-4o-mini'
+      })
     };
   } catch (error) {
     console.error('Error in AI label scanner:', error);

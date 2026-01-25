@@ -229,7 +229,7 @@ exports.handler = async (event) => {
 
         if (shouldUseAI && process.env.OPENAI_API_KEY) {
           console.log(isPremium ? 'Premium user: Parsing all ingredients with AI' : 'Parsing ingredient quantities with AI');
-          const parsedResult = await parseIngredientQuantities(recipeData.ingredients, isPremium);
+          const parsedResult = await parseIngredientQuantities(recipeData.ingredients, isPremium, userId);
           if (parsedResult && parsedResult.parsedIngredients && parsedResult.parsedIngredients.length > 0) {
             // Replace ingredients with parsed versions
             recipeData.ingredients = parsedResult.parsedIngredients.map(parsed => {
@@ -247,6 +247,10 @@ exports.handler = async (event) => {
             });
             // Also store structured data for easier access
             recipeData.parsedIngredients = parsedResult.parsedIngredients;
+            // Include usage data if available
+            if (parsedResult.usage) {
+              recipeData.usage = parsedResult.usage;
+            }
             console.log('AI parsing successful:', {
               ingredientsCount: recipeData.ingredients.length,
               parsedIngredientsCount: recipeData.parsedIngredients.length,
@@ -596,7 +600,7 @@ Return only valid JSON.`;
  * @param ingredients - Array of ingredient strings
  * @param isPremium - Whether user is premium (enhanced parsing)
  */
-async function parseIngredientQuantities(ingredients, isPremium = false) {
+async function parseIngredientQuantities(ingredients, isPremium = false, userId = null) {
   if (!process.env.OPENAI_API_KEY) {
     return null;
   }
@@ -684,7 +688,21 @@ Return only valid JSON.`;
       return null;
     }
 
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    
+    // Include usage data if available
+    if (data.usage) {
+      parsed.usage = {
+        promptTokens: data.usage.prompt_tokens || 0,
+        completionTokens: data.usage.completion_tokens || 0,
+        totalTokens: data.usage.total_tokens || 0,
+        userId: userId,
+        feature: 'ingredient_parsing',
+        model: 'gpt-3.5-turbo'
+      };
+    }
+    
+    return parsed;
   } catch (error) {
     console.error('AI ingredient parser error:', error);
     return null;

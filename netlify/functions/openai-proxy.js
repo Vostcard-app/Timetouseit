@@ -37,7 +37,9 @@ exports.handler = async (event) => {
       messages, 
       model = 'gpt-3.5-turbo', 
       temperature = 0.7, 
-      response_format 
+      response_format,
+      userId,
+      feature
     } = body;
 
     if (!process.env.OPENAI_API_KEY) {
@@ -93,13 +95,27 @@ exports.handler = async (event) => {
     }
 
     const data = await response.json();
+    
+    // Include usage data in response if available
+    const responseData = { ...data };
+    if (data.usage && userId && feature) {
+      responseData.usageData = {
+        promptTokens: data.usage.prompt_tokens || 0,
+        completionTokens: data.usage.completion_tokens || 0,
+        totalTokens: data.usage.total_tokens || 0,
+        userId: userId,
+        feature: feature,
+        model: model
+      };
+    }
+    
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(responseData)
     };
   } catch (error) {
     console.error('Error in OpenAI proxy:', error);

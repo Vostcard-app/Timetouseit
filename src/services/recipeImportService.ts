@@ -9,6 +9,7 @@ import { recipeSiteService } from './recipeSiteService';
 import { foodItemService } from './foodItemService';
 import { shoppingListService } from './shoppingListService';
 import { userSettingsService } from './userSettingsService';
+import { aiUsageService } from './aiUsageService';
 import { logServiceOperation, logServiceError } from './baseService';
 import { parseIngredientQuantity, normalizeItemName } from '../utils/ingredientQuantityParser';
 
@@ -54,6 +55,23 @@ export const recipeImportService = {
       }
 
       const data = await response.json();
+      
+      // Record token usage if available
+      if (data.usage && userId) {
+        try {
+          await aiUsageService.recordAIUsage(userId, {
+            feature: 'ingredient_parsing',
+            model: 'gpt-3.5-turbo',
+            promptTokens: data.usage.promptTokens || 0,
+            completionTokens: data.usage.completionTokens || 0,
+            totalTokens: data.usage.totalTokens || 0
+          });
+        } catch (usageError) {
+          // Don't fail the request if usage recording fails
+          console.error('Failed to record AI usage:', usageError);
+        }
+      }
+      
       return data;
     } catch (error) {
       logServiceError('importRecipe', 'recipeImport', error, { url, userId });

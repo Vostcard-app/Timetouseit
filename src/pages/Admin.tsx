@@ -32,6 +32,12 @@ interface UserInfo {
   username?: string;
   foodItemsCount: number;
   userItemsCount: number;
+  tokenUsage?: {
+    totalTokens: number;
+    promptTokens: number;
+    completionTokens: number;
+    requestCount: number;
+  };
 }
 
 const Admin: React.FC = () => {
@@ -45,6 +51,8 @@ const Admin: React.FC = () => {
     totalFoodItems: 0,
     totalShoppingLists: 0,
     totalUserItems: 0,
+    totalAITokens: 0,
+    totalAIRequests: 0,
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -258,6 +266,7 @@ const Admin: React.FC = () => {
             username: username,
             foodItemsCount: 0,
             userItemsCount: 0,
+            tokenUsage: undefined,
           });
         }
       }
@@ -713,6 +722,26 @@ const Admin: React.FC = () => {
             }}>
               <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Total User Items</div>
               <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{systemStats.totalUserItems}</div>
+            </div>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Total AI Tokens</div>
+              <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{systemStats.totalAITokens.toLocaleString()}</div>
+            </div>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Total AI Requests</div>
+              <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{systemStats.totalAIRequests.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -2047,7 +2076,7 @@ const Admin: React.FC = () => {
             }}>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr',
+                gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr',
                 gap: '1rem',
                 padding: '1rem',
                 backgroundColor: '#f9fafb',
@@ -2061,6 +2090,8 @@ const Admin: React.FC = () => {
                 <div>Email</div>
                 <div style={{ textAlign: 'center' }}>Food Items</div>
                 <div style={{ textAlign: 'center' }}>User Items</div>
+                <div style={{ textAlign: 'center' }}>AI Tokens</div>
+                <div style={{ textAlign: 'center' }}>AI Requests</div>
                 <div style={{ textAlign: 'center' }}>Actions</div>
               </div>
               {users.map((userInfo) => (
@@ -2068,7 +2099,7 @@ const Admin: React.FC = () => {
                   key={userInfo.uid}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr',
+                    gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr',
                     gap: '1rem',
                     padding: '1rem',
                     borderBottom: '1px solid #e5e7eb',
@@ -2086,6 +2117,12 @@ const Admin: React.FC = () => {
                   </div>
                   <div style={{ textAlign: 'center', color: '#6b7280' }}>{userInfo.foodItemsCount}</div>
                   <div style={{ textAlign: 'center', color: '#6b7280' }}>{userInfo.userItemsCount}</div>
+                  <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
+                    {userInfo.tokenUsage ? userInfo.tokenUsage.totalTokens.toLocaleString() : '0'}
+                  </div>
+                  <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
+                    {userInfo.tokenUsage ? userInfo.tokenUsage.requestCount.toLocaleString() : '0'}
+                  </div>
                   <div style={{ textAlign: 'center' }}>
                     <button
                       onClick={() => handleDeleteUser(userInfo.uid)}

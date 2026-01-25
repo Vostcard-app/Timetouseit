@@ -149,5 +149,15 @@ service cloud.firestore {
       // Allow collection-level queries for everyone
       allow list: if true;
     }
+
+    // AI Usage - users can read their own, admins can read all, authenticated users can write
+    match /aiUsage/{usageId} {
+      // Users can read their own usage records
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Authenticated users can create their own usage records
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Allow admins to list all AI usage records
+      allow list: if request.auth != null && isAdmin();
+    }
   }
 }

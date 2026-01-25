@@ -74,3 +74,11 @@ export type {
   FavoriteRecipe,
   FavoriteRecipeData
 } from './favoriteRecipe';
+
+// AI Usage Types
+export type {
+  AIFeature,
+  AIUsageRecord,
+  AIUsageData,
+  AggregatedTokenUsage
+} from './aiUsage';

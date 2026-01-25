@@ -4,6 +4,7 @@
  */
 
 import { userSettingsService } from './userSettingsService';
+import { aiUsageService } from './aiUsageService';
 import { logServiceOperation, logServiceError } from './baseService';
 import type { LabelScanResult } from '../types/labelScanner';
 
@@ -57,7 +58,7 @@ export const labelScannerService = {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ imageBase64 })
+        body: JSON.stringify({ imageBase64, userId })
       });
 
       if (!response.ok) {
@@ -78,6 +79,22 @@ export const labelScannerService = {
       if (result.expirationDate && isNaN(result.expirationDate.getTime())) {
         console.warn('Invalid expiration date received, setting to null');
         result.expirationDate = null;
+      }
+
+      // Record token usage if available
+      if (data.usage && userId) {
+        try {
+          await aiUsageService.recordAIUsage(userId, {
+            feature: 'label_scanning',
+            model: 'gpt-4o-mini',
+            promptTokens: data.usage.promptTokens || 0,
+            completionTokens: data.usage.completionTokens || 0,
+            totalTokens: data.usage.totalTokens || 0
+          });
+        } catch (usageError) {
+          // Don't fail the request if usage recording fails
+          console.error('Failed to record AI usage:', usageError);
+        }
       }
 
       logServiceOperation('scanLabel', 'labelScannerService', { 

@@ -4,6 +4,7 @@
  */
 
 import { userSettingsService } from './userSettingsService';
+import { aiUsageService } from './aiUsageService';
 import { detectCategory, type FoodCategory } from '../utils/categoryUtils';
 import { logServiceOperation, logServiceError } from './baseService';
 
@@ -37,7 +38,7 @@ export const categoryService = {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ itemName: itemName.trim() })
+          body: JSON.stringify({ itemName: itemName.trim(), userId })
         });
 
         if (response.ok) {
@@ -46,6 +47,22 @@ export const categoryService = {
             // Validate category is one of the allowed values
             const validCategories: FoodCategory[] = ['Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Leftovers', 'Other'];
             if (validCategories.includes(data.category as FoodCategory)) {
+              // Record token usage if available
+              if (data.usage && userId) {
+                try {
+                  await aiUsageService.recordAIUsage(userId, {
+                    feature: 'category_detection',
+                    model: 'gpt-3.5-turbo',
+                    promptTokens: data.usage.promptTokens || 0,
+                    completionTokens: data.usage.completionTokens || 0,
+                    totalTokens: data.usage.totalTokens || 0
+                  });
+                } catch (usageError) {
+                  // Don't fail the request if usage recording fails
+                  console.error('Failed to record AI usage:', usageError);
+                }
+              }
+              
               logServiceOperation('detectCategoryWithAI', 'categoryService', { 
                 itemName, 
                 category: data.category, 

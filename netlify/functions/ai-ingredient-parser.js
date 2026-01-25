@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { ingredients } = body;
+    const { ingredients, userId } = body;
 
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
       return {
@@ -155,6 +155,9 @@ Return only valid JSON.`;
 
     const parsed = JSON.parse(content);
     
+    // Extract token usage from OpenAI response
+    const usage = data.usage || null;
+    
     return {
       statusCode: 200,
       headers: {
@@ -162,7 +165,15 @@ Return only valid JSON.`;
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        parsedIngredients: parsed.parsedIngredients || []
+        parsedIngredients: parsed.parsedIngredients || [],
+        usage: usage ? {
+          promptTokens: usage.prompt_tokens || 0,
+          completionTokens: usage.completion_tokens || 0,
+          totalTokens: usage.total_tokens || 0
+        } : null,
+        userId: userId || null,
+        feature: 'ingredient_parsing',
+        model: 'gpt-3.5-turbo'
       })
     };
   } catch (error) {

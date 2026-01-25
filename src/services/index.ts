@@ -13,6 +13,7 @@ export { userCategoriesService } from './userCategoriesService';
 export { adminService } from './adminService';
 export { analyticsService } from './analyticsService';
 export { analyticsAggregationService } from './analyticsAggregationService';
+export { aiUsageService } from './aiUsageService';
 export { barcodeService } from './barcodeService';
 export { findFoodItems } from './foodkeeperService';
 export * from './masterFoodListService';
