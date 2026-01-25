@@ -63,11 +63,14 @@ service cloud.firestore {
 
     // Favorite Recipes - users can only access their own, admins can read all
     match /favoriteRecipes/{recipeId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
-      // Allow authenticated users to query (Firestore validates where clauses match auth.uid)
+      // Allow users to get their own documents, admins can get all
+      allow get: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Allow authenticated users to list/query (where clause ensures userId == auth.uid)
       allow list: if request.auth != null;
+      // Allow users to create their own documents
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Allow users to update/delete their own documents, admins can do all
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
     // Analytics Events collection
