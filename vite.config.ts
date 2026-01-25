@@ -11,7 +11,7 @@ export default defineConfig({
       devOptions: {
         enabled: false, // Disable service worker in dev mode to prevent caching issues
       },
-      includeAssets: ['icons/*.png', 'vite.svg', 'timetouseit logo.jpg'],
+      includeAssets: ['icons/*.png', 'icons/*.svg', 'vite.svg', 'timetouseit logo.jpg'],
       manifest: {
         name: 'TimeToUseIt - Food Best By Date Tracker',
         short_name: 'TimeToUseIt',
