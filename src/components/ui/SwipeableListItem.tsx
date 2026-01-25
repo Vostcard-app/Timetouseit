@@ -478,31 +478,13 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                 title="AI"
                 type="button"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{ display: 'inline-block', verticalAlign: 'middle' }}
-                >
-                  {/* Top-left corner bracket */}
-                  <path d="M4 4V8H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* Top-right corner bracket */}
-                  <path d="M20 4V8H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* Bottom-left corner bracket */}
-                  <path d="M4 20V16H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* Bottom-right corner bracket */}
-                  <path d="M20 20V16H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* Barcode pattern - vertical lines of varying widths */}
-                  <line x1="8" y1="8" x2="8" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="10" y1="8" x2="10" y2="16" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-                  <line x1="11.5" y1="8" x2="11.5" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="13" y1="8" x2="13" y2="16" stroke="currentColor" strokeWidth="0.75" strokeLinecap="round"/>
-                  <line x1="14" y1="8" x2="14" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="15.5" y1="8" x2="15.5" y2="16" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-                  <line x1="16.5" y1="8" x2="16.5" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+                <img 
+                  src="/icons/Scan.jpg" 
+                  alt="Scan" 
+                  width="20" 
+                  height="20" 
+                  style={{ display: 'inline-block', verticalAlign: 'middle' }} 
+                />
               </button>
             )}
             {/* Only show Freeze button for non-dry/canned items that aren't already frozen */}
