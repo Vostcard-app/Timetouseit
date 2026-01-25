@@ -302,7 +302,7 @@ export const mealPlanningService = {
           weekStartDate: data.weekStartDate.toDate(),
           meals: data.meals.map((meal: DocumentData) => {
             const normalizedMeal: PlannedMeal = {
-              ...meal,
+              ...(meal as PlannedMeal),
               date: startOfDay(meal.date.toDate()) // Normalize to start of day for consistent comparison
             };
             // Migrate legacy meals to nested dishes structure

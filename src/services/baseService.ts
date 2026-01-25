@@ -4,17 +4,95 @@
  */
 
 import type { QuerySnapshot, DocumentData } from 'firebase/firestore';
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { Timestamp, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
-import {
-  handleSubscriptionError,
-  cleanFirestoreData,
-  transformDocument,
-  transformSnapshot,
-  logServiceOperation,
-  logServiceError
-} from './baseService';
-import { toServiceError, FirestoreError } from './errors';
+import { toServiceError } from './errors';
+
+/**
+ * Transform Firestore document to typed object with date conversion
+ */
+export function transformDocument<T>(doc: { id: string; data: () => DocumentData }, dateFields: string[] = []): T {
+  const data = doc.data();
+  const result: Record<string, unknown> = { id: doc.id };
+
+  Object.keys(data).forEach(key => {
+    const value = data[key];
+    
+    // Convert Timestamps to Dates for specified date fields
+    if (dateFields.includes(key) && value && typeof value === 'object' && 'toDate' in value) {
+      result[key] = (value as Timestamp).toDate();
+    } else {
+      result[key] = value;
+    }
+  });
+
+  return result as T;
+}
+
+/**
+ * Transform Firestore snapshot to typed array
+ */
+export function transformSnapshot<T>(snapshot: QuerySnapshot<DocumentData>, dateFields: string[] = []): T[] {
+  return snapshot.docs.map(doc => transformDocument<T>(doc, dateFields));
+}
+
+/**
+ * Clean Firestore data by removing undefined values
+ */
+export function cleanFirestoreData(data: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  
+  Object.keys(data).forEach(key => {
+    const value = data[key];
+    if (value !== undefined) {
+      // Convert Date objects to Timestamps
+      if (value instanceof Date) {
+        cleaned[key] = Timestamp.fromDate(value);
+      } else {
+        cleaned[key] = value;
+      }
+    }
+  });
+  
+  return cleaned;
+}
+
+/**
+ * Log service operation
+ */
+export function logServiceOperation(operation: string, collectionName: string, context?: Record<string, unknown>): void {
+  if (import.meta.env.DEV) {
+    console.log(`[${collectionName}] ${operation}`, context || '');
+  }
+}
+
+/**
+ * Log service error
+ */
+export function logServiceError(operation: string, collectionName: string, error: unknown, context?: Record<string, unknown>): void {
+  console.error(`[${collectionName}] ${operation} error:`, error, context || '');
+}
+
+/**
+ * Handle subscription errors with fallback
+ */
+export function handleSubscriptionError(
+  error: unknown,
+  collectionName: string,
+  userId?: string,
+  fallbackQuery?: () => QuerySnapshot<DocumentData> | Promise<QuerySnapshot<DocumentData>>,
+  fallbackCallback?: (snapshot: QuerySnapshot<DocumentData>) => void
+): void {
+  logServiceError('subscription', collectionName, error, { userId });
+  
+  if (fallbackQuery && fallbackCallback) {
+    Promise.resolve(fallbackQuery())
+      .then(snapshot => fallbackCallback(snapshot))
+      .catch(fallbackError => {
+        console.error(`[${collectionName}] Fallback query failed:`, fallbackError);
+      });
+  }
+}
 
 export interface ServiceOptions {
   dateFields?: string[];

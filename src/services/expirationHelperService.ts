@@ -63,7 +63,7 @@ export async function getExpirationSuggestion(
     logServiceError('getExpirationSuggestion', 'expirationHelper', error, { itemName, storageType });
     return {
       success: false,
-      error: error?.message || 'Failed to get best by date suggestion. Please try again.'
+      error: error instanceof Error ? error.message : 'Failed to get best by date suggestion. Please try again.'
     };
   }
 }

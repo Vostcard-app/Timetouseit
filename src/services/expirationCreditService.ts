@@ -87,7 +87,7 @@ export async function useCredit(): Promise<UseCreditResult> {
       success: false,
       usedFree: false,
       remaining: currentCredits,
-      error: error?.message || 'Failed to use credit'
+      error: error instanceof Error ? error.message : 'Failed to use credit'
     };
   }
 }

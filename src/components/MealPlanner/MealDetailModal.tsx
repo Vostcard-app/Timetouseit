@@ -103,86 +103,6 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
   const displayName = currentDish.dishName;
   const truncatedDisplayName = smartTruncate(displayName, 60);
 
-  // Footer buttons based on mode
-  const footer = (
-    <div style={{ display: 'flex', gap: spacing.md, justifyContent: 'flex-end' }}>
-      {isEditing ? (
-        <>
-          <button
-            onClick={handleCancelEdit}
-            disabled={saving}
-            style={combineStyles(
-              buttonStyles.secondary,
-              saving && buttonStyles.disabled
-            )}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={combineStyles(
-              buttonStyles.primary,
-              saving && buttonStyles.disabled
-            )}
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </>
-      ) : isPreparing ? (
-        <>
-          <button
-            onClick={handleCancelPreparing}
-            disabled={preparing}
-            style={combineStyles(
-              buttonStyles.secondary,
-              preparing && buttonStyles.disabled
-            )}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirmPrepared}
-            disabled={preparing}
-            style={combineStyles(
-              buttonStyles.success,
-              preparing && buttonStyles.disabled
-            )}
-          >
-            {preparing ? 'Preparing...' : 'Confirm Prepared'}
-          </button>
-        </>
-      ) : (
-        <>
-          {!meal.completed && (
-            <button
-              onClick={handlePrepared}
-              style={buttonStyles.success}
-            >
-              Prepared
-            </button>
-          )}
-          <button
-            onClick={handleEdit}
-            style={buttonStyles.secondary}
-          >
-            Edit
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            style={combineStyles(
-              buttonStyles.danger,
-              deleting && buttonStyles.disabled
-            )}
-          >
-            {deleting ? 'Deleting...' : 'Delete'}
-          </button>
-        </>
-      )}
-    </div>
-  );
-
   // Initialize edit state when dish changes
   useEffect(() => {
     if (currentDish) {
@@ -578,7 +498,7 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       onClose();
     } catch (error: unknown) {
       console.error('[handleDelete] Error deleting dish:', error);
-      const errorMessage = error?.message || 'Unknown error occurred';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('[handleDelete] Error details:', {
         errorMessage,
         dishId: currentDish.id,
@@ -693,6 +613,86 @@ export const MealDetailModal: React.FC<MealDetailModalProps> = ({
       setPreparing(false);
     }
   };
+
+  // Footer buttons based on mode
+  const footer = (
+    <div style={{ display: 'flex', gap: spacing.md, justifyContent: 'flex-end' }}>
+      {isEditing ? (
+        <>
+          <button
+            onClick={handleCancelEdit}
+            disabled={saving}
+            style={combineStyles(
+              buttonStyles.secondary,
+              saving && buttonStyles.disabled
+            )}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={combineStyles(
+              buttonStyles.primary,
+              saving && buttonStyles.disabled
+            )}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </>
+      ) : isPreparing ? (
+        <>
+          <button
+            onClick={handleCancelPreparing}
+            disabled={preparing}
+            style={combineStyles(
+              buttonStyles.secondary,
+              preparing && buttonStyles.disabled
+            )}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmPrepared}
+            disabled={preparing}
+            style={combineStyles(
+              buttonStyles.success,
+              preparing && buttonStyles.disabled
+            )}
+          >
+            {preparing ? 'Preparing...' : 'Confirm Prepared'}
+          </button>
+        </>
+      ) : (
+        <>
+          {!meal.completed && (
+            <button
+              onClick={handlePrepared}
+              style={buttonStyles.success}
+            >
+              Prepared
+            </button>
+          )}
+          <button
+            onClick={handleEdit}
+            style={buttonStyles.secondary}
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            style={combineStyles(
+              buttonStyles.danger,
+              deleting && buttonStyles.disabled
+            )}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <BaseModal

@@ -11,7 +11,7 @@ import { colors, spacing, zIndex } from '../../styles/designTokens';
 export interface BaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
+  title?: string | React.ReactNode;
   children: React.ReactNode;
   size?: 'small' | 'medium' | 'large' | 'full';
   showCloseButton?: boolean;

@@ -16,11 +16,9 @@ import { MealTypeSelectionModal } from '../components/MealPlanner/MealTypeSelect
 import { DayMealsModal } from '../components/MealPlanner/DayMealsModal';
 import { DishListModal } from '../components/MealPlanner/DishListModal';
 import { MealSelectionModal } from '../components/MealPlanner/MealSelectionModal';
-import { CalendarNavigation } from '../components/calendar/CalendarNavigation';
-import { CalendarGrid } from '../components/calendar/CalendarGrid';
 import { CalendarNavigation } from '../components/MealPlanner/CalendarNavigation';
 import { CalendarGrid } from '../components/MealPlanner/CalendarGrid';
-import { addDays, startOfWeek, format, isSameDay, startOfDay } from 'date-fns';
+import { addDays, startOfWeek, format, isSameDay, startOfDay, startOfMonth, endOfMonth, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import type { PlannedMealCalendarLocationState } from '../types/navigation';
@@ -264,22 +262,22 @@ const PlannedMealCalendar: React.FC = () => {
     return meals;
   }, [mealPlans]);
 
-  // Create meals by day map for CalendarGrid
-  const mealsByDayMap = useMemo(() => {
-    const map = new Map<string, PlannedMeal[]>();
-    allPlannedMeals.forEach(meal => {
-      const dayKey = startOfDay(meal.date).toISOString().split('T')[0];
-      if (!map.has(dayKey)) {
-        map.set(dayKey, []);
-      }
-      const dayMeals = map.get(dayKey)!;
-      // Only include meals with dishes
-      if (meal.dishes && meal.dishes.length > 0) {
-        dayMeals.push(meal);
-      }
-    });
-    return map;
-  }, [allPlannedMeals]);
+  // Create meals by day map for CalendarGrid (kept for potential future use)
+  // const mealsByDayMap = useMemo(() => {
+  //   const map = new Map<string, PlannedMeal[]>();
+  //   allPlannedMeals.forEach(meal => {
+  //     const dayKey = startOfDay(meal.date).toISOString().split('T')[0];
+  //     if (!map.has(dayKey)) {
+  //       map.set(dayKey, []);
+  //     }
+  //     const dayMeals = map.get(dayKey)!;
+  //     // Only include meals with dishes
+  //     if (meal.dishes && meal.dishes.length > 0) {
+  //       dayMeals.push(meal);
+  //     }
+  //   });
+  //   return map;
+  // }, [allPlannedMeals]);
 
   // Get meals for a specific day
   const getMealsForDay = (date: Date): PlannedMeal[] => {
@@ -741,15 +739,13 @@ const PlannedMealCalendar: React.FC = () => {
         {/* Navigation and View Controls */}
         <CalendarNavigation
           currentDate={currentDate}
-          onNavigate={navigatePeriod}
-          onListClick={() => navigate(`/print-meal-list?date=${format(currentDate, 'yyyy-MM-dd')}`)}
+          onNavigatePeriod={navigatePeriod}
         />
 
         {/* Calendar Grid */}
         <CalendarGrid
           currentDate={currentDate}
-          monthDays={monthCalendarDays}
-          mealsByDay={mealsByDayMap}
+          allPlannedMeals={allPlannedMeals}
           isDragging={isDragging}
           draggedMeal={draggedMeal}
           dragOverDate={dragOverDate}
@@ -760,6 +756,7 @@ const PlannedMealCalendar: React.FC = () => {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           canDropMeal={canDropMeal}
+          getMealsForDay={getMealsForDay}
         />
 
         {/* Legend */}
