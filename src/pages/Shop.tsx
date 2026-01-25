@@ -886,8 +886,8 @@ const Shop: React.FC = () => {
                   type="button"
                   onClick={handleAddItemScanClick}
                   style={{
-                    padding: '0.5rem',
-                    backgroundColor: '#10b981',
+                    padding: '0.25rem',
+                    backgroundColor: '#48a13b',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -1195,8 +1195,8 @@ const Shop: React.FC = () => {
                           handleScanLabel(item);
                         }}
                         style={{
-                          padding: '0.5rem',
-                          backgroundColor: '#10b981',
+                          padding: '0.25rem',
+                          backgroundColor: '#48a13b',
                           color: 'white',
                           border: 'none',
                           borderRadius: '6px',

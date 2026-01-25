@@ -530,8 +530,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
               type="button"
               onClick={handleScanClick}
               style={{
-                padding: '0.5rem',
-                backgroundColor: '#10b981',
+                padding: '0.25rem',
+                backgroundColor: '#48a13b',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
