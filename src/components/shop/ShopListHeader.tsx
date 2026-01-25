@@ -205,7 +205,8 @@ export const ShopListHeader: React.FC<ShopListHeaderProps> = ({
                   width: '42px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  overflow: 'hidden'
                 }
               )}
               aria-label="AI"

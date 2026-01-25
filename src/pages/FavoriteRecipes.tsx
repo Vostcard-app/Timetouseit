@@ -75,7 +75,7 @@ const FavoriteRecipes: React.FC = () => {
   if (loading) {
     return (
       <>
-        <Banner onMenuClick={() => setMenuOpen(true)} />
+        <Banner showHomeIcon={true} showLogo={false} onMenuClick={() => setMenuOpen(true)} />
         <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
         <div style={{ padding: '2rem', textAlign: 'center' }}>
           <p>Loading favorite recipes...</p>
@@ -86,7 +86,7 @@ const FavoriteRecipes: React.FC = () => {
 
   return (
     <>
-      <Banner onMenuClick={() => setMenuOpen(true)} />
+      <Banner showHomeIcon={true} showLogo={false} onMenuClick={() => setMenuOpen(true)} />
       <HamburgerMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem' }}>
@@ -108,9 +108,45 @@ const FavoriteRecipes: React.FC = () => {
                   border: '1px solid #e5e7eb',
                   borderRadius: '8px',
                   padding: '1.5rem',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  position: 'relative'
                 }}
               >
+                {/* Delete icon in top right corner */}
+                <button
+                  onClick={() => handleDeleteRecipe(recipe.id)}
+                  style={{
+                    position: 'absolute',
+                    top: '0.75rem',
+                    right: '0.75rem',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#6b7280',
+                    fontSize: '1.25rem',
+                    lineHeight: 1,
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '4px',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.color = '#ef4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#6b7280';
+                  }}
+                  aria-label="Delete recipe"
+                  title="Delete recipe"
+                >
+                  ×
+                </button>
                 <div style={{ marginBottom: '1rem' }}>
                   <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>
                     {recipe.recipeTitle || recipe.dishName}
@@ -127,14 +163,15 @@ const FavoriteRecipes: React.FC = () => {
                         });
                       }}
                       style={{
-                        fontSize: '0.875rem',
-                        color: '#3b82f6',
-                        textDecoration: 'none',
-                        background: 'none',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#002B4D',
+                        color: 'white',
                         border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
                         cursor: 'pointer',
-                        padding: 0,
-                        textAlign: 'left'
+                        marginTop: '0.5rem'
                       }}
                     >
                       Select a date
@@ -176,21 +213,6 @@ const FavoriteRecipes: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => handleDeleteRecipe(recipe.id)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Delete
-                  </button>
                   <button
                     onClick={() => handlePlanRecipe(recipe)}
                     style={{

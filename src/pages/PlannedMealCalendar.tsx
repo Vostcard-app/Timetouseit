@@ -169,7 +169,8 @@ const PlannedMealCalendar: React.FC = () => {
             return filtered;
           });
           
-          // Track initial load for this week (only count once per week)
+          // Track initial load for this week (even if plan is null due to error)
+          // This ensures loading state is cleared even when subscription fails
           if (!loadedWeeksRef.current.has(weekKey)) {
             loadedWeeksRef.current.add(weekKey);
             if (loadedWeeksRef.current.size === totalWeeks) {
@@ -671,14 +672,14 @@ const PlannedMealCalendar: React.FC = () => {
         backgroundColor: '#ffffff',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
-        <Banner showHomeIcon={true} showLogo={false} onMenuClick={() => setMenuOpen(true)} />
+        <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
 
         {/* Lists, Items, and Plan Buttons */}
-        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center', position: 'relative' }}>
+        <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
           <button
             onClick={() => navigate('/shop')}
             style={{
-              padding: '0.75rem 2rem',
+              padding: '0.75rem 1.5rem',
               backgroundColor: '#f3f4f6',
               color: '#1f2937',
               border: '1px solid #d1d5db',
@@ -686,8 +687,7 @@ const PlannedMealCalendar: React.FC = () => {
               fontSize: '1rem',
               fontWeight: '500',
               cursor: 'pointer',
-              minHeight: '44px',
-              minWidth: '120px'
+              minHeight: '44px'
             }}
           >
             Lists
@@ -695,7 +695,7 @@ const PlannedMealCalendar: React.FC = () => {
           <button
             onClick={() => navigate('/dashboard')}
             style={{
-              padding: '0.75rem 2rem',
+              padding: '0.75rem 1.5rem',
               backgroundColor: '#f3f4f6',
               color: '#1f2937',
               border: '1px solid #d1d5db',
@@ -703,8 +703,7 @@ const PlannedMealCalendar: React.FC = () => {
               fontSize: '1rem',
               fontWeight: '500',
               cursor: 'pointer',
-              minHeight: '44px',
-              minWidth: '120px'
+              minHeight: '44px'
             }}
           >
             Items
@@ -715,16 +714,16 @@ const PlannedMealCalendar: React.FC = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             style={{
-              padding: '0.75rem 2rem',
+              padding: '0.75rem 1.5rem',
               backgroundColor: '#002B4D',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
+              fontSize: '1.25rem',
+              fontWeight: '600',
               cursor: 'pointer',
               minHeight: '44px',
-              minWidth: '120px'
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
           >
             Plan

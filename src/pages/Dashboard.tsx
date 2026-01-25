@@ -385,14 +385,14 @@ const Dashboard: React.FC = () => {
         backgroundColor: '#ffffff',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
       }}>
-        <Banner onMenuClick={() => setMenuOpen(true)} />
+        <Banner showHomeIcon={false} onMenuClick={() => setMenuOpen(true)} maxWidth="1400px" />
 
         {/* Lists, Items, and Plan Buttons */}
-        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+        <div style={{ padding: '1rem', maxWidth: '1400px', margin: '0 auto', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
           <button
             onClick={() => navigate('/shop')}
             style={{
-              padding: '0.75rem 2rem',
+              padding: '0.75rem 1.5rem',
               backgroundColor: '#f3f4f6',
               color: '#1f2937',
               border: '1px solid #d1d5db',
@@ -400,8 +400,7 @@ const Dashboard: React.FC = () => {
               fontSize: '1rem',
               fontWeight: '500',
               cursor: 'pointer',
-              minHeight: '44px',
-              minWidth: '120px'
+              minHeight: '44px'
             }}
           >
             Lists
@@ -412,16 +411,16 @@ const Dashboard: React.FC = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             style={{
-              padding: '0.75rem 2rem',
+              padding: '0.75rem 1.5rem',
               backgroundColor: '#002B4D',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: '500',
+              fontSize: '1.25rem',
+              fontWeight: '600',
               cursor: 'pointer',
               minHeight: '44px',
-              minWidth: '120px'
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
           >
             Items
@@ -429,7 +428,7 @@ const Dashboard: React.FC = () => {
           <button
             onClick={() => navigate('/planned-meal-calendar')}
             style={{
-              padding: '0.75rem 2rem',
+              padding: '0.75rem 1.5rem',
               backgroundColor: '#f3f4f6',
               color: '#1f2937',
               border: '1px solid #d1d5db',
@@ -437,8 +436,7 @@ const Dashboard: React.FC = () => {
               fontSize: '1rem',
               fontWeight: '500',
               cursor: 'pointer',
-              minHeight: '44px',
-              minWidth: '120px'
+              minHeight: '44px'
             }}
           >
             Plan
