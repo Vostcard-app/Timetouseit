@@ -897,8 +897,8 @@ const Shop: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: '44px',
-                    minHeight: '44px'
+                    height: '42px',
+                    width: '42px'
                   }}
                   aria-label="AI"
                   title="AI"

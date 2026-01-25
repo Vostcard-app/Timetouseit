@@ -471,8 +471,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  minWidth: '44px',
-                  minHeight: '36px'
+                  width: '44px',
+                  height: '36px'
                 }}
                 aria-label="AI"
                 title="AI"
