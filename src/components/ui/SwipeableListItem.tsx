@@ -474,8 +474,8 @@ const SwipeableListItem: React.FC<SwipeableListItemProps> = React.memo(({ item, 
                   minWidth: '44px',
                   minHeight: '36px'
                 }}
-                aria-label="Scan label"
-                title="Scan label with AI"
+                aria-label="AI"
+                title="AI"
                 type="button"
               >
                 <svg

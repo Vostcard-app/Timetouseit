@@ -544,8 +544,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, onS
                 minWidth: '44px',
                 minHeight: '44px'
               }}
-              aria-label="Scan label"
-              title="Scan label with AI"
+              aria-label="AI"
+              title="AI"
             >
               <svg
                 width="20"

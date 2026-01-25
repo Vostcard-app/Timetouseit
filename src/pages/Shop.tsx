@@ -900,8 +900,8 @@ const Shop: React.FC = () => {
                     minWidth: '44px',
                     minHeight: '44px'
                   }}
-                  aria-label="Scan label to add item"
-                  title="Scan label with AI to add item"
+                  aria-label="AI"
+                  title="AI"
                 >
                   <svg
                     width="20"
@@ -1221,8 +1221,8 @@ const Shop: React.FC = () => {
                           minWidth: '44px',
                           minHeight: '44px'
                         }}
-                        aria-label="Scan label"
-                        title="Scan label with AI"
+                        aria-label="AI"
+                        title="AI"
                       >
                         <svg
                           width="20"
