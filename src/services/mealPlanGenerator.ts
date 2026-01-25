@@ -3,8 +3,8 @@
  * Logic for generating meal suggestions and creating meal plans
  */
 
-import { addDays, format, isSameDay, startOfDay } from 'date-fns';
-import type { MealPlan, MealSuggestion, PlannedMeal, MealType, LeftoverMeal, FoodItem } from '../types';
+import { addDays, format, isSameDay } from 'date-fns';
+import type { MealSuggestion, PlannedMeal, MealType, LeftoverMeal } from '../types';
 import { generateMealSuggestions } from './openaiService';
 import { mealProfileService } from './mealProfileService';
 import { leftoverMealService } from './leftoverMealService';

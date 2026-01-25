@@ -4,7 +4,7 @@
  */
 
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
-import type { MealPlan, PlannedMeal, UnplannedEvent, LeftoverMeal, FoodItem } from '../types';
+import type { MealPlan, PlannedMeal, UnplannedEvent, LeftoverMeal } from '../types';
 import { replanMeals } from './openaiService';
 import { mealProfileService } from './mealProfileService';
 import { leftoverMealService } from './leftoverMealService';

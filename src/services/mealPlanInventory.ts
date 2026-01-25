@@ -3,7 +3,6 @@
  * Logic for calculating available inventory and waste risk items
  */
 
-import { startOfWeek } from 'date-fns';
 import type { MealPlan, FoodItem } from '../types';
 import { foodItemService } from './foodItemService';
 import { logServiceOperation, logServiceError } from './baseService';

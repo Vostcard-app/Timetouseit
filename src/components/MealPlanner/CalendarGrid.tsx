@@ -27,7 +27,6 @@ interface CalendarGridProps {
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
   currentDate,
-  allPlannedMeals,
   isDragging,
   draggedMeal,
   dragOverDate,

@@ -18,7 +18,7 @@ import { DishListModal } from '../components/MealPlanner/DishListModal';
 import { MealSelectionModal } from '../components/MealPlanner/MealSelectionModal';
 import { CalendarNavigation } from '../components/MealPlanner/CalendarNavigation';
 import { CalendarGrid } from '../components/MealPlanner/CalendarGrid';
-import { addDays, startOfWeek, format, isSameDay, startOfDay, startOfMonth, endOfMonth, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { addDays, startOfWeek, isSameDay, startOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import type { PlannedMealCalendarLocationState } from '../types/navigation';

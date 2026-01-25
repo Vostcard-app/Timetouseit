@@ -24,7 +24,6 @@ import type {
   UnplannedEvent,
   FoodItem,
   MealType,
-  LeftoverMeal,
   Dish
 } from '../types';
 import {
@@ -34,8 +33,7 @@ import {
   logServiceError
 } from './baseService';
 import { toServiceError } from './errors';
-import { mealProfileService } from './mealProfileService';
-import { addDays, startOfWeek, format, isSameDay, startOfDay } from 'date-fns';
+import { addDays, startOfWeek, isSameDay, startOfDay } from 'date-fns';
 import { generateDailySuggestions, generateMealSuggestionsForWeek, createPlannedMealsFromSuggestions } from './mealPlanGenerator';
 import { replanMealsAfterEvent } from './mealPlanReplanner';
 import { recalculateInventory, getWasteRiskItems } from './mealPlanInventory';

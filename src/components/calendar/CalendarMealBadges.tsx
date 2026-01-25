@@ -5,7 +5,7 @@
 
 import React from 'react';
 import type { MealType, PlannedMeal } from '../../types';
-import { colors, spacing, borderRadius } from '../../styles/designTokens';
+import { colors, spacing } from '../../styles/designTokens';
 
 const MEAL_TYPE_ABBREVIATIONS: Record<MealType, string> = {
   breakfast: 'B',

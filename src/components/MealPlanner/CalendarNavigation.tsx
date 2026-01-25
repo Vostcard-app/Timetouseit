@@ -6,7 +6,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { spacing, colors, borderRadius } from '../../styles/designTokens';
+import { spacing } from '../../styles/designTokens';
 import { buttonStyles, combineStyles } from '../../styles/componentStyles';
 
 interface CalendarNavigationProps {

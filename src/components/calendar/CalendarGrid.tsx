@@ -4,11 +4,9 @@
  */
 
 import React from 'react';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import type { MealType, PlannedMeal } from '../../types';
 import { CalendarDayCell } from './CalendarDayCell';
 import { colors, spacing, borderRadius } from '../../styles/designTokens';
-import { textStyles } from '../../styles/componentStyles';
 
 interface CalendarGridProps {
   currentDate: Date;
