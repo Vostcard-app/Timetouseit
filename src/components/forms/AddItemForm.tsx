@@ -536,7 +536,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, ini
                 backgroundColor: '#48a13b',
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '50%',
                 fontSize: '0.875rem',
                 fontWeight: '500',
                 cursor: 'pointer',
