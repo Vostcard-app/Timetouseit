@@ -10,6 +10,7 @@ import { buttonStyles, cardStyles, combineStyles } from '../../styles/componentS
 import { textStyles } from '../../styles/componentStyles';
 import { colors } from '../../styles/designTokens';
 import { formatCost } from '../../utils/aiCostCalculator';
+import { AdminCostBreakdown } from './AdminCostBreakdown';
 
 export interface UserInfo {
   uid: string;
@@ -38,6 +39,8 @@ interface AdminUserManagementProps {
   onCleanupOrphaned: () => Promise<void>;
 }
 
+type UserManagementTab = 'userList' | 'costBreakdown';
+
 export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
   users,
   loading,
@@ -50,6 +53,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
 }) => {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [showOnlyAuthUsers, setShowOnlyAuthUsers] = useState(false);
+  const [activeTab, setActiveTab] = useState<UserManagementTab>('userList');
 
   const handleDeleteUser = async (userId: string) => {
     if (!window.confirm(`Are you sure you want to delete all data for user ${userId}? This action cannot be undone.`)) {
@@ -79,6 +83,43 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
           User Management
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginRight: '1rem' }}>
+            <button
+              onClick={() => setActiveTab('userList')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: activeTab === 'userList' ? '#002B4D' : '#f9fafb',
+                color: activeTab === 'userList' ? 'white' : '#1f2937',
+                border: activeTab === 'userList' ? '3px solid #002B4D' : '2px solid #d1d5db',
+                borderBottom: activeTab === 'userList' ? '4px solid #002B4D' : '2px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: activeTab === 'userList' ? '600' : '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              User List
+            </button>
+            <button
+              onClick={() => setActiveTab('costBreakdown')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: activeTab === 'costBreakdown' ? '#002B4D' : '#f9fafb',
+                color: activeTab === 'costBreakdown' ? 'white' : '#1f2937',
+                border: activeTab === 'costBreakdown' ? '3px solid #002B4D' : '2px solid #d1d5db',
+                borderBottom: activeTab === 'costBreakdown' ? '4px solid #002B4D' : '2px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '1rem',
+                fontWeight: activeTab === 'costBreakdown' ? '600' : '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Cost Breakdown
+            </button>
+          </div>
           <button
             onClick={onPopulateEmails}
             disabled={populatingEmails}
@@ -117,16 +158,22 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
           </button>
         </div>
       </div>
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: colors.gray[500] }}>
-          <p>Loading users...</p>
-        </div>
-      ) : users.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: colors.gray[500] }}>
-          <p>No users found.</p>
-        </div>
+      
+      {/* Tab Content */}
+      {activeTab === 'costBreakdown' ? (
+        <AdminCostBreakdown users={users} loading={loading} />
       ) : (
-        <div style={cardStyles.base}>
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: colors.gray[500] }}>
+              <p>Loading users...</p>
+            </div>
+          ) : users.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: colors.gray[500] }}>
+              <p>No users found.</p>
+            </div>
+          ) : (
+            <div style={cardStyles.base}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
@@ -206,7 +253,9 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
               </div>
             </div>
           ))}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

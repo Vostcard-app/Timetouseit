@@ -1,9 +1,10 @@
 import { doc, getDocs, collection, query, where, deleteDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/firebaseConfig';
-import type { UserInfo } from '../types';
 import { aiUsageService } from './aiUsageService';
 import { calculateModelCost } from '../utils/aiCostCalculator';
+import type { UserCostBreakdown } from '../components/admin/AdminCostBreakdown';
+import type { UserInfo } from '../components/admin/AdminUserManagement';
 
 // Configure admin emails here
 const ADMIN_EMAILS = [
@@ -27,7 +28,8 @@ export const adminService = {
   },
 
   // Get all users (admin only)
-  async getAllUsers(): Promise<UserInfo[]> {
+  // Note: This returns a minimal user list. For full user info with stats, use the Admin page's loadData function
+  async getAllUsers(): Promise<Array<{ uid: string; email?: string; username?: string }>> {
     // Note: Firebase Auth doesn't provide a direct way to list all users
     // We'll need to collect user data from Firestore collections
     // This gets users from foodItems collection
@@ -287,6 +289,145 @@ export const adminService = {
     const result = await checkUserAuthStatusFunction({ userIds });
     const data = result.data as { results: Array<{ userId: string; existsInAuth: boolean; email?: string }> };
     return data.results;
+  },
+
+  // Get cost breakdown for all users with monthly averages
+  async getUserCostBreakdown(users: UserInfo[]): Promise<UserCostBreakdown[]> {
+    const now = new Date();
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const breakdown: UserCostBreakdown[] = [];
+
+    // Process users in parallel batches to avoid overwhelming Firestore
+    const batchSize = 10;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+      
+      const batchResults = await Promise.all(
+        batch.map(async (user) => {
+          try {
+            // Get all-time usage
+            const allTimeUsage = await aiUsageService.getUserTokenUsage(user.uid).catch(() => ({
+              totalTokens: 0,
+              promptTokens: 0,
+              completionTokens: 0,
+              requestCount: 0,
+              byFeature: {} as Record<string, { totalTokens: number; requestCount: number }>,
+              byModel: {}
+            }));
+
+            // Get last 30 days usage
+            const last30DaysUsage = await aiUsageService.getUserTokenUsage(user.uid, last30Days, now).catch(() => ({
+              totalTokens: 0,
+              promptTokens: 0,
+              completionTokens: 0,
+              requestCount: 0,
+              byFeature: {} as Record<string, { totalTokens: number; requestCount: number }>,
+              byModel: {}
+            }));
+
+            // Get last 3 months usage (for average)
+            const last3MonthsUsage = await aiUsageService.getUserTokenUsage(user.uid, threeMonthsAgo, now).catch(() => ({
+              totalTokens: 0,
+              promptTokens: 0,
+              completionTokens: 0,
+              requestCount: 0,
+              byFeature: {} as Record<string, { totalTokens: number; requestCount: number }>,
+              byModel: {}
+            }));
+
+            // Get current month usage
+            const currentMonthUsage = await aiUsageService.getUserTokenUsage(user.uid, currentMonthStart, now).catch(() => ({
+              totalTokens: 0,
+              promptTokens: 0,
+              completionTokens: 0,
+              requestCount: 0,
+              byFeature: {} as Record<string, { totalTokens: number; requestCount: number }>,
+              byModel: {}
+            }));
+
+            // Calculate costs
+            const calculateCost = (usage: typeof allTimeUsage): number => {
+              if (usage.promptTokens === 0 && usage.completionTokens === 0) return 0;
+              
+              if (Object.keys(usage.byModel).length > 0) {
+                const totalTokens = Object.values(usage.byModel).reduce((sum, m) => sum + m.totalTokens, 0);
+                let cost = 0;
+                for (const [model, modelUsage] of Object.entries(usage.byModel)) {
+                  const modelTokenRatio = totalTokens > 0 ? modelUsage.totalTokens / totalTokens : 1;
+                  const estimatedPromptTokens = Math.round(usage.promptTokens * modelTokenRatio);
+                  const estimatedCompletionTokens = Math.round(usage.completionTokens * modelTokenRatio);
+                  cost += calculateModelCost(model, estimatedPromptTokens, estimatedCompletionTokens);
+                }
+                return cost;
+              } else {
+                return calculateModelCost('gpt-3.5-turbo', usage.promptTokens, usage.completionTokens);
+              }
+            };
+
+            const totalCost = calculateCost(allTimeUsage);
+            const last30DaysCost = calculateCost(last30DaysUsage);
+            const last3MonthsCost = calculateCost(last3MonthsUsage);
+            const currentMonthCost = calculateCost(currentMonthUsage);
+
+            // Calculate monthly averages
+            // Last 30 days: daily average * 30.4 (average days per month)
+            const last30DaysDailyTokens = last30DaysUsage.totalTokens / 30;
+            const last30DaysMonthlyTokens = last30DaysDailyTokens * 30.4;
+            const last30DaysDailyCost = last30DaysCost / 30;
+            const last30DaysMonthlyCost = last30DaysDailyCost * 30.4;
+
+            // Last 3 months: total / 3 (average per month)
+            const last3MonthsMonthlyTokens = last3MonthsUsage.totalTokens / 3;
+            const last3MonthsMonthlyCost = last3MonthsCost / 3;
+
+            return {
+              userId: user.uid,
+              email: user.email,
+              username: user.username,
+              totalTokens: allTimeUsage.totalTokens,
+              totalCost,
+              monthlyAverages: {
+                last30Days: {
+                  tokens: last30DaysMonthlyTokens,
+                  cost: last30DaysMonthlyCost
+                },
+                last3Months: {
+                  tokens: last3MonthsMonthlyTokens,
+                  cost: last3MonthsMonthlyCost
+                },
+                currentMonth: {
+                  tokens: currentMonthUsage.totalTokens,
+                  cost: currentMonthCost
+                }
+              }
+            };
+          } catch (error) {
+            console.error(`Error getting cost breakdown for user ${user.uid}:`, error);
+            // Return zero data for this user
+            return {
+              userId: user.uid,
+              email: user.email,
+              username: user.username,
+              totalTokens: 0,
+              totalCost: 0,
+              monthlyAverages: {
+                last30Days: { tokens: 0, cost: 0 },
+                last3Months: { tokens: 0, cost: 0 },
+                currentMonth: { tokens: 0, cost: 0 }
+              }
+            };
+          }
+        })
+      );
+
+      breakdown.push(...batchResults);
+    }
+
+    // Filter out users with no usage
+    return breakdown.filter(user => user.totalTokens > 0);
   },
 };
 
