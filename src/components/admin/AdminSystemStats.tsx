@@ -6,6 +6,7 @@
 import React from 'react';
 import { cardStyles, textStyles } from '../../styles/componentStyles';
 import { combineStyles } from '../../utils/styleHelpers';
+import { formatCost } from '../../utils/aiCostCalculator';
 
 interface SystemStats {
   totalUsers: number;
@@ -14,6 +15,7 @@ interface SystemStats {
   totalUserItems: number;
   totalAITokens: number;
   totalAIRequests: number;
+  totalAICost: number;
 }
 
 interface AdminSystemStatsProps {
@@ -60,6 +62,10 @@ export const AdminSystemStats: React.FC<AdminSystemStatsProps> = ({ stats }) => 
         <div style={statCardStyle}>
           <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Total AI Requests</div>
           <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{stats.totalAIRequests.toLocaleString()}</div>
+        </div>
+        <div style={statCardStyle}>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Total AI Cost</div>
+          <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>{formatCost(stats.totalAICost)}</div>
         </div>
       </div>
     </div>

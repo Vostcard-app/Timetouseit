@@ -9,6 +9,7 @@ import { showToast } from '../Toast';
 import { buttonStyles, cardStyles, combineStyles } from '../../styles/componentStyles';
 import { textStyles } from '../../styles/componentStyles';
 import { colors } from '../../styles/designTokens';
+import { formatCost } from '../../utils/aiCostCalculator';
 
 export interface UserInfo {
   uid: string;
@@ -22,6 +23,7 @@ export interface UserInfo {
     promptTokens: number;
     completionTokens: number;
     requestCount: number;
+    estimatedCost: number;
   };
 }
 
@@ -127,7 +129,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
         <div style={cardStyles.base}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr',
+            gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
             gap: '1rem',
             padding: '1rem',
             backgroundColor: colors.gray[50],
@@ -143,6 +145,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
             <div style={{ textAlign: 'center' }}>User Items</div>
             <div style={{ textAlign: 'center' }}>AI Tokens</div>
             <div style={{ textAlign: 'center' }}>AI Requests</div>
+            <div style={{ textAlign: 'center' }}>AI Cost</div>
             <div style={{ textAlign: 'center' }}>Auth Status</div>
             <div style={{ textAlign: 'center' }}>Actions</div>
           </div>
@@ -153,7 +156,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
               key={userInfo.uid}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr',
+                gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
                 gap: '1rem',
                 padding: '1rem',
                 borderBottom: `1px solid ${colors.gray[200]}`,
@@ -176,6 +179,9 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
               </div>
               <div style={{ textAlign: 'center', color: colors.gray[500], fontSize: '0.875rem' }}>
                 {userInfo.tokenUsage ? userInfo.tokenUsage.requestCount.toLocaleString() : '0'}
+              </div>
+              <div style={{ textAlign: 'center', color: colors.gray[500], fontSize: '0.875rem', fontWeight: 500 }}>
+                {userInfo.tokenUsage?.estimatedCost ? formatCost(userInfo.tokenUsage.estimatedCost) : '$0.00'}
               </div>
               <div style={{ textAlign: 'center', fontSize: '0.875rem' }}>
                 {userInfo.existsInAuth === undefined ? (

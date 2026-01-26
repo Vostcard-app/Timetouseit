@@ -3,6 +3,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/firebaseConfig';
 import type { UserInfo } from '../types';
 import { aiUsageService } from './aiUsageService';
+import { calculateModelCost } from '../utils/aiCostCalculator';
 
 // Configure admin emails here
 const ADMIN_EMAILS = [
@@ -63,6 +64,7 @@ export const adminService = {
       promptTokens: number;
       completionTokens: number;
       requestCount: number;
+      estimatedCost: number;
     };
   }> {
     const [foodItems, userItems, tokenUsage] = await Promise.all([
@@ -73,10 +75,32 @@ export const adminService = {
         promptTokens: 0,
         completionTokens: 0,
         requestCount: 0,
-        byFeature: {},
+        byFeature: {} as Record<string, { totalTokens: number; requestCount: number }>,
         byModel: {}
       }))
     ]);
+    
+    // Calculate cost based on model breakdown
+    let estimatedCost = 0;
+    if (tokenUsage.promptTokens > 0 || tokenUsage.completionTokens > 0) {
+      if (Object.keys(tokenUsage.byModel).length > 0) {
+        // Calculate cost per model
+        const totalTokens = Object.values(tokenUsage.byModel).reduce((sum, m) => sum + m.totalTokens, 0);
+        const promptRatio = totalTokens > 0 && (tokenUsage.promptTokens + tokenUsage.completionTokens) > 0
+          ? tokenUsage.promptTokens / (tokenUsage.promptTokens + tokenUsage.completionTokens)
+          : 0.7;
+        
+        for (const [model, modelUsage] of Object.entries(tokenUsage.byModel)) {
+          const modelTokenRatio = totalTokens > 0 ? modelUsage.totalTokens / totalTokens : 1;
+          const estimatedPromptTokens = Math.round(tokenUsage.promptTokens * modelTokenRatio);
+          const estimatedCompletionTokens = Math.round(tokenUsage.completionTokens * modelTokenRatio);
+          estimatedCost += calculateModelCost(model, estimatedPromptTokens, estimatedCompletionTokens);
+        }
+      } else {
+        // Default to GPT-3.5 Turbo if no model breakdown
+        estimatedCost = calculateModelCost('gpt-3.5-turbo', tokenUsage.promptTokens, tokenUsage.completionTokens);
+      }
+    }
     
     return {
       foodItemsCount: foodItems.size,
@@ -85,7 +109,8 @@ export const adminService = {
         totalTokens: tokenUsage.totalTokens,
         promptTokens: tokenUsage.promptTokens,
         completionTokens: tokenUsage.completionTokens,
-        requestCount: tokenUsage.requestCount
+        requestCount: tokenUsage.requestCount,
+        estimatedCost
       }
     };
   },
@@ -98,6 +123,7 @@ export const adminService = {
     totalUserItems: number;
     totalAITokens: number;
     totalAIRequests: number;
+    totalAICost: number;
   }> {
     const [foodItems, shoppingLists, userItems, userSettings, aiUsage] = await Promise.all([
       getDocs(collection(db, 'foodItems')),
@@ -106,6 +132,8 @@ export const adminService = {
       getDocs(collection(db, 'userSettings')),
       aiUsageService.getAllUsersTokenUsage().catch(() => ({
         totalTokens: 0,
+        promptTokens: 0,
+        completionTokens: 0,
         totalRequests: 0,
         userCount: 0,
         byFeature: {},
@@ -120,6 +148,28 @@ export const adminService = {
     userItems.forEach(doc => userIds.add(doc.data().userId));
     userSettings.forEach(doc => userIds.add(doc.id));
     
+    // Calculate total AI cost
+    let totalAICost = 0;
+    if (aiUsage.promptTokens > 0 || aiUsage.completionTokens > 0) {
+      if (Object.keys(aiUsage.byModel).length > 0) {
+        // Calculate cost per model
+        const totalTokens = Object.values(aiUsage.byModel).reduce((sum, m) => sum + m.totalTokens, 0);
+        const promptRatio = totalTokens > 0 && (aiUsage.promptTokens + aiUsage.completionTokens) > 0
+          ? aiUsage.promptTokens / (aiUsage.promptTokens + aiUsage.completionTokens)
+          : 0.7;
+        
+        for (const [model, modelUsage] of Object.entries(aiUsage.byModel)) {
+          const modelTokenRatio = totalTokens > 0 ? modelUsage.totalTokens / totalTokens : 1;
+          const estimatedPromptTokens = Math.round(aiUsage.promptTokens * modelTokenRatio);
+          const estimatedCompletionTokens = Math.round(aiUsage.completionTokens * modelTokenRatio);
+          totalAICost += calculateModelCost(model, estimatedPromptTokens, estimatedCompletionTokens);
+        }
+      } else {
+        // Default to GPT-3.5 Turbo if no model breakdown
+        totalAICost = calculateModelCost('gpt-3.5-turbo', aiUsage.promptTokens, aiUsage.completionTokens);
+      }
+    }
+    
     return {
       totalUsers: userIds.size,
       totalFoodItems: foodItems.size,
@@ -127,6 +177,7 @@ export const adminService = {
       totalUserItems: userItems.size,
       totalAITokens: aiUsage.totalTokens,
       totalAIRequests: aiUsage.totalRequests,
+      totalAICost,
     };
   },
 

@@ -32,6 +32,7 @@ const Admin: React.FC = () => {
     totalUserItems: 0,
     totalAITokens: 0,
     totalAIRequests: 0,
+    totalAICost: 0,
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);

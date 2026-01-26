@@ -134,6 +134,8 @@ export async function getAllUsersTokenUsage(
   endDate?: Date
 ): Promise<{
   totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
   totalRequests: number;
   userCount: number;
   byFeature: Record<AIFeature, { totalTokens: number; requestCount: number }>;
@@ -166,6 +168,8 @@ export async function getAllUsersTokenUsage(
     // Initialize aggregation
     const aggregated = {
       totalTokens: 0,
+      promptTokens: 0,
+      completionTokens: 0,
       totalRequests: 0,
       userCount: 0,
       byFeature: {} as Record<AIFeature, { totalTokens: number; requestCount: number }>,
@@ -177,6 +181,8 @@ export async function getAllUsersTokenUsage(
     snapshot.forEach(doc => {
       const docData = doc.data();
       const totalTokens = docData.totalTokens || 0;
+      const promptTokens = docData.promptTokens || 0;
+      const completionTokens = docData.completionTokens || 0;
       const feature = docData.feature as AIFeature;
       const model = docData.model as string;
       const userId = docData.userId as string;
@@ -188,6 +194,8 @@ export async function getAllUsersTokenUsage(
 
       // Aggregate totals
       aggregated.totalTokens += totalTokens;
+      aggregated.promptTokens += promptTokens;
+      aggregated.completionTokens += completionTokens;
       aggregated.totalRequests += 1;
 
       // Aggregate by feature
