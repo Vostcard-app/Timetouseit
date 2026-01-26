@@ -536,15 +536,15 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, ini
                 backgroundColor: '#48a13b',
                 color: 'white',
                 border: 'none',
-                borderRadius: '50%',
+                borderRadius: '8px',
                 fontSize: '0.875rem',
                 fontWeight: '500',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '52px',
-                height: '52px',
+                width: '42px',
+                height: '42px',
                 overflow: 'hidden'
               }}
               aria-label="AI"
