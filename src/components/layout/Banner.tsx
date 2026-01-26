@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 interface BannerProps {
   /** Whether to show the home icon. Defaults to true. Set to false for Shop page. */
@@ -31,6 +31,9 @@ const Banner: React.FC<BannerProps> = ({
   onMenuClick,
   maxWidth = '1200px'
 }) => {
+  const location = useLocation();
+  const isShopPage = location.pathname === '/shop';
+  
   return (
     <div style={{
       backgroundColor: '#002B4D',
@@ -80,9 +83,23 @@ const Banner: React.FC<BannerProps> = ({
             </Link>
           )}
           {showLogo !== false && (
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
-              TimeToUseIt
-            </h1>
+            isShopPage ? (
+              <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
+                TimeToUseIt
+              </h1>
+            ) : (
+              <Link 
+                to="/shop" 
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'inherit' 
+                }}
+              >
+                <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#ffffff' }}>
+                  TimeToUseIt
+                </h1>
+              </Link>
+            )
           )}
         </div>
         <button
