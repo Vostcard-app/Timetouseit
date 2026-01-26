@@ -178,27 +178,18 @@ const FavoriteRecipes: React.FC = () => {
                         });
                       }}
                       style={{
-                        background: 'none',
+                        backgroundColor: '#002B4D',
+                        color: 'white',
                         border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.5rem 1rem',
+                        fontSize: '1rem',
+                        fontWeight: '500',
                         cursor: 'pointer',
-                        padding: '0.25rem',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#002B4D',
-                        fontSize: '1.25rem',
-                        lineHeight: 1,
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '4px',
-                        transition: 'background-color 0.2s',
-                        flexShrink: 0
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
+                        gap: '0.5rem',
+                        transition: 'all 0.2s'
                       }}
                       aria-label="Add to calendar"
                       title="Add to calendar"
