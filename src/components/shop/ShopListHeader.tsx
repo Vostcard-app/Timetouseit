@@ -222,7 +222,7 @@ export const ShopListHeader: React.FC<ShopListHeaderProps> = ({
         </div>
       </form>
       <div style={{ 
-        marginTop: spacing.sm, 
+        marginTop: spacing.xs, 
         fontSize: '1.25rem', 
         color: colors.gray[900],
         textAlign: 'center',
