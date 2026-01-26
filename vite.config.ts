@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
@@ -107,7 +107,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: mode === 'development', // Only generate source maps in development to avoid 404 errors in production
     rollupOptions: {
       output: {
         manualChunks: {
@@ -119,4 +119,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))
