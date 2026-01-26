@@ -25,7 +25,7 @@ type CategoryFilterType = 'all' | FoodCategory;
 
 const Dashboard: React.FC = () => {
   const [user] = useAuthState(auth);
-  const { foodItems, loading } = useFoodItems(user || null);
+  const { foodItems, loading } = useFoodItems(user || null, { defer: 100 });
   const [filter, setFilter] = useState<FilterType>('all');
   const [storageTab, setStorageTab] = useState<StorageTabType>('perishable');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilterType>('all');

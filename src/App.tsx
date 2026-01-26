@@ -6,7 +6,6 @@ import Layout from './components/layout/Layout';
 import LoadingFallback from './components/ui/LoadingFallback';
 import ToastContainer from './components/Toast';
 import { notificationService } from './services/notificationService';
-import { useFoodItems } from './hooks/useFoodItems';
 import { analyticsService } from './services/analyticsService';
 import { useSessionTracking } from './hooks/useSessionTracking';
 
@@ -34,7 +33,6 @@ const PrintMealList = lazy(() => import('./pages/PrintMealList'));
 
 function App() {
   const [user, loading] = useAuthState(auth);
-  const { foodItems } = useFoodItems(user || null);
 
   // Track sessions and retention
   useSessionTracking();
@@ -71,29 +69,8 @@ function App() {
     }
   }, [user]);
 
-  // Check for expiring items daily
-  useEffect(() => {
-    if (!user || !foodItems.length) return;
-
-    const checkExpiringItems = async () => {
-      // Check once per day
-      const lastCheck = localStorage.getItem('lastExpirationCheck');
-      const now = new Date().toDateString();
-      
-      if (lastCheck !== now) {
-        // Get user settings for reminder days
-        const reminderDays = 7; // Default, could be loaded from settings
-        await notificationService.checkAndSendReminders(foodItems, reminderDays);
-        localStorage.setItem('lastExpirationCheck', now);
-      }
-    };
-
-    checkExpiringItems();
-    
-    // Check every hour
-    const interval = setInterval(checkExpiringItems, 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [user, foodItems]);
+  // Note: Notification check for expiring items moved to Dashboard component
+  // where foodItems are actually loaded, to avoid blocking initial page load
 
   if (loading) {
     return (

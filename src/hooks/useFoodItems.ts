@@ -4,7 +4,11 @@ import type { FoodItem } from '../types';
 import { foodItemService, userSettingsService } from '../services';
 import { getFoodItemStatus } from '../utils/statusUtils';
 
-export const useFoodItems = (user: User | null) => {
+interface UseFoodItemsOptions {
+  defer?: number; // Delay in milliseconds before subscribing
+}
+
+export const useFoodItems = (user: User | null, options?: UseFoodItemsOptions) => {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [reminderDays, setReminderDays] = useState(7);
@@ -17,45 +21,57 @@ export const useFoodItems = (user: User | null) => {
     }
 
     let unsubscribe: (() => void) | null = null;
+    const deferMs = options?.defer || 0;
 
-    // Load user settings for reminder days
-    userSettingsService.getUserSettings(user.uid)
-      .then(settings => {
-      if (settings) {
-        setReminderDays(settings.reminderDays);
-      }
-      
-      // Subscribe to food items after settings are loaded
-      unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
-        // Update status for each item based on current date
-        // Frozen items don't have expiration status, use 'fresh' as default
-        const currentReminderDays = settings?.reminderDays || 7;
-        const updatedItems = items.map(item => ({
-          ...item,
-          status: item.isFrozen ? 'fresh' : (item.bestByDate ? getFoodItemStatus(item.bestByDate, currentReminderDays) : 'fresh')
-        }));
-        setFoodItems(updatedItems);
-        setLoading(false);
-      });
-      })
-      .catch(error => {
-        console.error('Error loading user settings:', error);
-        // Still try to subscribe to food items even if settings fail
+    const setupSubscription = () => {
+      // Load user settings for reminder days
+      userSettingsService.getUserSettings(user.uid)
+        .then(settings => {
+        if (settings) {
+          setReminderDays(settings.reminderDays);
+        }
+        
+        // Subscribe to food items after settings are loaded
         unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
+          // Update status for each item based on current date
           // Frozen items don't have expiration status, use 'fresh' as default
+          const currentReminderDays = settings?.reminderDays || 7;
           const updatedItems = items.map(item => ({
             ...item,
-            status: item.isFrozen ? 'fresh' : (item.bestByDate ? getFoodItemStatus(item.bestByDate, 7) : 'fresh') // Use default
+            status: item.isFrozen ? 'fresh' : (item.bestByDate ? getFoodItemStatus(item.bestByDate, currentReminderDays) : 'fresh')
           }));
           setFoodItems(updatedItems);
           setLoading(false);
         });
-    });
-
-    return () => {
-      if (unsubscribe) unsubscribe();
+        })
+        .catch(error => {
+          console.error('Error loading user settings:', error);
+          // Still try to subscribe to food items even if settings fail
+          unsubscribe = foodItemService.subscribeToFoodItems(user.uid, (items) => {
+            // Frozen items don't have expiration status, use 'fresh' as default
+            const updatedItems = items.map(item => ({
+              ...item,
+              status: item.isFrozen ? 'fresh' : (item.bestByDate ? getFoodItemStatus(item.bestByDate, 7) : 'fresh') // Use default
+            }));
+            setFoodItems(updatedItems);
+            setLoading(false);
+          });
+      });
     };
-  }, [user]);
+
+    if (deferMs > 0) {
+      const timeoutId = setTimeout(setupSubscription, deferMs);
+      return () => {
+        clearTimeout(timeoutId);
+        if (unsubscribe) unsubscribe();
+      };
+    } else {
+      setupSubscription();
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [user, options?.defer]);
 
   return { foodItems, loading, reminderDays };
 };

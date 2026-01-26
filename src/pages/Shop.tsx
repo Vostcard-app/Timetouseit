@@ -100,19 +100,27 @@ const Shop: React.FC = () => {
   }, [user, settingsLoaded, selectedListId]);
 
 
-  // Load shopping lists
+  // Load shopping lists - deferred to allow initial render
   useEffect(() => {
     if (!user) {
       setLoading(false);
       return;
     }
 
-    const unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists: ShoppingList[]) => {
-      console.log('📦 Shopping lists updated:', lists.map(l => ({ id: l.id, name: l.name, isDefault: l.isDefault })));
-      setShoppingLists(lists);
-    });
+    let unsubscribeLists: (() => void) | null = null;
 
-    return () => unsubscribeLists();
+    // Defer subscription to allow initial page render
+    const timeoutId = setTimeout(() => {
+      unsubscribeLists = shoppingListsService.subscribeToShoppingLists(user.uid, (lists: ShoppingList[]) => {
+        console.log('📦 Shopping lists updated:', lists.map(l => ({ id: l.id, name: l.name, isDefault: l.isDefault })));
+        setShoppingLists(lists);
+      });
+    }, 150);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (unsubscribeLists) unsubscribeLists();
+    };
   }, [user]);
 
   // Restore selected list after settings + lists load
@@ -153,6 +161,7 @@ const Shop: React.FC = () => {
   }, [user, settingsLoaded, shoppingLists]);
 
   // Load items when selectedListId changes (using subscription for real-time updates)
+  // Deferred to allow initial render
   useEffect(() => {
     if (!user || !selectedListId) {
       setShoppingListItems([]);
@@ -161,16 +170,24 @@ const Shop: React.FC = () => {
     }
 
     setLoading(true);
-    const unsubscribe = shoppingListService.subscribeToShoppingList(
-      user.uid,
-      selectedListId,
-      (items) => {
-        setShoppingListItems(items);
-        setLoading(false);
-      }
-    );
+    let unsubscribe: (() => void) | null = null;
+    
+    // Defer subscription to allow initial render
+    const timeoutId = setTimeout(() => {
+      unsubscribe = shoppingListService.subscribeToShoppingList(
+        user.uid,
+        selectedListId,
+        (items) => {
+          setShoppingListItems(items);
+          setLoading(false);
+        }
+      );
+    }, 150);
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      if (unsubscribe) unsubscribe();
+    };
   }, [user, selectedListId]);
 
 
