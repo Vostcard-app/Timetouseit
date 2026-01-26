@@ -23,7 +23,8 @@ export interface ExpirationSuggestionResult {
 export async function getExpirationSuggestion(
   itemName: string,
   storageType: 'refrigerator' | 'freezer' | 'pantry',
-  isLeftover: boolean = false
+  isLeftover: boolean = false,
+  userId?: string
 ): Promise<ExpirationSuggestionResult> {
   try {
     // Check if credits available
@@ -45,7 +46,7 @@ export async function getExpirationSuggestion(
     }
 
     // Call AI service
-    const aiResult = await suggestExpirationDate(itemName, storageType, isLeftover);
+    const aiResult = await suggestExpirationDate(itemName, storageType, isLeftover, userId);
     
     // Parse the best by date (AI service returns expirationDate which maps to bestByDate)
     const expirationDate = new Date(aiResult.expirationDate);

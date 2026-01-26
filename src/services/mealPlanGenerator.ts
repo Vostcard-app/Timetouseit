@@ -99,7 +99,7 @@ export async function generateDailySuggestions(
     };
 
     // Generate suggestions for this specific day and meal type
-    const allSuggestions = await generateMealSuggestions(context, mealType);
+    const allSuggestions = await generateMealSuggestions(context, mealType, userId);
     
     // Filter to only this meal type and limit to 3
     const filtered = allSuggestions
@@ -115,7 +115,7 @@ export async function generateDailySuggestions(
         bestBySoonItems: [],
         currentInventory: []
       };
-      const prefSuggestions = await generateMealSuggestions(prefContext);
+      const prefSuggestions = await generateMealSuggestions(prefContext, undefined, userId);
       const prefFiltered = prefSuggestions
         .filter(s => s.mealType === mealType && isSameDay(new Date(s.date), date))
         .slice(0, 3 - filtered.length);
@@ -216,7 +216,7 @@ export async function generateMealSuggestionsForWeek(
     };
 
     // Generate suggestions
-    const suggestions = await generateMealSuggestions(context);
+    const suggestions = await generateMealSuggestions(context, undefined, userId);
     return suggestions;
   } catch (error) {
     logServiceError('generateMealSuggestionsForWeek', 'mealPlans', error, { userId });

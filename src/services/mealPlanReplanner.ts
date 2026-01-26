@@ -117,7 +117,7 @@ export async function replanMealsAfterEvent(
     };
 
     // Generate new suggestions
-    const newSuggestions = await replanMeals(context);
+    const newSuggestions = await replanMeals(context, userId);
 
     // Mark skipped meals
     const updatedMeals = currentPlan.meals.map(meal => {

@@ -10,11 +10,18 @@ import type {
   MealType
 } from '../types/mealPlan';
 import { logServiceError } from './baseService';
+import { aiUsageService } from './aiUsageService';
+import type { AIFeature } from '../types/aiUsage';
 
 /**
  * Call OpenAI API via Netlify Function
  */
-async function callOpenAI(messages: Array<{ role: string; content: string }>, model: string = 'gpt-3.5-turbo'): Promise<any> {
+async function callOpenAI(
+  messages: Array<{ role: string; content: string }>, 
+  model: string = 'gpt-3.5-turbo',
+  userId?: string,
+  feature?: AIFeature
+): Promise<any> {
   const functionUrl = '/.netlify/functions/openai-proxy';
   
   try {
@@ -27,7 +34,9 @@ async function callOpenAI(messages: Array<{ role: string; content: string }>, mo
         model,
         messages,
         temperature: 0.7,
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
+        userId: userId || null,
+        feature: feature || null
       })
     });
 
@@ -50,7 +59,25 @@ async function callOpenAI(messages: Array<{ role: string; content: string }>, mo
       throw new Error(errorMessage);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Record AI usage if userId and feature are provided and usage data is available
+    if (userId && feature && data.usageData) {
+      try {
+        await aiUsageService.recordAIUsage(userId, {
+          feature,
+          model: data.usageData.model || model,
+          promptTokens: data.usageData.promptTokens || 0,
+          completionTokens: data.usageData.completionTokens || 0,
+          totalTokens: data.usageData.totalTokens || 0
+        });
+      } catch (usageError) {
+        // Don't fail the request if usage recording fails
+        console.error('Failed to record AI usage:', usageError);
+      }
+    }
+    
+    return data;
   } catch (error) {
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -65,7 +92,8 @@ async function callOpenAI(messages: Array<{ role: string; content: string }>, mo
  */
 export async function generateMealSuggestions(
   context: MealPlanningContext,
-  targetMealType?: MealType
+  targetMealType?: MealType,
+  userId?: string
 ): Promise<MealSuggestion[]> {
   try {
     // Build prompt for meal planning
@@ -84,7 +112,7 @@ export async function generateMealSuggestions(
         role: 'user',
         content: prompt
       }
-    ], model);
+    ], model, userId, 'meal_planning');
 
     const content = response.choices?.[0]?.message?.content;
     if (!content) {
@@ -103,7 +131,8 @@ export async function generateMealSuggestions(
  * Replan meals after unplanned events
  */
 export async function replanMeals(
-  context: ReplanningContext
+  context: ReplanningContext,
+  userId?: string
 ): Promise<MealSuggestion[]> {
   try {
     const prompt = buildReplanningPrompt(context);
@@ -118,7 +147,7 @@ export async function replanMeals(
         role: 'user',
         content: prompt
       }
-    ], model);
+    ], model, userId, 'meal_planning');
 
     const content = response.choices?.[0]?.message?.content;
     if (!content) {
@@ -331,7 +360,8 @@ Generate exactly 3 different meal suggestions.`;
 export async function suggestExpirationDate(
   itemName: string,
   storageType: 'refrigerator' | 'freezer' | 'pantry',
-  isLeftover: boolean = false
+  isLeftover: boolean = false,
+  userId?: string
 ): Promise<{ expirationDate: string; reasoning: string }> {
   try {
     const prompt = buildExpirationDatePrompt(itemName, storageType, isLeftover);
@@ -346,7 +376,7 @@ export async function suggestExpirationDate(
         role: 'user',
         content: prompt
       }
-    ], model);
+    ], model, userId, 'expiration_helper');
 
     const content = response.choices?.[0]?.message?.content;
     if (!content) {

@@ -203,7 +203,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onSubmit, initialBarcode, ini
       const result = await suggestExpirationDate(
         formData.name.trim(),
         storageType,
-        false // isLeftover
+        false, // isLeftover
+        user.uid // userId
       );
       
       const suggestedDate = new Date(result.expirationDate);
