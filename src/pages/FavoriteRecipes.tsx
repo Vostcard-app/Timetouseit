@@ -147,6 +147,15 @@ const FavoriteRecipes: React.FC = () => {
         <h1 style={{ marginBottom: '1.5rem', fontSize: '1.75rem', fontWeight: '600' }}>
           Favorite Recipes
         </h1>
+        <p style={{ 
+          marginTop: '-1rem',
+          marginBottom: '1.5rem', 
+          fontSize: '0.875rem', 
+          color: '#6b7280',
+          fontStyle: 'italic'
+        }}>
+          Selecting date and meal type automatically retrieves ingredients
+        </p>
 
         {favoriteRecipes.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
