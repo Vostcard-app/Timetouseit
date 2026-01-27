@@ -9,7 +9,7 @@ export interface AddItemLocationState {
   itemName?: string;
   editingItem?: import('./foodItem').FoodItem;
   forceFreeze?: boolean;
-  storageType?: 'pantry' | 'refrigerator'; // Storage type from Dashboard tab
+  storageType?: 'pantry' | 'refrigerator' | 'freezer'; // Storage type from Dashboard tab
   scannedLabelData?: {
     itemName: string;
     quantity?: number;
