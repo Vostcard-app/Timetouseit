@@ -5,6 +5,9 @@
 
 // Quantity unit options for measurement-based items
 export const PANTRY_UNITS = [
+  // Countable
+  { value: 'item', label: 'item' },
+  { value: 'units', label: 'units' },
   // Volume (Cups & larger)
   { value: 'c', label: 'c (cup)' },
   { value: 'pt', label: 'pt (pint)' },
