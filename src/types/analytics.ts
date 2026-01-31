@@ -47,6 +47,7 @@ export type EngagementEventType =
   | 'feature_used'
   | 'shopping_list_item_added'
   | 'shopping_list_item_crossed_off'
+  | 'shopping_list_item_restored'
   | 'calendar_viewed'
   | 'barcode_scanned'
   | 'label_scanned'

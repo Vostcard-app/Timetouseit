@@ -10,6 +10,7 @@ import Banner from '../components/layout/Banner';
 import LabelScanner from '../components/features/LabelScanner';
 import { ShopListHeader } from '../components/shop/ShopListHeader';
 import { ShopListItem } from '../components/shop/ShopListItem';
+import { ShopRemovedListItem } from '../components/shop/ShopRemovedListItem';
 import { analyticsService } from '../services/analyticsService';
 
 import { STORAGE_KEYS } from '../constants';
@@ -199,6 +200,17 @@ const Shop: React.FC = () => {
     return shoppingListItems.filter(item => item.crossedOff !== true);
   }, [shoppingListItems]);
 
+  // Last 10 crossed-off items (by crossedOffAt desc, fallback createdAt) for "Recently removed" section
+  const last10Removed = useMemo(() => {
+    return shoppingListItems
+      .filter(item => item.crossedOff === true)
+      .sort((a, b) => {
+        const aAt = a.crossedOffAt ?? a.createdAt;
+        const bAt = b.crossedOffAt ?? b.createdAt;
+        return (bAt instanceof Date ? bAt.getTime() : 0) - (aAt instanceof Date ? aAt.getTime() : 0);
+      })
+      .slice(0, 10);
+  }, [shoppingListItems]);
 
   // Get FoodKeeper suggestions based on search query
   const foodKeeperSuggestions = useMemo(() => {
@@ -246,6 +258,19 @@ const Shop: React.FC = () => {
     }
   };
 
+  const handleAddBack = async (item: ShoppingListItem) => {
+    if (!user) return;
+    try {
+      await shoppingListService.updateShoppingListItemCrossedOff(item.id, false);
+      await analyticsService.trackEngagement(user.uid, 'shopping_list_item_restored', {
+        action: 'swipe_to_add_back',
+        itemName: item.name,
+      });
+    } catch (error) {
+      console.error('Error adding item back to list:', error);
+      alert('Failed to add item back. Please try again.');
+    }
+  };
 
   const handleQuantityClick = (item: ShoppingListItem) => {
     // Cancel name and unit editing if active
@@ -850,9 +875,21 @@ const Shop: React.FC = () => {
                 </div>
               )}
 
-
-              </>
-        )}
+              {/* Recently removed: last 10 crossed-off items; swipe to add back */}
+              {last10Removed.length > 0 && (
+                <div style={{ marginTop: '1.5rem', width: '100%' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#6b7280', marginBottom: '0.5rem' }}>
+                    Recently removed
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {last10Removed.map((item) => (
+                      <ShopRemovedListItem key={item.id} item={item} onAddBack={handleAddBack} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
           </div>
         </div>
       </div>

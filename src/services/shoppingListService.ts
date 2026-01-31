@@ -1,5 +1,6 @@
 import {
   Timestamp,
+  serverTimestamp,
   onSnapshot,
   type QuerySnapshot,
   type DocumentData
@@ -25,7 +26,7 @@ export const shoppingListService = {
     try {
       const q = buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]], 'createdAt', 'desc');
       const querySnapshot = await getDocs(q);
-      return transformSnapshot<ShoppingListItem>(querySnapshot, ['createdAt']);
+      return transformSnapshot<ShoppingListItem>(querySnapshot, ['createdAt', 'crossedOffAt']);
     } catch (error) {
       logServiceError('getShoppingListItems', 'shoppingList', error, { userId, listId });
       throw toServiceError(error, 'shoppingList');
@@ -44,10 +45,11 @@ export const shoppingListService = {
 
     const q = buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]], 'createdAt', 'desc');
 
+    const dateFields = ['createdAt', 'crossedOffAt'];
     const unsubscribe = onSnapshot(
       q,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const items = transformSnapshot<ShoppingListItem>(snapshot, ['createdAt']);
+        const items = transformSnapshot<ShoppingListItem>(snapshot, dateFields);
         callback(items);
       },
       (error) => {
@@ -60,7 +62,7 @@ export const shoppingListService = {
             return getDocs(buildQueryWithFilters('shoppingList', userId, [['listId', '==', listId]]));
           },
           (snapshot) => {
-            const items = transformSnapshot<ShoppingListItem>(snapshot, ['createdAt']);
+            const items = transformSnapshot<ShoppingListItem>(snapshot, dateFields);
             callback(items);
           }
         );
@@ -109,12 +111,17 @@ export const shoppingListService = {
 
   /**
    * Update crossedOff status of a shopping list item
+   * When crossing off, sets crossedOffAt for "last 10 removed" ordering.
    */
   async updateShoppingListItemCrossedOff(itemId: string, crossedOff: boolean): Promise<void> {
     logServiceOperation('updateShoppingListItemCrossedOff', 'shoppingList', { itemId, crossedOff });
-    
+
     try {
-      await updateDoc(doc(db, 'shoppingList', itemId), { crossedOff });
+      const updates: Record<string, unknown> = { crossedOff };
+      if (crossedOff) {
+        updates.crossedOffAt = serverTimestamp();
+      }
+      await updateDoc(doc(db, 'shoppingList', itemId), updates);
     } catch (error) {
       logServiceError('updateShoppingListItemCrossedOff', 'shoppingList', error, { itemId });
       throw toServiceError(error, 'shoppingList');
