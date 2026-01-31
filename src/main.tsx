@@ -4,15 +4,16 @@ import './index.css'
 import './styles/global.css'
 import App from './App.tsx'
 
-// Register service worker for PWA with update notifications
+// Service worker update policy (lower frequency for slow cellular)
+const SW_CHECK_INTERVAL_MS = 15 * 60 * 1000   // 15 minutes
+const SW_IDLE_REFRESH_MS = 30 * 60 * 1000     // 30 minutes hidden => refresh on visible
+
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  // Dynamic import to avoid TypeScript errors
   // @ts-ignore - virtual:pwa-register is provided by vite-plugin-pwa
   import('virtual:pwa-register').then(({ registerSW }) => {
     registerSW({
       onNeedRefresh() {
         console.log('🔄 New content available, reloading...')
-        // Automatically reload when new content is available
         window.location.reload()
       },
       onOfflineReady() {
@@ -20,25 +21,34 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       },
       onRegistered(registration: ServiceWorkerRegistration | undefined) {
         console.log('📦 Service worker registered')
-        // Check for updates more frequently (every 5 minutes) and on every page load
-        if (registration) {
-          // Check immediately on registration
-          registration.update().catch((err: Error) => {
-            console.warn('⚠️ Failed to check for updates:', err)
-          })
-          
-          // Check periodically (every 5 minutes)
-          setInterval(() => {
+        if (!registration) return
+        // No immediate update on every load (reduces slow-cellular chatter)
+        // Periodic check only when tab is visible
+        setInterval(() => {
+          if (document.visibilityState === 'visible') {
             registration.update().catch((err: Error) => {
               console.warn('⚠️ Failed to check for updates:', err)
             })
-          }, 5 * 60 * 1000) // 5 minutes instead of 1 hour
-        }
+          }
+        }, SW_CHECK_INTERVAL_MS)
+        // Check when returning after long idle
+        let hiddenAt: number | null = null
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            hiddenAt = Date.now()
+            return
+          }
+          if (hiddenAt !== null && Date.now() - hiddenAt >= SW_IDLE_REFRESH_MS) {
+            registration.update().catch((err: Error) => {
+              console.warn('⚠️ Failed to check for updates:', err)
+            })
+          }
+          hiddenAt = null
+        })
       },
       immediate: true
     })
   }).catch(() => {
-    // Service worker registration not available (dev mode or not supported)
     console.log('Service worker not available')
   })
 }

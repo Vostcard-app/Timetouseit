@@ -56,16 +56,18 @@ export default defineConfig(({ mode }) => ({
           /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/
         ],
         runtimeCaching: [
+          // HTML / App Shell (NetworkFirst, longer timeout for slow cellular)
           {
             urlPattern: /\.html$/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'html-cache',
-              networkTimeoutSeconds: 3,
+              networkTimeoutSeconds: 8,
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60
-              }
+              },
+              cacheableResponse: { statuses: [0, 200] }
             }
           },
           {
@@ -82,16 +84,17 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
+          // Firestore (StaleWhileRevalidate: show cache first, then update in background)
           {
             urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'firestore-cache',
-              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 5 // 5 minutes
-              }
+              },
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]
